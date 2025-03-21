@@ -32,6 +32,7 @@ func (g GoAnalyzer) AnalyzeCode(sourcePath string) (models.AnalysisResult, error
 	).Output()
 	if err != nil {
 		fmt.Println("Error running golangci-lint:", err)
+		fmt.Println("Output:", string(output))
 	}
 
 	return models.AnalysisResult{RawOutput: string(output)}, nil
