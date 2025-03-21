@@ -30,6 +30,9 @@ func (g GoAnalyzer) AnalyzeCode(sourcePath string) (models.AnalysisResult, error
 		"json",
 		sourcePath,
 	).Output()
+	if output == nil {
+		return models.AnalysisResult{}, fmt.Errorf("golangci-lint returned no output")
+	}
 	if err != nil {
 		fmt.Println("Error running golangci-lint:", err)
 		fmt.Println("Output:", string(output))
