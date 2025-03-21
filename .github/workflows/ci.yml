@@ -11,15 +11,12 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    container:
+      image: golang:1.21  # Use official Go image
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.21
 
       - name: Install Dependencies
         run: go mod tidy
