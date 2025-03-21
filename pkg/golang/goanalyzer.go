@@ -42,7 +42,7 @@ func (g GoAnalyzer) ExtractMetrics(result models.AnalysisResult) (models.CodeMet
 	golangCILintReport := &models.GolangCILintReport{}
 	err := json.Unmarshal([]byte(result.RawOutput), golangCILintReport)
 	if err != nil {
-		return models.CodeMetrics{}, err
+		return models.CodeMetrics{}, fmt.Errorf("error unmarshalling golangci-lint report: %v", err)
 	}
 
 	return models.CodeMetrics{
