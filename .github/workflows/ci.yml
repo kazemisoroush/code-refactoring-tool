@@ -11,25 +11,25 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container:
-      image: golang:1.24
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
         with:
-          fetch-depth: 0  # Ensures .git directory is available
+          go-version: '1.24.1' # Use the correct Go version
+          cache: false
 
       - name: Install Dependencies
         run: go mod tidy
 
-      - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-
       - name: Run Linter
-        env:
-          GOVCS: "off"  # Fully disables Go's VCS checks
-        run: golangci-lint run --build-tags -buildvcs=false ./...
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          working-directory: .  # Adjust if needed
 
       - name: Run Tests
         run: go test -v ./...
