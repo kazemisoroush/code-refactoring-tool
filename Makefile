@@ -6,7 +6,7 @@ test:
 
 lint:
 	@echo "Running linter..."
-	@golangci-lint run
+	@golangci-lint -v run
 	@echo "Linter passed."
 
 ci: test lint
