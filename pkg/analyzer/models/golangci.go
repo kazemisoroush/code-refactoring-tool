@@ -1,19 +1,20 @@
 package models
 
-import (
-	"strconv"
-	"strings"
-)
-
 // GolangCIIssue represents an issue found by the GolangCI linter
 type GolangCIIssue struct {
-	FromLinter           string           `json:"FromLinter"`
-	Text                 string           `json:"Text"`
-	Severity             string           `json:"Severity"`
-	SourceLines          []string         `json:"SourceLines"`
-	Pos                  GolangCIPosition `json:"Pos"`
-	ExpectNoLint         bool             `json:"ExpectNoLint"`
-	ExpectedNoLintLinter string           `json:"ExpectedNoLintLinter"`
+	FromLinter           string              `json:"FromLinter"`
+	Text                 string              `json:"Text"`
+	SourceLines          []string            `json:"SourceLines"`
+	Pos                  GolangCIPosition    `json:"Pos"`
+	ExpectNoLint         bool                `json:"ExpectNoLint"`
+	ExpectedNoLintLinter string              `json:"ExpectedNoLintLinter"`
+	Replacement          GolangCIReplacement `json:"Replacement"`
+}
+
+// GolangCIReplacement represents a replacement for an issue found by the GolangCI linter
+type GolangCIReplacement struct {
+	Line int    `json:"Line"`
+	Text string `json:"Text"`
 }
 
 // GolangCIPosition represents the position of an issue in the source code
@@ -40,77 +41,4 @@ type GolangCIReport struct {
 type GolangCILintReport struct {
 	Issues []GolangCIIssue `json:"Issues"`
 	Report GolangCIReport  `json:"Report"`
-}
-
-// GetCyclomaticComplexity returns the number of cyclomatic complexity issues
-func (g *GolangCILintReport) GetCyclomaticComplexity() int {
-	count := 0
-	for _, issue := range g.Issues {
-		if issue.FromLinter == "gocyclo" {
-			count++
-		}
-	}
-	return count
-}
-
-// GetDuplicateCode returns the number of duplicate code issues
-func (g *GolangCILintReport) GetDuplicateCode() int {
-	count := 0
-	for _, issue := range g.Issues {
-		if issue.FromLinter == "dupl" {
-			count++
-		}
-	}
-	return count
-}
-
-// GetTestCoverage returns the test coverage percentage
-func (g *GolangCILintReport) GetTestCoverage() float64 {
-	for _, issue := range g.Issues {
-		if strings.Contains(issue.Text, "coverage:") {
-			parts := strings.Fields(issue.Text)
-			for _, part := range parts {
-				if strings.HasSuffix(part, "%") {
-					val, err := strconv.ParseFloat(strings.TrimSuffix(part, "%"), 64)
-					if err == nil {
-						return val
-					}
-				}
-			}
-		}
-	}
-	return 0.0
-}
-
-// GetFunctionCount returns the number of function count issues
-func (g *GolangCILintReport) GetFunctionCount() int {
-	count := 0
-	for _, issue := range g.Issues {
-		if issue.FromLinter == "funlen" {
-			count++
-		}
-	}
-	return count
-}
-
-// GetLongFunctions returns the number of long function issues
-func (g *GolangCILintReport) GetLongFunctions() int {
-	count := 0
-	for _, issue := range g.Issues {
-		if issue.FromLinter == "gocognit" {
-			count++
-		}
-	}
-	return count
-}
-
-// GetDeadCodeCount returns the number of dead code issues
-func (g *GolangCILintReport) GetDeadCodeCount() int {
-	count := 0
-	for _, issue := range g.Issues {
-		if issue.FromLinter == "deadcode" || issue.FromLinter == "unused" {
-			count++
-		}
-	}
-	return count
 }

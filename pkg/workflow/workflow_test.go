@@ -25,14 +25,12 @@ func TestWorkflow_Run(t *testing.T) {
 	defer ctrl.Finish()
 
 	analysisResult := models.AnalysisResult{}
-	codeMetrics := models.CodeMetrics{}
-	report := models.Report{}
+	codeMetrics := []models.LinterIssue{}
 	repoPath := "code-refactor-tool"
 
 	a := analyzer_mocks.NewMockAnalyzer(ctrl)
 	a.EXPECT().AnalyzeCode(repoPath).Return(analysisResult, nil)
-	a.EXPECT().ExtractMetrics(analysisResult).Return(codeMetrics, nil)
-	a.EXPECT().GenerateReport(codeMetrics).Return(report)
+	a.EXPECT().ExtractIssues(analysisResult).Return(codeMetrics, nil)
 
 	r := repo_mocks.NewMockRepository(ctrl)
 	r.EXPECT().GetPath().Return(repoPath)

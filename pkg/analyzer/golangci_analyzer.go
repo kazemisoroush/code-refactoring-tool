@@ -43,37 +43,28 @@ func (g GolangCIAnalyzer) AnalyzeCode(sourcePath string) (models.AnalysisResult,
 	return models.AnalysisResult{RawOutput: string(output)}, nil
 }
 
-// ExtractMetrics implements CodeAnalyzer.
-func (g GolangCIAnalyzer) ExtractMetrics(result models.AnalysisResult) (models.CodeMetrics, error) {
-	golangCILintReport := &models.GolangCILintReport{}
-	err := json.Unmarshal([]byte(result.RawOutput), golangCILintReport)
+// ExtractIssues transforms golangci-lint issues into a universal linter issue format.
+func (g GolangCIAnalyzer) ExtractIssues(result models.AnalysisResult) ([]models.LinterIssue, error) {
+	var golangCILintReport models.GolangCILintReport
+	err := json.Unmarshal([]byte(result.RawOutput), &golangCILintReport)
 	if err != nil {
-		return models.CodeMetrics{}, fmt.Errorf("error unmarshalling golangci-lint report: %v %s", err, result.RawOutput)
+		return nil, fmt.Errorf("error unmarshalling golangci-lint report: %v", err)
 	}
 
-	return models.CodeMetrics{
-		CyclomaticComplexity: golangCILintReport.GetCyclomaticComplexity(),
-		DuplicateCode:        golangCILintReport.GetDuplicateCode(),
-		TestCoverage:         golangCILintReport.GetTestCoverage(),
-		FunctionCount:        golangCILintReport.GetFunctionCount(),
-		LongFunctions:        golangCILintReport.GetLongFunctions(),
-		DeadCodeCount:        golangCILintReport.GetDeadCodeCount(),
-	}, nil
-}
-
-// GenerateReport implements CodeAnalyzer.
-func (g GolangCIAnalyzer) GenerateReport(metrics models.CodeMetrics) models.Report {
-	suggestions := []string{}
-	if metrics.CyclomaticComplexity > 15 {
-		suggestions = append(suggestions, "Reduce cyclomatic complexity by refactoring functions.")
-	}
-	if metrics.DuplicateCode > 10 {
-		suggestions = append(suggestions, "Remove duplicate code blocks.")
+	var linterIssues []models.LinterIssue
+	for _, issue := range golangCILintReport.Issues {
+		linterIssue := models.LinterIssue{
+			LinterName:    issue.FromLinter,
+			RuleID:        issue.FromLinter,
+			Message:       issue.Text,
+			FilePath:      issue.Pos.Filename,
+			Line:          issue.Pos.Line,
+			Column:        issue.Pos.Column,
+			SourceSnippet: issue.SourceLines,
+			Suggestions:   []string{issue.Replacement.Text},
+		}
+		linterIssues = append(linterIssues, linterIssue)
 	}
 
-	return models.Report{
-		Language:    "Go",
-		CodeMetrics: metrics,
-		Suggestions: suggestions,
-	}
+	return linterIssues, nil
 }

@@ -11,9 +11,6 @@ type Analyzer interface {
 	// AnalyzeCode runs the code analysis tool on the provided source path
 	AnalyzeCode(sourcePath string) (models.AnalysisResult, error)
 
-	// ExtractMetrics extracts code metrics from the analysis result
-	ExtractMetrics(result models.AnalysisResult) (models.CodeMetrics, error)
-
-	// GenerateReport generates a report from the code metrics
-	GenerateReport(metrics models.CodeMetrics) models.Report
+	// ExtractIssues extracts code metrics from the analysis result
+	ExtractIssues(result models.AnalysisResult) ([]models.LinterIssue, error)
 }

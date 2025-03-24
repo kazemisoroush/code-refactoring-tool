@@ -46,15 +46,20 @@ func (o *Workflow) Run() error {
 	}
 
 	// Extract metrics
-	metrics, err := o.Analyzer.ExtractMetrics(analysisResult)
+	metrics, err := o.Analyzer.ExtractIssues(analysisResult)
 	if err != nil {
 		return fmt.Errorf("failed to extract metrics: %w", err)
 	}
 
-	// Generate report
-	report := o.Analyzer.GenerateReport(metrics)
-
-	log.Printf("Workflow completed successfully! Report: %s", report.ToString())
+	// Print the metrics
+	for _, metric := range metrics {
+		log.Printf("Linter: %s, Rule: %s, Message: %s, File: %s\n",
+			metric.LinterName,
+			metric.RuleID,
+			metric.Message,
+			metric.FilePath,
+		)
+	}
 
 	return nil
 }

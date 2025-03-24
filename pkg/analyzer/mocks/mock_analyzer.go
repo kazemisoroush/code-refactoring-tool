@@ -49,31 +49,17 @@ func (mr *MockAnalyzerMockRecorder) AnalyzeCode(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnalyzeCode", reflect.TypeOf((*MockAnalyzer)(nil).AnalyzeCode), arg0)
 }
 
-// ExtractMetrics mocks base method.
-func (m *MockAnalyzer) ExtractMetrics(arg0 models.AnalysisResult) (models.CodeMetrics, error) {
+// ExtractIssues mocks base method.
+func (m *MockAnalyzer) ExtractIssues(arg0 models.AnalysisResult) ([]models.LinterIssue, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExtractMetrics", arg0)
-	ret0, _ := ret[0].(models.CodeMetrics)
+	ret := m.ctrl.Call(m, "ExtractIssues", arg0)
+	ret0, _ := ret[0].([]models.LinterIssue)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ExtractMetrics indicates an expected call of ExtractMetrics.
-func (mr *MockAnalyzerMockRecorder) ExtractMetrics(arg0 interface{}) *gomock.Call {
+// ExtractIssues indicates an expected call of ExtractIssues.
+func (mr *MockAnalyzerMockRecorder) ExtractIssues(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtractMetrics", reflect.TypeOf((*MockAnalyzer)(nil).ExtractMetrics), arg0)
-}
-
-// GenerateReport mocks base method.
-func (m *MockAnalyzer) GenerateReport(arg0 models.CodeMetrics) models.Report {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GenerateReport", arg0)
-	ret0, _ := ret[0].(models.Report)
-	return ret0
-}
-
-// GenerateReport indicates an expected call of GenerateReport.
-func (mr *MockAnalyzerMockRecorder) GenerateReport(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateReport", reflect.TypeOf((*MockAnalyzer)(nil).GenerateReport), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtractIssues", reflect.TypeOf((*MockAnalyzer)(nil).ExtractIssues), arg0)
 }
