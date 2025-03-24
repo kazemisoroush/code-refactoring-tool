@@ -3,7 +3,7 @@ package models_test
 import (
 	"testing"
 
-	"github.com/kazemisoroush/code-refactor-tool/pkg/golang/models"
+	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/models"
 )
 
 // TestGetCyclomaticComplexity

@@ -1,15 +1,16 @@
-package golang
+package analyzer
 
 import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
 
-	"github.com/kazemisoroush/code-refactor-tool/pkg/golang/models"
+	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/models"
 )
 
 type GoAnalyzer struct{}
 
+// NewGoAnalyzer creates a new GoAnalyzer.
 func NewGoAnalyzer() (CodeAnalyzer, error) {
 	// Check the golangci-lint cli exists...
 	output, err := exec.Command("golangci-lint", "--version").Output()
@@ -22,6 +23,7 @@ func NewGoAnalyzer() (CodeAnalyzer, error) {
 	return GoAnalyzer{}, nil
 }
 
+// AnalyzeCode implements CodeAnalyzer.
 func (g GoAnalyzer) AnalyzeCode(sourcePath string) (models.AnalysisResult, error) {
 	output, err := exec.Command(
 		"golangci-lint",

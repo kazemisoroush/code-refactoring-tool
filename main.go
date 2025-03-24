@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/kazemisoroush/code-refactor-tool/pkg/golang"
+	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer"
 )
 
 func main() {
 	sourcePath := "./pkg/test/golang/bad_code_1.go"
 
-	analyzer, err := golang.NewGoAnalyzer()
+	analyzer, err := analyzer.NewGoAnalyzer()
 	if err != nil {
 		log.Fatalf("❌ Error creating analyzer: %v", err)
 	}

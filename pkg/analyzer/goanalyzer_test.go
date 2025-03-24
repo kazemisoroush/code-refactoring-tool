@@ -1,12 +1,12 @@
-package golang_test
+package analyzer_test
 
 import (
 	"encoding/json"
 	"fmt"
 	"testing"
 
-	"github.com/kazemisoroush/code-refactor-tool/pkg/golang"
-	"github.com/kazemisoroush/code-refactor-tool/pkg/golang/models"
+	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer"
+	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,7 +42,7 @@ func TestExtractMetrics(t *testing.T) {
 	jsonMarshalBytes, err := json.Marshal(golangCILintReport)
 	require.NoError(t, err, "json.Marshal should not return an error")
 
-	goAnalyzer, err := golang.NewGoAnalyzer()
+	goAnalyzer, err := analyzer.NewGoAnalyzer()
 	require.NoError(t, err, "NewGoAnalyzer should not return an error")
 
 	analysisResult := models.AnalysisResult{
@@ -67,7 +67,7 @@ func TestGolangCodeAnalyzer_Integration(t *testing.T) {
 	// Arrange
 	sourcePath := "./fixtures/dead_code.go"
 
-	analyzer, err := golang.NewGoAnalyzer()
+	analyzer, err := analyzer.NewGoAnalyzer()
 	require.NoError(t, err, "NewGoAnalyzer should not return an error")
 
 	// Act
