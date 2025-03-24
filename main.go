@@ -16,7 +16,7 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	a, err := analyzer.NewGoAnalyzer()
+	a, err := analyzer.NewGolangCIAnalyzer()
 	if err != nil {
 		log.Fatalf("failed to create analyzer: %v", err)
 	}

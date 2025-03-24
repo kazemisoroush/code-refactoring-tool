@@ -42,7 +42,7 @@ func TestExtractMetrics(t *testing.T) {
 	jsonMarshalBytes, err := json.Marshal(golangCILintReport)
 	require.NoError(t, err, "json.Marshal should not return an error")
 
-	goAnalyzer, err := analyzer.NewGoAnalyzer()
+	goAnalyzer, err := analyzer.NewGolangCIAnalyzer()
 	require.NoError(t, err, "NewGoAnalyzer should not return an error")
 
 	analysisResult := models.AnalysisResult{
@@ -67,7 +67,7 @@ func TestGolangCodeAnalyzer_Integration(t *testing.T) {
 	// Arrange
 	sourcePath := "./fixtures/dead_code.go"
 
-	analyzer, err := analyzer.NewGoAnalyzer()
+	analyzer, err := analyzer.NewGolangCIAnalyzer()
 	require.NoError(t, err, "NewGoAnalyzer should not return an error")
 
 	// Act

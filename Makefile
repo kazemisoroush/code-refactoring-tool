@@ -1,4 +1,3 @@
-# test
 test:
 	@echo "Running tests..."
 	@go test -v ./...
@@ -11,7 +10,7 @@ lint:
 
 ci: test lint
 
-mockgen:
+mock:
 	@echo "Generating mocks..."
 	@go generate ./...
 	@echo "Mocks generated."

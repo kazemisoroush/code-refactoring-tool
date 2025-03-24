@@ -8,23 +8,23 @@ import (
 	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/models"
 )
 
-type GoAnalyzer struct{}
+type GolangCIAnalyzer struct{}
 
-// NewGoAnalyzer creates a new GoAnalyzer.
-func NewGoAnalyzer() (Analyzer, error) {
+// NewGolangCIAnalyzer creates a new GoAnalyzer.
+func NewGolangCIAnalyzer() (Analyzer, error) {
 	// Check the golangci-lint cli exists...
 	output, err := exec.Command("golangci-lint", "--version").Output()
 	if err != nil {
-		return GoAnalyzer{}, fmt.Errorf("golangci-lint not found: %v", err)
+		return GolangCIAnalyzer{}, fmt.Errorf("golangci-lint not found: %v", err)
 	}
 
 	fmt.Println("golangci-lint version:", string(output))
 
-	return GoAnalyzer{}, nil
+	return GolangCIAnalyzer{}, nil
 }
 
 // AnalyzeCode implements CodeAnalyzer.
-func (g GoAnalyzer) AnalyzeCode(sourcePath string) (models.AnalysisResult, error) {
+func (g GolangCIAnalyzer) AnalyzeCode(sourcePath string) (models.AnalysisResult, error) {
 	output, err := exec.Command(
 		"golangci-lint",
 		"run",
@@ -44,7 +44,7 @@ func (g GoAnalyzer) AnalyzeCode(sourcePath string) (models.AnalysisResult, error
 }
 
 // ExtractMetrics implements CodeAnalyzer.
-func (g GoAnalyzer) ExtractMetrics(result models.AnalysisResult) (models.CodeMetrics, error) {
+func (g GolangCIAnalyzer) ExtractMetrics(result models.AnalysisResult) (models.CodeMetrics, error) {
 	golangCILintReport := &models.GolangCILintReport{}
 	err := json.Unmarshal([]byte(result.RawOutput), golangCILintReport)
 	if err != nil {
@@ -62,7 +62,7 @@ func (g GoAnalyzer) ExtractMetrics(result models.AnalysisResult) (models.CodeMet
 }
 
 // GenerateReport implements CodeAnalyzer.
-func (g GoAnalyzer) GenerateReport(metrics models.CodeMetrics) models.Report {
+func (g GolangCIAnalyzer) GenerateReport(metrics models.CodeMetrics) models.Report {
 	suggestions := []string{}
 	if metrics.CyclomaticComplexity > 15 {
 		suggestions = append(suggestions, "Reduce cyclomatic complexity by refactoring functions.")
