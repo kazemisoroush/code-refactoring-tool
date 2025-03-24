@@ -27,7 +27,9 @@ jobs:
         run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
       - name: Run Linter
-        run: GOCOMPILEDEBUG=VCS=off golangci-lint run --build-tags -buildvcs=false ./...
+        env:
+          GOVCS: "off"  # Fully disables Go's VCS checks
+        run: golangci-lint run --build-tags -buildvcs=false ./...
 
       - name: Run Tests
         run: go test -v ./...
