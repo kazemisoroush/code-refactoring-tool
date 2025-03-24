@@ -12,14 +12,14 @@ import (
 // Workflow represents a code analysis workflow
 type Workflow struct {
 	Config     config.Config
-	Analyzer   analyzer.CodeAnalyzer
+	Analyzer   analyzer.Analyzer
 	Repository repository.Repository
 }
 
 // NewWorkflow creates a new Workflow instance
 func NewWorkflow(
 	cfg config.Config,
-	analyzer analyzer.CodeAnalyzer,
+	analyzer analyzer.Analyzer,
 	repo repository.Repository,
 ) (*Workflow, error) {
 	return &Workflow{

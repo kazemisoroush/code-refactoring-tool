@@ -4,10 +4,10 @@ import (
 	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/models"
 )
 
-// CodeAnalyzer is an interface for analyzing Go code
+// Analyzer is an interface for analyzing Go code
 //
-//go:generate mockgen -destination=./mocks/mock_analyzer.go -mock_names=CodeAnalyzer=MockCodeAnalyzer -package=mocks . CodeAnalyzer
-type CodeAnalyzer interface {
+//go:generate mockgen -destination=./mocks/mock_analyzer.go -mock_names=Analyzer=MockAnalyzer -package=mocks . Analyzer
+type Analyzer interface {
 	// AnalyzeCode runs the code analysis tool on the provided source path
 	AnalyzeCode(sourcePath string) (models.AnalysisResult, error)
 

@@ -11,7 +11,7 @@ import (
 type GoAnalyzer struct{}
 
 // NewGoAnalyzer creates a new GoAnalyzer.
-func NewGoAnalyzer() (CodeAnalyzer, error) {
+func NewGoAnalyzer() (Analyzer, error) {
 	// Check the golangci-lint cli exists...
 	output, err := exec.Command("golangci-lint", "--version").Output()
 	if err != nil {

@@ -29,7 +29,7 @@ func TestWorkflow_Run(t *testing.T) {
 	report := models.Report{}
 	repoPath := "code-refactor-tool"
 
-	a := analyzer_mocks.NewMockCodeAnalyzer(ctrl)
+	a := analyzer_mocks.NewMockAnalyzer(ctrl)
 	a.EXPECT().AnalyzeCode(repoPath).Return(analysisResult, nil)
 	a.EXPECT().ExtractMetrics(analysisResult).Return(codeMetrics, nil)
 	a.EXPECT().GenerateReport(codeMetrics).Return(report)
