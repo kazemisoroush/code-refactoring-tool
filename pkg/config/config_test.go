@@ -39,3 +39,18 @@ func TestLoadConfig_MissingVariables(t *testing.T) {
 	// Assert: Expect an error due to missing required variables
 	assert.Error(t, err, "LoadConfig should return an error when required variables are missing")
 }
+
+func TestLoadConfig_InvalidGitHubURL(t *testing.T) {
+	// Arrange: Set an invalid GitHub repo URL
+	os.Setenv("REPO_URL", "https://invalid.com/repo.git")
+	os.Setenv("GITHUB_TOKEN", "ghp_testtoken123")
+	defer os.Unsetenv("REPO_URL")
+	defer os.Unsetenv("GITHUB_TOKEN")
+
+	// Act: Attempt to load configuration
+	_, err := config.LoadConfig()
+
+	// Assert: Expect an error due to invalid URL format
+	assert.Error(t, err, "LoadConfig should return an error for an invalid GitHub repository URL")
+	assert.Contains(t, err.Error(), "invalid GitHub repository URL format", "Error message should indicate invalid format")
+}

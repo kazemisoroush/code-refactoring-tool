@@ -16,7 +16,7 @@ import (
 
 func TestWorkflow_Run(t *testing.T) {
 	// Arrange
-	os.Setenv("REPO_URL", "some_repo_url")
+	os.Setenv("REPO_URL", "https://github.com/kazemisoroush/code-refactor-tool.git")
 	os.Setenv("GITHUB_TOKEN", "some_github_token")
 	cfg, err := config.LoadConfig()
 	require.NoError(t, err, "LoadConfig should not return an error")
@@ -27,7 +27,7 @@ func TestWorkflow_Run(t *testing.T) {
 	analysisResult := models.AnalysisResult{}
 	codeMetrics := models.CodeMetrics{}
 	report := models.Report{}
-	repoPath := "some_path"
+	repoPath := "code-refactor-tool"
 
 	a := analyzer_mocks.NewMockCodeAnalyzer(ctrl)
 	a.EXPECT().AnalyzeCode(repoPath).Return(analysisResult, nil)

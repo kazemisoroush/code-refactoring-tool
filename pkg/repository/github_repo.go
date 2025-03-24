@@ -3,6 +3,8 @@ package repository
 import (
 	"fmt"
 	"os/exec"
+	"path"
+	"strings"
 )
 
 type GitHubRepo struct {
@@ -19,7 +21,9 @@ func NewGitHubRepo(repoURL, token string) Repository {
 
 // GetPath implements Repository.
 func (g *GitHubRepo) GetPath() string {
-	return g.RepoURL
+	// Trim protocol (https:// or git@) and extract the last path component
+	repoName := path.Base(strings.TrimSuffix(g.RepoURL, ".git"))
+	return repoName
 }
 
 func (g *GitHubRepo) Clone() error {
