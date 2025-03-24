@@ -1,46 +1,38 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer"
+	"github.com/kazemisoroush/code-refactor-tool/pkg/config"
+	"github.com/kazemisoroush/code-refactor-tool/pkg/repository"
+	"github.com/kazemisoroush/code-refactor-tool/pkg/workflow"
 )
 
+// main is the entry point for the application.
 func main() {
-	sourcePath := "./pkg/test/golang/bad_code_1.go"
-
-	analyzer, err := analyzer.NewGoAnalyzer()
+	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("❌ Error creating analyzer: %v", err)
+		log.Fatalf("failed to load config: %v", err)
 	}
 
-	fmt.Println("🔍 Running code analysis...")
-	analysisResult, err := analyzer.AnalyzeCode(sourcePath)
+	a, err := analyzer.NewGoAnalyzer()
 	if err != nil {
-		log.Fatalf("❌ Error running analysis: %v", err)
+		log.Fatalf("failed to create analyzer: %v", err)
 	}
 
-	codeMetrics, err := analyzer.ExtractMetrics(analysisResult)
+	r := repository.NewGitHubRepo(cfg.RepoURL, cfg.GitToken)
 	if err != nil {
-		log.Fatalf("❌ Error extracting metrics: %v", err)
+		log.Fatalf("failed to create repository: %v", err)
 	}
 
-	report := analyzer.GenerateReport(codeMetrics)
-
-	fmt.Println("\n📊 Analysis Report:")
-	fmt.Printf("🔹 Language: %s\n", report.Language)
-	fmt.Printf("🔹 Cyclomatic Complexity: %d\n", report.CodeMetrics.CyclomaticComplexity)
-	fmt.Printf("🔹 Duplicate Code: %d\n", report.CodeMetrics.DuplicateCode)
-	fmt.Printf("🔹 Test Coverage: %.2f%%\n", report.CodeMetrics.TestCoverage)
-	fmt.Printf("🔹 Function Count: %d\n", report.CodeMetrics.FunctionCount)
-	fmt.Printf("🔹 Long Functions: %d\n", report.CodeMetrics.LongFunctions)
-	fmt.Printf("🔹 Dead Code Count: %d\n", report.CodeMetrics.DeadCodeCount)
-
-	fmt.Println("\n🛠️ Refactoring Suggestions:")
-	for _, suggestion := range report.Suggestions {
-		fmt.Printf("  - %s\n", suggestion)
+	wf, err := workflow.NewWorkflow(cfg, a, r)
+	if err != nil {
+		log.Fatalf("failed to create workflow: %v", err)
 	}
 
-	fmt.Println("\n✅ Done!")
+	err = wf.Run()
+	if err != nil {
+		log.Fatalf("workflow failed: %v", err)
+	}
 }
