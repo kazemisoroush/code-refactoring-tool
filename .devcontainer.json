@@ -5,5 +5,5 @@
     "ghcr.io/devcontainers/features/aws-cli:1": {},
     "ghcr.io/devcontainers/features/git:1": {}
   },
-  "postCreateCommand": "go mod tidy"
+  "postCreateCommand": "go install github.com/golang/mock/mockgen@v1.6.0 && go mod tidy"
 }
