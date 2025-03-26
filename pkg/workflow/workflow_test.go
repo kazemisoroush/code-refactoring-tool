@@ -9,6 +9,7 @@ import (
 	analyzer_mocks "github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/mocks"
 	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/models"
 	"github.com/kazemisoroush/code-refactor-tool/pkg/config"
+	ptchr_mocks "github.com/kazemisoroush/code-refactor-tool/pkg/patcher/mocks"
 	planner_mocks "github.com/kazemisoroush/code-refactor-tool/pkg/planner/mocks"
 	planner_model "github.com/kazemisoroush/code-refactor-tool/pkg/planner/models"
 	repo_mocks "github.com/kazemisoroush/code-refactor-tool/pkg/repository/mocks"
@@ -33,18 +34,21 @@ func TestWorkflow_Run(t *testing.T) {
 	repoPath := "code-refactor-tool"
 	plan := planner_model.Plan{}
 
-	a := analyzer_mocks.NewMockAnalyzer(ctrl)
-	a.EXPECT().AnalyzeCode(repoPath).Return(analysisResult, nil)
-	a.EXPECT().ExtractIssues(analysisResult).Return(issues, nil)
+	anlz := analyzer_mocks.NewMockAnalyzer(ctrl)
+	anlz.EXPECT().AnalyzeCode(repoPath).Return(analysisResult, nil)
+	anlz.EXPECT().ExtractIssues(analysisResult).Return(issues, nil)
 
-	r := repo_mocks.NewMockRepository(ctrl)
-	r.EXPECT().GetPath().Return(repoPath)
-	r.EXPECT().Clone().Return(nil)
+	repo := repo_mocks.NewMockRepository(ctrl)
+	repo.EXPECT().GetPath().Return(repoPath)
+	repo.EXPECT().Clone().Return(nil)
 
-	p := planner_mocks.NewMockPlanner(ctrl)
-	p.EXPECT().Plan(ctx, repoPath, issues).Return(plan, nil)
+	plnr := planner_mocks.NewMockPlanner(ctrl)
+	plnr.EXPECT().Plan(ctx, repoPath, issues).Return(plan, nil)
 
-	wf, err := workflow.NewWorkflow(cfg, a, r, p)
+	ptchr := ptchr_mocks.NewMockPatcher(ctrl)
+	ptchr.EXPECT().Patch(repoPath, plan).Return(nil)
+
+	wf, err := workflow.NewWorkflow(cfg, anlz, repo, plnr, ptchr)
 	require.NoError(t, err, "NewWorkflow should not return an error")
 
 	// Act

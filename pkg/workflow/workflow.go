@@ -7,6 +7,7 @@ import (
 
 	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer"
 	"github.com/kazemisoroush/code-refactor-tool/pkg/config"
+	"github.com/kazemisoroush/code-refactor-tool/pkg/patcher"
 	"github.com/kazemisoroush/code-refactor-tool/pkg/planner"
 	"github.com/kazemisoroush/code-refactor-tool/pkg/repository"
 )
@@ -17,6 +18,7 @@ type Workflow struct {
 	Analyzer   analyzer.Analyzer
 	Repository repository.Repository
 	Planner    planner.Planner
+	Patcher    patcher.Patcher
 }
 
 // NewWorkflow creates a new Workflow instance
@@ -25,12 +27,14 @@ func NewWorkflow(
 	analyzer analyzer.Analyzer,
 	repo repository.Repository,
 	planner planner.Planner,
+	patcher patcher.Patcher,
 ) (*Workflow, error) {
 	return &Workflow{
 		Config:     cfg,
 		Analyzer:   analyzer,
 		Repository: repo,
 		Planner:    planner,
+		Patcher:    patcher,
 	}, nil
 }
 
@@ -57,9 +61,14 @@ func (o *Workflow) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to extract issues: %w", err)
 	}
 
-	_, err = o.Planner.Plan(ctx, path, issues)
+	plan, err := o.Planner.Plan(ctx, path, issues)
 	if err != nil {
 		return fmt.Errorf("failed to create plan: %w", err)
+	}
+
+	err = o.Patcher.Patch(path, plan)
+	if err != nil {
+		return fmt.Errorf("failed to patch code: %w", err)
 	}
 
 	return nil
