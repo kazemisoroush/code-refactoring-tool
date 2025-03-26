@@ -1,11 +1,13 @@
 package workflow
 
 import (
+	"context"
 	"fmt"
 	"log"
 
 	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer"
 	"github.com/kazemisoroush/code-refactor-tool/pkg/config"
+	"github.com/kazemisoroush/code-refactor-tool/pkg/planner"
 	"github.com/kazemisoroush/code-refactor-tool/pkg/repository"
 )
 
@@ -14,6 +16,7 @@ type Workflow struct {
 	Config     config.Config
 	Analyzer   analyzer.Analyzer
 	Repository repository.Repository
+	Planner    planner.Planner
 }
 
 // NewWorkflow creates a new Workflow instance
@@ -21,16 +24,18 @@ func NewWorkflow(
 	cfg config.Config,
 	analyzer analyzer.Analyzer,
 	repo repository.Repository,
+	planner planner.Planner,
 ) (*Workflow, error) {
 	return &Workflow{
 		Config:     cfg,
 		Analyzer:   analyzer,
 		Repository: repo,
+		Planner:    planner,
 	}, nil
 }
 
 // Run executes the code analysis workflow
-func (o *Workflow) Run() error {
+func (o *Workflow) Run(ctx context.Context) error {
 	log.Println("Running workflow...")
 
 	// Clone the repository
@@ -38,27 +43,23 @@ func (o *Workflow) Run() error {
 	if err != nil {
 		return fmt.Errorf("failed to clone repository: %w", err)
 	}
+	path := o.Repository.GetPath()
 
 	// Analyze the code
-	analysisResult, err := o.Analyzer.AnalyzeCode(o.Repository.GetPath())
+	analysisResult, err := o.Analyzer.AnalyzeCode(path)
 	if err != nil {
 		return fmt.Errorf("failed to analyze code: %w", err)
 	}
 
-	// Extract metrics
-	metrics, err := o.Analyzer.ExtractIssues(analysisResult)
+	// Extract issues
+	issues, err := o.Analyzer.ExtractIssues(analysisResult)
 	if err != nil {
-		return fmt.Errorf("failed to extract metrics: %w", err)
+		return fmt.Errorf("failed to extract issues: %w", err)
 	}
 
-	// Print the metrics
-	for _, metric := range metrics {
-		log.Printf("Linter: %s, Rule: %s, Message: %s, File: %s\n",
-			metric.LinterName,
-			metric.RuleID,
-			metric.Message,
-			metric.FilePath,
-		)
+	_, err = o.Planner.Plan(ctx, path, issues)
+	if err != nil {
+		return fmt.Errorf("failed to create plan: %w", err)
 	}
 
 	return nil

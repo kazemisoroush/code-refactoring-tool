@@ -4,8 +4,10 @@ import (
 	"context"
 	"log"
 
+	"github.com/kazemisoroush/code-refactor-tool/pkg/agent"
 	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer"
 	"github.com/kazemisoroush/code-refactor-tool/pkg/config"
+	"github.com/kazemisoroush/code-refactor-tool/pkg/planner"
 	"github.com/kazemisoroush/code-refactor-tool/pkg/repository"
 	"github.com/kazemisoroush/code-refactor-tool/pkg/workflow"
 )
@@ -29,12 +31,16 @@ func main() {
 		log.Fatalf("failed to create repository: %v", err)
 	}
 
-	wf, err := workflow.NewWorkflow(cfg, a, r)
+	agnt := agent.NewAWSBedrockAgent(cfg.AWSConfig, "TODO:modelID")
+
+	p := planner.NewAIPlanner(agnt)
+
+	wf, err := workflow.NewWorkflow(cfg, a, r, p)
 	if err != nil {
 		log.Fatalf("failed to create workflow: %v", err)
 	}
 
-	err = wf.Run()
+	err = wf.Run(ctx)
 	if err != nil {
 		log.Fatalf("workflow failed: %v", err)
 	}

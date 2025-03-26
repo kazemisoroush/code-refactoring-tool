@@ -1,4 +1,4 @@
-package fixer
+package planner
 
 import (
 	"context"
@@ -7,22 +7,23 @@ import (
 
 	"github.com/kazemisoroush/code-refactor-tool/pkg/agent"
 	analyzerModels "github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/models"
+	"github.com/kazemisoroush/code-refactor-tool/pkg/planner/models"
 )
 
-// AIFixer is the interface that wraps the Fix method.
-type AIFixer struct {
+// AIPlanner is the interface that wraps the Fix method.
+type AIPlanner struct {
 	agent agent.Agent
 }
 
-// NewAIFixer constructor.
-func NewAIFixer(agent agent.Agent) Fixer {
-	return &AIFixer{
+// NewAIPlanner constructor.
+func NewAIPlanner(agent agent.Agent) Planner {
+	return &AIPlanner{
 		agent: agent,
 	}
 }
 
-// Fix fixes the code in the provided source path
-func (a *AIFixer) Fix(ctx context.Context, _ string, issues []analyzerModels.LinterIssue) error {
+// Plan fixes the code in the provided source path
+func (a *AIPlanner) Plan(ctx context.Context, _ string, issues []analyzerModels.LinterIssue) (models.Plan, error) {
 	for _, issue := range issues {
 		if len(issue.SourceSnippet) == 0 {
 			continue
@@ -44,11 +45,11 @@ Please provide only the corrected version of this line.`,
 		// send prompt to Bedrock
 		_, err := a.agent.Ask(ctx, prompt)
 		if err != nil {
-			return fmt.Errorf("failed to ask agent: %w", err)
+			return models.Plan{}, fmt.Errorf("failed to ask agent: %w", err)
 		}
 
 		// TODO: replace the original line with the corrected one
 	}
-	
-	return nil
+
+	return models.Plan{}, nil
 }
