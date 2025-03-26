@@ -3,6 +3,7 @@ package analyzer_test
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer"
@@ -59,14 +60,45 @@ func TestExtractIssues(t *testing.T) {
 
 func TestGolangCodeAnalyzer_Integration(t *testing.T) {
 	// Arrange
-	sourcePath := "./fixtures/dead_code.go"
+	tmpFile, err := os.CreateTemp("", "dead_code_*.go")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name()) //nolint:errcheck
+
+	code := `
+		package main
+
+		import "fmt"
+
+		func main() {
+			fmt.Println(ValidateUser("John", "", 25))
+			fmt.Println(ValidateUser("", "Doe", 17))
+		}
+
+		func ValidateUser(firstName, lastName string, age int) string {
+			if firstName == "" {
+				return "Error: First name is required"
+			}
+			if lastName == "" {
+				return "Error: Last name is required"
+			}
+			if age < 18 {
+				return "Error: User must be 18 or older"
+			}
+			return "Valid user"
+		}
+	`
+
+	_, err = tmpFile.WriteString(code)
+	require.NoError(t, err)
+	err = tmpFile.Close()
+	require.NoError(t, err)
 
 	analyzer, err := analyzer.NewGolangCIAnalyzer()
 	require.NoError(t, err, "NewGoAnalyzer should not return an error")
 
 	// Act
 	fmt.Println("🔍 Running code analysis...")
-	analysisResult, err := analyzer.AnalyzeCode(sourcePath)
+	analysisResult, err := analyzer.AnalyzeCode(tmpFile.Name())
 	require.NoError(t, err, "AnalyzeCode should not return an error")
 
 	codeIssues, err := analyzer.ExtractIssues(analysisResult)
