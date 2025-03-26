@@ -1,25 +1,9 @@
 {
-  "name": "Code Refactoring Tool Dev Container",
-  "image": "mcr.microsoft.com/devcontainers/go:1-1.24",
+  "name": "Go Refactor Tool Dev",
+  "image": "mcr.microsoft.com/devcontainers/go:dev-1.24",
   "features": {
-    "ghcr.io/devcontainers/features/common-utils:2": {
-      "installZsh": true,
-      "username": "vscode"
-    }
+    "ghcr.io/devcontainers/features/aws-cli:1": {},
+    "ghcr.io/devcontainers/features/git:1": {}
   },
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "golang.go",
-        "ms-vscode.makefile-tools"
-      ],
-      "settings": {
-        "go.useLanguageServer": true,
-        "go.lintTool": "golangci-lint",
-        "go.lintFlags": ["--fast"]
-      }
-    }
-  },
-  "postCreateCommand": "go mod tidy && golangci-lint --version",
-  "remoteUser": "vscode"
+  "postCreateCommand": "go mod tidy"
 }
