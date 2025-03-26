@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/models"
 )
@@ -30,8 +31,8 @@ func (g GolangCIAnalyzer) AnalyzeCode(sourcePath string) (models.AnalysisResult,
 	output, err := exec.Command(
 		"golangci-lint",
 		"run",
-		"--out-format",
-		"json",
+		"--output.json.path",
+		"stdout",
 		sourcePath,
 	).Output()
 	if output == nil {
@@ -42,7 +43,11 @@ func (g GolangCIAnalyzer) AnalyzeCode(sourcePath string) (models.AnalysisResult,
 		fmt.Println("Output:", string(output))
 	}
 
-	return models.AnalysisResult{RawOutput: string(output)}, nil
+	// Keep only the first line (JSON) and discard any trailing "0 issues." etc.
+	outputLines := strings.SplitN(string(output), "\n", 2)
+	cleanOutput := outputLines[0]
+
+	return models.AnalysisResult{RawOutput: cleanOutput}, nil
 }
 
 // ExtractIssues transforms golangci-lint issues into a universal linter issue format.
