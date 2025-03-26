@@ -1,6 +1,7 @@
 package workflow_test
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -16,9 +17,10 @@ import (
 
 func TestWorkflow_Run(t *testing.T) {
 	// Arrange
+	ctx := context.Background()
 	os.Setenv("REPO_URL", "https://github.com/kazemisoroush/code-refactor-tool.git")
 	os.Setenv("GITHUB_TOKEN", "some_github_token")
-	cfg, err := config.LoadConfig()
+	cfg, err := config.LoadConfig(ctx)
 	require.NoError(t, err, "LoadConfig should not return an error")
 
 	ctrl := gomock.NewController(t)

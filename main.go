@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 
 	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer"
@@ -11,7 +12,9 @@ import (
 
 // main is the entry point for the application.
 func main() {
-	cfg, err := config.LoadConfig()
+	ctx := context.Background()
+
+	cfg, err := config.LoadConfig(ctx)
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
