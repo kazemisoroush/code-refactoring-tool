@@ -29,7 +29,21 @@ func (a *AIPlanner) Plan(ctx context.Context, _ string, issues []analyzerModels.
 			continue
 		}
 
-		prompt := fmt.Sprintf(`You are an AI code refactoring agent.
+		prompt := a.CreatePrompt(issue)
+
+		// send prompt to Bedrock
+		_, err := a.agent.Ask(ctx, prompt)
+		if err != nil {
+			return models.Plan{}, fmt.Errorf("failed to ask agent: %w", err)
+		}
+	}
+
+	return models.Plan{}, nil
+}
+
+// CreatePrompt creates a prompt for the given issue
+func (a *AIPlanner) CreatePrompt(issue analyzerModels.LinterIssue) string {
+	prompt := fmt.Sprintf(`You are an AI code refactoring agent.
 Your task is to fix a linting issue in the following Go code snippet. Do not change code behavior.
 
 Lint rule violation: %s
@@ -38,18 +52,9 @@ Original code:
 %s
 
 Please provide only the corrected version of this line.`,
-			issue.Message,
-			strings.Join(issue.SourceSnippet, "\n"),
-		)
+		issue.Message,
+		strings.Join(issue.SourceSnippet, "\n"),
+	)
 
-		// send prompt to Bedrock
-		_, err := a.agent.Ask(ctx, prompt)
-		if err != nil {
-			return models.Plan{}, fmt.Errorf("failed to ask agent: %w", err)
-		}
-
-		// TODO: replace the original line with the corrected one
-	}
-
-	return models.Plan{}, nil
+	return prompt
 }

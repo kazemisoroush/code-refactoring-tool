@@ -36,6 +36,20 @@ func (m *MockPlanner) EXPECT() *MockPlannerMockRecorder {
 	return m.recorder
 }
 
+// CreatePrompt mocks base method.
+func (m *MockPlanner) CreatePrompt(arg0 models.LinterIssue) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreatePrompt", arg0)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// CreatePrompt indicates an expected call of CreatePrompt.
+func (mr *MockPlannerMockRecorder) CreatePrompt(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePrompt", reflect.TypeOf((*MockPlanner)(nil).CreatePrompt), arg0)
+}
+
 // Plan mocks base method.
 func (m *MockPlanner) Plan(arg0 context.Context, arg1 string, arg2 []models.LinterIssue) (models0.Plan, error) {
 	m.ctrl.T.Helper()
