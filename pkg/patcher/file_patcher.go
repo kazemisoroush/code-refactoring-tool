@@ -37,7 +37,11 @@ func (p *FilePatcher) Patch(projectSourcePath string, plan models.Plan) error {
 		for scanner.Scan() {
 			lines = append(lines, scanner.Text())
 		}
-		file.Close()
+
+		err = file.Close()
+		if err != nil {
+			return fmt.Errorf("failed to close file %s: %w", fullPath, err)
+		}
 
 		if err := scanner.Err(); err != nil {
 			return fmt.Errorf("failed to read file %s: %w", fullPath, err)
