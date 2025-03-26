@@ -1,3 +1,4 @@
+// Package models provides the data models for the code analysis tool.
 package models
 
 // Plan represents a plan to fix the issues in the source code.

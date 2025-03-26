@@ -1,3 +1,4 @@
+// Package agent provides the interface for the agent that interacts with the user.
 package agent
 
 import (

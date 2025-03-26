@@ -9,11 +9,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 )
 
+// AWSBedrockAgent is an implementation of the Agent interface that uses the AWS Bedrock service.
 type AWSBedrockAgent struct {
 	Client  *bedrockruntime.Client
 	ModelID string
 }
 
+// NewAWSBedrockAgent creates a new AWSBedrockAgent.
 func NewAWSBedrockAgent(cfg aws.Config, modelID string) Agent {
 	client := bedrockruntime.NewFromConfig(cfg)
 	return &AWSBedrockAgent{
@@ -22,6 +24,7 @@ func NewAWSBedrockAgent(cfg aws.Config, modelID string) Agent {
 	}
 }
 
+// Ask sends a prompt to the agent and returns the response.
 func (a *AWSBedrockAgent) Ask(ctx context.Context, prompt string) (string, error) {
 	payload := map[string]interface{}{
 		"anthropic_version": "bedrock-2023-05-31",

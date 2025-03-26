@@ -1,3 +1,4 @@
+// Package models provides the data models for the code analysis tool.
 package models
 
 // GolangCIIssue represents an issue found by the GolangCI linter

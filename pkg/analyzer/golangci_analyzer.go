@@ -1,3 +1,4 @@
+// Package analyzer provides the code analysis functionality.
 package analyzer
 
 import (
@@ -8,6 +9,7 @@ import (
 	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/models"
 )
 
+// GolangCIAnalyzer is a code analyzer that uses golangci-lint.
 type GolangCIAnalyzer struct{}
 
 // NewGolangCIAnalyzer creates a new GoAnalyzer.

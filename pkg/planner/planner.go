@@ -7,7 +7,7 @@ import (
 	"github.com/kazemisoroush/code-refactor-tool/pkg/planner/models"
 )
 
-// Planner
+// Planner defines the interface for creating a plan to fix issues in the source code
 //
 //go:generate mockgen -destination=./mocks/mock_planner.go -mock_names=Planner=MockPlanner -package=mocks . Planner
 type Planner interface {

@@ -1,3 +1,4 @@
+// Package workflow provides the main workflow for the code analysis tool.
 package workflow
 
 import (

@@ -1,3 +1,4 @@
+// Package planner provides the code refactoring planner.
 package planner
 
 import (

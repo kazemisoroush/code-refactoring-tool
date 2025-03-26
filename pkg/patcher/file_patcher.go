@@ -1,3 +1,4 @@
+// Package patcher provides the code patcher interface and implementations.
 package patcher
 
 import (
@@ -11,13 +12,16 @@ import (
 	"github.com/kazemisoroush/code-refactor-tool/pkg/planner/models"
 )
 
+// FilePatcher is a patcher that applies changes to files in the project source path
 type FilePatcher struct {
 }
 
+// NewFilePatcher constructor
 func NewFilePatcher() Patcher {
 	return &FilePatcher{}
 }
 
+// Patch applies the changes to the files in the project source path
 func (p *FilePatcher) Patch(projectSourcePath string, plan models.Plan) error {
 	for _, action := range plan.Actions {
 		fullPath := filepath.Join(projectSourcePath, action.FilePath)
