@@ -2,6 +2,7 @@ package planner
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -24,37 +25,58 @@ func NewAIPlanner(agent agent.Agent) Planner {
 
 // Plan fixes the code in the provided source path
 func (a *AIPlanner) Plan(ctx context.Context, _ string, issues []analyzerModels.LinterIssue) (models.Plan, error) {
+	plan := models.Plan{}
 	for _, issue := range issues {
 		if len(issue.SourceSnippet) == 0 {
 			continue
 		}
 
-		prompt := a.CreatePrompt(issue)
+		prompt, err := a.CreatePrompt(issue)
+		if err != nil {
+			return plan, fmt.Errorf("failed to create prompt: %w", err)
+		}
 
 		// send prompt to Bedrock
-		_, err := a.agent.Ask(ctx, prompt)
+		responseString, err := a.agent.Ask(ctx, prompt)
 		if err != nil {
-			return models.Plan{}, fmt.Errorf("failed to ask agent: %w", err)
+			return plan, fmt.Errorf("failed to ask agent: %w", err)
 		}
+
+		// Parse response to PlannedAction
+		var plannedActions []models.PlannedAction
+		err = json.Unmarshal([]byte(responseString), &plannedActions)
+		if err != nil {
+			return plan, fmt.Errorf("failed to unmarshal response: %w", err)
+		}
+
+		plan.Actions = append(plan.Actions, plannedActions...)
 	}
 
-	return models.Plan{}, nil
+	return plan, nil
 }
 
 // CreatePrompt creates a prompt for the given issue
-func (a *AIPlanner) CreatePrompt(issue analyzerModels.LinterIssue) string {
+func (a *AIPlanner) CreatePrompt(issue analyzerModels.LinterIssue) (string, error) {
+	schemaExample := []models.PlannedAction{}
+
+	// Marshal to pretty-printed JSON as schema
+	schemaBytes, err := json.MarshalIndent(schemaExample, "", "  ")
+	if err != nil {
+		return "", err
+	}
+
 	prompt := fmt.Sprintf(`You are an AI code refactoring agent.
-Your task is to fix a linting issue in the following Go code snippet. Do not change code behavior.
+You will be given a linting issue and some Go code. Your task is to return a single JSON object matching the structure below:
+
+%s
+
+Do not explain anything. Just return a valid JSON.
 
 Lint rule violation: %s
 
-Original code:
+Code snippet:
 %s
+`, string(schemaBytes), issue.Message, strings.Join(issue.SourceSnippet, "\n"))
 
-Please provide only the corrected version of this line.`,
-		issue.Message,
-		strings.Join(issue.SourceSnippet, "\n"),
-	)
-
-	return prompt
+	return prompt, nil
 }
