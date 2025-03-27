@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/kazemisoroush/code-refactor-tool/pkg/agent"
 	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer"
@@ -21,13 +22,14 @@ const (
 
 // main is the entry point for the application.
 func main() {
-	ctx := context.Background()
-
 	// Load environment + AWS config
-	cfg, err := config.LoadConfig(ctx)
+	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("❌ failed to load config: %v", err)
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.TimeoutSeconds)*time.Second)
+	defer cancel()
 
 	// Initialize static analyzer
 	anlzr, err := analyzer.NewGolangCIAnalyzer()

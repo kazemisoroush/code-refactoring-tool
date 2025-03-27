@@ -1,7 +1,6 @@
 package config_test
 
 import (
-	"context"
 	"os"
 	"testing"
 
@@ -12,7 +11,6 @@ import (
 
 func TestLoadConfig_Success(t *testing.T) {
 	// Arrange: Set environment variables
-	ctx := context.Background()
 	expectedRepoURL := "https://github.com/example/repo.git"
 	expectedToken := "ghp_testtoken123"
 
@@ -24,7 +22,7 @@ func TestLoadConfig_Success(t *testing.T) {
 	defer os.Unsetenv("GITHUB_TOKEN") //nolint:errcheck
 
 	// Act: Load configuration
-	cfg, err := config.LoadConfig(ctx)
+	cfg, err := config.LoadConfig()
 
 	// Assert: Check no error and values are correctly set
 	require.NoError(t, err, "LoadConfig should not return an error")
@@ -34,14 +32,13 @@ func TestLoadConfig_Success(t *testing.T) {
 
 func TestLoadConfig_MissingVariables(t *testing.T) {
 	// Arrange: Clear environment variables
-	ctx := context.Background()
 	err := os.Unsetenv("REPO_URL")
 	require.NoError(t, err, "Unsetenv should not return an error")
 	err = os.Unsetenv("GITHUB_TOKEN")
 	require.NoError(t, err, "Unsetenv should not return an error")
 
 	// Act: Load configuration
-	_, err = config.LoadConfig(ctx)
+	_, err = config.LoadConfig()
 
 	// Assert: Expect an error due to missing required variables
 	assert.Error(t, err, "LoadConfig should return an error when required variables are missing")
@@ -49,7 +46,6 @@ func TestLoadConfig_MissingVariables(t *testing.T) {
 
 func TestLoadConfig_InvalidGitHubURL(t *testing.T) {
 	// Arrange: Set an invalid GitHub repo URL
-	ctx := context.Background()
 	err := os.Setenv("REPO_URL", "https://invalid.com/repo.git")
 	require.NoError(t, err, "Setenv should not return an error")
 	err = os.Setenv("GITHUB_TOKEN", "ghp_testtoken123")
@@ -59,7 +55,7 @@ func TestLoadConfig_InvalidGitHubURL(t *testing.T) {
 	defer os.Unsetenv("GITHUB_TOKEN") //nolint:errcheck
 
 	// Act: Attempt to load configuration
-	_, err = config.LoadConfig(ctx)
+	_, err = config.LoadConfig()
 
 	// Assert: Expect an error due to invalid URL format
 	assert.Error(t, err, "LoadConfig should return an error for an invalid GitHub repository URL")

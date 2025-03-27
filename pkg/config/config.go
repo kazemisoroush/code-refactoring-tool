@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -14,9 +15,10 @@ import (
 
 // Config represents the configuration for the application
 type Config struct {
-	RepoURL   string     `envconfig:"REPO_URL" required:"true"`
-	GitToken  string     `envconfig:"GITHUB_TOKEN" required:"true"`
-	AWSConfig aws.Config // Loaded using AWS SDK, not from env
+	RepoURL        string     `envconfig:"REPO_URL" required:"true"`
+	GitToken       string     `envconfig:"GITHUB_TOKEN" required:"true"`
+	TimeoutSeconds int        `envconfig:"TIMEOUT_SECONDS" default:"30"`
+	AWSConfig      aws.Config // Loaded using AWS SDK, not from env
 }
 
 // validateRepositoryURL ensures the RepoURL matches the expected GitHub URL pattern
@@ -34,7 +36,7 @@ func validateRepositoryURL(url string) error {
 }
 
 // LoadConfig loads and validates configuration from environment variables and AWS
-func LoadConfig(ctx context.Context) (Config, error) {
+func LoadConfig() (Config, error) {
 	var cfg Config
 
 	// Load env vars
@@ -46,6 +48,9 @@ func LoadConfig(ctx context.Context) (Config, error) {
 	if err := validateRepositoryURL(cfg.RepoURL); err != nil {
 		return cfg, fmt.Errorf("invalid GitHub repository URL: %w", err)
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.TimeoutSeconds)*time.Second)
+	defer cancel()
 
 	// Load AWS config
 	awsCfg, err := config.LoadDefaultConfig(ctx)
