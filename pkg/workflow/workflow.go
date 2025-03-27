@@ -77,7 +77,20 @@ func (o *Workflow) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to patch code: %w", err)
 	}
 
-	// TODO: Make a new branch, commit the changes, and push the branch
+	err = o.Repository.CheckoutBranch("fix/refactor")
+	if err != nil {
+		return fmt.Errorf("failed to checkout branch: %w", err)
+	}
+
+	err = o.Repository.Commit("Refactor code")
+	if err != nil {
+		return fmt.Errorf("failed to commit changes: %w", err)
+	}
+
+	err = o.Repository.Push()
+	if err != nil {
+		return fmt.Errorf("failed to push changes: %w", err)
+	}
 
 	return nil
 }
