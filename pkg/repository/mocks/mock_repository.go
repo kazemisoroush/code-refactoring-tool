@@ -47,6 +47,20 @@ func (mr *MockRepositoryMockRecorder) CheckoutBranch(arg0 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckoutBranch", reflect.TypeOf((*MockRepository)(nil).CheckoutBranch), arg0)
 }
 
+// Cleanup mocks base method.
+func (m *MockRepository) Cleanup() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Cleanup")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Cleanup indicates an expected call of Cleanup.
+func (mr *MockRepositoryMockRecorder) Cleanup() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Cleanup", reflect.TypeOf((*MockRepository)(nil).Cleanup))
+}
+
 // Clone mocks base method.
 func (m *MockRepository) Clone() error {
 	m.ctrl.T.Helper()

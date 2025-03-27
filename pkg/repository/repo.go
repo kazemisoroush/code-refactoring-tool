@@ -21,4 +21,7 @@ type Repository interface {
 
 	// CreatePR creates a pull request in the repository
 	CreatePR(title, description, sourceBranch, targetBranch string) (string, error)
+
+	// Cleanup deletes the repository
+	Cleanup() error
 }

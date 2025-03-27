@@ -28,13 +28,9 @@ func NewGolangCIAnalyzer() (Analyzer, error) {
 
 // AnalyzeCode implements CodeAnalyzer.
 func (g GolangCIAnalyzer) AnalyzeCode(sourcePath string) (models.AnalysisResult, error) {
-	output, err := exec.Command(
-		"golangci-lint",
-		"run",
-		"--output.json.path",
-		"stdout",
-		sourcePath,
-	).Output()
+	cmd := exec.Command("golangci-lint", "run", "--output.json.path", "stdout")
+	cmd.Dir = sourcePath
+	output, err := cmd.Output()
 	if output == nil {
 		return models.AnalysisResult{}, fmt.Errorf("golangci-lint returned no output")
 	}

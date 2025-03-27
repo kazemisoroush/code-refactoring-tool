@@ -67,3 +67,9 @@ func (g *GitHubRepo) CreatePR(title, description, sourceBranch, targetBranch str
 	}
 	return string(output), nil
 }
+
+// Cleanup deletes the repository from the filesystem.
+func (g *GitHubRepo) Cleanup() error {
+	cmd := exec.Command("rm", "-rf", g.GetPath())
+	return cmd.Run()
+}

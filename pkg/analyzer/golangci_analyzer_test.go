@@ -98,7 +98,7 @@ func TestGolangCodeAnalyzer_Integration(t *testing.T) {
 
 	// Act
 	fmt.Println("🔍 Running code analysis...")
-	analysisResult, err := analyzer.AnalyzeCode(tmpFile.Name())
+	analysisResult, err := analyzer.AnalyzeCode("/tmp")
 	require.NoError(t, err, "AnalyzeCode should not return an error")
 
 	codeIssues, err := analyzer.ExtractIssues(analysisResult)

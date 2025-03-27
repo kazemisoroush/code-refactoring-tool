@@ -50,6 +50,13 @@ func (o *Workflow) Run(ctx context.Context) error {
 	}
 	path := o.Repository.GetPath()
 
+	defer func() {
+		err := o.Repository.Cleanup()
+		if err != nil {
+			log.Printf("failed to cleanup repository: %v", err)
+		}
+	}()
+
 	// Analyze the code
 	analysisResult, err := o.Analyzer.AnalyzeCode(path)
 	if err != nil {
