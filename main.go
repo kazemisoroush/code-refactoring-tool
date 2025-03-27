@@ -16,8 +16,10 @@ import (
 )
 
 const (
-	claude3Sonnet = "anthropic.claude-3-sonnet-20240229-v1:0"
-	mistral7B     = "mistral.mistral-7b-instruct-v0:2"
+	claude3Sonnet  = "anthropic.claude-3-sonnet-20240229-v1:0"
+	claude35Sonnet = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+	mistral7B      = "mistral.mistral-7b-instruct-v0:2"
+	mistralLarge   = "mistral.mistral-large-2402-v1:0"
 )
 
 // main is the entry point for the application.
@@ -41,7 +43,7 @@ func main() {
 	repo := repository.NewGitHubRepo(cfg.RepoURL, cfg.GitToken)
 
 	// Use a valid Bedrock model ID (Claude 3 Sonnet here as an example)
-	agnt := agent.NewAWSBedrockAgent(cfg.AWSConfig, claude3Sonnet)
+	agnt := agent.NewAWSBedrockAgent(cfg.AWSConfig, claude35Sonnet)
 
 	// Create planner using AI agent
 	plnr := planner.NewAIPlanner(agnt)

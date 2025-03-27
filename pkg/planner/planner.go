@@ -15,5 +15,5 @@ type Planner interface {
 	Plan(ctx context.Context, sourcePath string, issues []analyzerModels.LinterIssue) (models.Plan, error)
 
 	// CreatePrompt creates a prompt for the given issue
-	CreatePrompt(issue analyzerModels.LinterIssue) (string, error)
+	CreatePrompt(issues []analyzerModels.LinterIssue) (string, error)
 }

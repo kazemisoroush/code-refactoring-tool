@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
@@ -53,15 +54,19 @@ func (a *AWSBedrockAgent) Ask(ctx context.Context, prompt string) (string, error
 		return "", fmt.Errorf("error parsing response: %w", err)
 	}
 
+	log.Println("response: ", string(output.Body))
+
 	// Extract answer from Claude-style output
 	if content, ok := resp["content"].(string); ok {
 		return content, nil
 	}
 
 	// Or if it's wrapped in a list of messages
-	if messages, ok := resp["messages"].([]interface{}); ok && len(messages) > 0 {
-		if m, ok := messages[0].(map[string]interface{}); ok {
-			return fmt.Sprintf("%v", m["content"]), nil
+	if messages, ok := resp["content"].([]interface{}); ok && len(messages) > 0 {
+		if msg, ok := messages[0].(map[string]interface{}); ok {
+			if text, ok := msg["text"].(string); ok {
+				return text, nil
+			}
 		}
 	}
 
