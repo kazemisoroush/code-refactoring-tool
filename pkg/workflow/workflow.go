@@ -92,5 +92,11 @@ func (o *Workflow) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to push changes: %w", err)
 	}
 
+	output, err := o.Repository.CreatePR("Refactor code", "This PR refactors the code", "fix/refactor", "main")
+	if err != nil {
+		return fmt.Errorf("failed to create PR: %w", err)
+	}
+	log.Println("PR created:", output)
+
 	return nil
 }

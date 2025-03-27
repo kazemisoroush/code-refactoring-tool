@@ -59,6 +59,7 @@ func TestWorkflow_Run(t *testing.T) {
 	repo.EXPECT().CheckoutBranch(gomock.Any()).Return(nil)
 	repo.EXPECT().Commit(gomock.Any()).Return(nil)
 	repo.EXPECT().Push().Return(nil)
+	repo.EXPECT().CreatePR(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("output", nil)
 
 	plnr := planner_mocks.NewMockPlanner(ctrl)
 	plnr.EXPECT().Plan(ctx, repoPath, issues).Return(plan, nil)
