@@ -62,6 +62,11 @@ func (o *Workflow) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to extract issues: %w", err)
 	}
 
+	if len(issues) == 0 {
+		log.Println("No issues found.")
+		return nil
+	}
+
 	plan, err := o.Planner.Plan(ctx, path, issues)
 	if err != nil {
 		return fmt.Errorf("failed to create plan: %w", err)
@@ -71,6 +76,8 @@ func (o *Workflow) Run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to patch code: %w", err)
 	}
+
+	// TODO: Make a new branch, commit the changes, and push the branch
 
 	return nil
 }

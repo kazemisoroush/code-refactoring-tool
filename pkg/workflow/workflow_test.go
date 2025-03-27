@@ -32,7 +32,18 @@ func TestWorkflow_Run(t *testing.T) {
 	defer ctrl.Finish()
 
 	analysisResult := models.AnalysisResult{}
-	issues := []models.LinterIssue{}
+	issues := []models.LinterIssue{
+		{
+			LinterName:    "test-linter",
+			RuleID:        "test-rule",
+			Message:       "test-message",
+			FilePath:      "test-file-path",
+			Line:          1,
+			Column:        1,
+			SourceSnippet: []string{"test-snippet"},
+			Suggestions:   []string{"test-suggestion"},
+		},
+	}
 	repoPath := "code-refactor-tool"
 	plan := planner_model.Plan{}
 
