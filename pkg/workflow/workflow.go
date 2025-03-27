@@ -43,19 +43,19 @@ func NewWorkflow(
 func (o *Workflow) Run(ctx context.Context) error {
 	log.Println("Running workflow...")
 
-	// Clone the repository
-	err := o.Repository.Clone()
-	if err != nil {
-		return fmt.Errorf("failed to clone repository: %w", err)
-	}
-	path := o.Repository.GetPath()
-
 	defer func() {
 		err := o.Repository.Cleanup()
 		if err != nil {
 			log.Printf("failed to cleanup repository: %v", err)
 		}
 	}()
+
+	// Clone the repository
+	err := o.Repository.Clone()
+	if err != nil {
+		return fmt.Errorf("failed to clone repository: %w", err)
+	}
+	path := o.Repository.GetPath()
 
 	// Analyze the code
 	analysisResult, err := o.Analyzer.AnalyzeCode(path)
