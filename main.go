@@ -6,13 +6,13 @@ import (
 	"log"
 	"time"
 
-	"github.com/kazemisoroush/code-refactor-tool/pkg/agent"
-	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer"
-	"github.com/kazemisoroush/code-refactor-tool/pkg/config"
-	"github.com/kazemisoroush/code-refactor-tool/pkg/patcher"
-	"github.com/kazemisoroush/code-refactor-tool/pkg/planner"
-	"github.com/kazemisoroush/code-refactor-tool/pkg/repository"
-	"github.com/kazemisoroush/code-refactor-tool/pkg/workflow"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/agent"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/analyzer"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/patcher"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/planner"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/workflow"
 )
 
 const (

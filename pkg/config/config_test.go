@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/kazemisoroush/code-refactor-tool/pkg/config"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

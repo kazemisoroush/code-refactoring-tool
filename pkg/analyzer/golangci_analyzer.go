@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/models"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/analyzer/models"
 )
 
 // GolangCIAnalyzer is a code analyzer that uses golangci-lint.

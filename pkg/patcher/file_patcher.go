@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/kazemisoroush/code-refactor-tool/pkg/planner/models"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/planner/models"
 )
 
 // FilePatcher is a patcher that applies changes to files in the project source path

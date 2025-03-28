@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/kazemisoroush/code-refactor-tool/pkg/patcher"
-	"github.com/kazemisoroush/code-refactor-tool/pkg/planner/models"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/patcher"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/planner/models"
 	"github.com/stretchr/testify/require"
 )
 

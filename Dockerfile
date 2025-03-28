@@ -8,14 +8,14 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o code-refactor-tool ./main.go
+RUN go build -o code-refactoring-tool ./main.go
 
 FROM debian:bullseye-slim
 
 WORKDIR /app
 
-COPY --from=builder /app/code-refactor-tool .
+COPY --from=builder /app/code-refactoring-tool .
 
 EXPOSE 8080
 
-CMD ["./code-refactor-tool"]
+CMD ["./code-refactoring-tool"]

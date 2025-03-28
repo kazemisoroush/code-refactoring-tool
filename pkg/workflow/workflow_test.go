@@ -6,14 +6,14 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	analyzer_mocks "github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/mocks"
-	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/models"
-	"github.com/kazemisoroush/code-refactor-tool/pkg/config"
-	ptchr_mocks "github.com/kazemisoroush/code-refactor-tool/pkg/patcher/mocks"
-	planner_mocks "github.com/kazemisoroush/code-refactor-tool/pkg/planner/mocks"
-	planner_model "github.com/kazemisoroush/code-refactor-tool/pkg/planner/models"
-	repo_mocks "github.com/kazemisoroush/code-refactor-tool/pkg/repository/mocks"
-	"github.com/kazemisoroush/code-refactor-tool/pkg/workflow"
+	analyzer_mocks "github.com/kazemisoroush/code-refactoring-tool/pkg/analyzer/mocks"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/analyzer/models"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
+	ptchr_mocks "github.com/kazemisoroush/code-refactoring-tool/pkg/patcher/mocks"
+	planner_mocks "github.com/kazemisoroush/code-refactoring-tool/pkg/planner/mocks"
+	planner_model "github.com/kazemisoroush/code-refactoring-tool/pkg/planner/models"
+	repo_mocks "github.com/kazemisoroush/code-refactoring-tool/pkg/repository/mocks"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/workflow"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +23,7 @@ func TestWorkflow_Run(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30)
 	defer cancel()
 
-	err := os.Setenv("REPO_URL", "https://github.com/kazemisoroush/code-refactor-tool.git")
+	err := os.Setenv("REPO_URL", "https://github.com/kazemisoroush/code-refactoring-tool.git")
 	require.NoError(t, err, "Setenv should not return an error")
 	err = os.Setenv("GITHUB_TOKEN", "some_github_token")
 	require.NoError(t, err, "Setenv should not return an error")
@@ -46,7 +46,7 @@ func TestWorkflow_Run(t *testing.T) {
 			Suggestions:   []string{"test-suggestion"},
 		},
 	}
-	repoPath := "code-refactor-tool"
+	repoPath := "code-refactoring-tool"
 	plan := planner_model.Plan{}
 
 	anlz := analyzer_mocks.NewMockAnalyzer(ctrl)

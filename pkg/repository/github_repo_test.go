@@ -3,13 +3,13 @@ package repository_test
 import (
 	"testing"
 
-	"github.com/kazemisoroush/code-refactor-tool/pkg/repository"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRepository_GetPath(t *testing.T) {
 	// Arrange
-	repositoryURL := "https://github.com/kazemisoroush/code-refactor-tool"
+	repositoryURL := "https://github.com/kazemisoroush/code-refactoring-tool"
 	githubToken := "some_github_token"
 	r := repository.NewGitHubRepo(repositoryURL, githubToken)
 
@@ -17,5 +17,5 @@ func TestRepository_GetPath(t *testing.T) {
 	path := r.GetPath()
 
 	// Assert
-	assert.Equal(t, "code-refactor-tool", path, "GetPath should return the correct path")
+	assert.Equal(t, "code-refactoring-tool", path, "GetPath should return the correct path")
 }

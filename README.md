@@ -8,10 +8,10 @@
 ### Run with Docker
 ```sh
 # Build the Docker image
-docker build -t code-refactor-tool .
+docker build -t code-refactoring-tool .
 
 # Run the container
-docker run --rm -p 8080:8080 code-refactor-tool
+docker run --rm -p 8080:8080 code-refactoring-tool
 ```
 
 ### Run Locally
@@ -21,10 +21,10 @@ docker run --rm -p 8080:8080 code-refactor-tool
 go mod tidy
 
 # Build the application
-go build -o code-refactor-tool ./main.go
+go build -o code-refactoring-tool ./main.go
 
 # Run the application
-./code-refactor-tool
+./code-refactoring-tool
 ```
 
 ### Environment Variables
@@ -36,7 +36,7 @@ Example:
 ```sh
 export REPO_URL="https://github.com/example/repo.git"
 export GITHUB_TOKEN="your_github_token"
-./code-refactor-tool
+./code-refactoring-tool
 ```
 
 ### Testing

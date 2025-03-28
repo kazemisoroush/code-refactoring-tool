@@ -3,8 +3,8 @@ package planner
 import (
 	"context"
 
-	analyzerModels "github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/models"
-	"github.com/kazemisoroush/code-refactor-tool/pkg/planner/models"
+	analyzerModels "github.com/kazemisoroush/code-refactoring-tool/pkg/analyzer/models"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/planner/models"
 )
 
 // Planner defines the interface for creating a plan to fix issues in the source code

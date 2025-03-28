@@ -8,9 +8,9 @@ import (
 	"log"
 	"strings"
 
-	"github.com/kazemisoroush/code-refactor-tool/pkg/agent"
-	analyzerModels "github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/models"
-	"github.com/kazemisoroush/code-refactor-tool/pkg/planner/models"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/agent"
+	analyzerModels "github.com/kazemisoroush/code-refactoring-tool/pkg/analyzer/models"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/planner/models"
 )
 
 // AIPlanner is the interface that wraps the Fix method.
@@ -28,6 +28,11 @@ func NewAIPlanner(agent agent.Agent) Planner {
 // Plan fixes the code in the provided source path
 func (a *AIPlanner) Plan(ctx context.Context, _ string, issues []analyzerModels.LinterIssue) (models.Plan, error) {
 	plan := models.Plan{}
+
+	if len(issues) == 0 {
+		return models.Plan{}, nil
+	}
+
 	prompt, err := a.CreatePrompt(issues)
 	if err != nil {
 		return models.Plan{}, fmt.Errorf("failed to create prompt: %w", err)

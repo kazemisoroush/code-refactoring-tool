@@ -1,7 +1,7 @@
 package patcher
 
 import (
-	"github.com/kazemisoroush/code-refactor-tool/pkg/planner/models"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/planner/models"
 )
 
 // Patcher represents a code patcher

@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer"
-	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/models"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/analyzer"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/analyzer/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +18,7 @@ func TestExtractIssues(t *testing.T) {
 		Issues: []models.GolangCIIssue{
 			{
 				FromLinter:  "typecheck",
-				Text:        ": # github.com/kazemisoroush/code-refactor-tool/pkg/golang\npkg/golang/goanalyzer.go:31:16: undefined: parseCyclo\npkg/golang/goanalyzer.go:32:16: undefined: parseDuplication\npkg/golang/goanalyzer.go:37:25: undefined: calculateCoverage\npkg/golang/goanalyzer.go:38:25: undefined: countFunctions\npkg/golang/goanalyzer.go:39:25: undefined: detectLongFunctions\npkg/golang/goanalyzer.go:40:25: undefined: detectDeadCode",
+				Text:        ": # github.com/kazemisoroush/code-refactoring-tool/pkg/golang\npkg/golang/goanalyzer.go:31:16: undefined: parseCyclo\npkg/golang/goanalyzer.go:32:16: undefined: parseDuplication\npkg/golang/goanalyzer.go:37:25: undefined: calculateCoverage\npkg/golang/goanalyzer.go:38:25: undefined: countFunctions\npkg/golang/goanalyzer.go:39:25: undefined: detectLongFunctions\npkg/golang/goanalyzer.go:40:25: undefined: detectDeadCode",
 				SourceLines: []string{"package golang"},
 				Pos: models.GolangCIPosition{
 					Filename: "pkg/golang/analyzer.go",

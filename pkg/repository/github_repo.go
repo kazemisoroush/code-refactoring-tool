@@ -3,65 +3,88 @@ package repository
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
+
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 )
 
 // GitHubRepo represents a GitHub repository
 type GitHubRepo struct {
 	RepoURL string
 	Token   string
+	repo    *git.Repository
+	path    string
 }
 
 // NewGitHubRepo creates a new GitHub repository instance
 func NewGitHubRepo(repoURL, token string) Repository {
+	repoName := path.Base(strings.TrimSuffix(repoURL, ".git"))
 	return &GitHubRepo{
 		RepoURL: repoURL,
 		Token:   token,
+		path:    repoName,
 	}
 }
 
 // GetPath implements Repository.
 func (g *GitHubRepo) GetPath() string {
-	// Trim protocol (https:// or git@) and extract the last path component
-	repoName := path.Base(strings.TrimSuffix(g.RepoURL, ".git"))
-	return repoName
+	return g.path
 }
 
 // Clone clones the repository to the local filesystem
 func (g *GitHubRepo) Clone() error {
-	cmd := exec.Command("git", "clone", g.RepoURL)
-	return cmd.Run()
+	repo, err := git.PlainClone(g.path, false, &git.CloneOptions{
+		URL:      g.RepoURL,
+		Progress: os.Stdout,
+	})
+	if err != nil {
+		return err
+	}
+	g.repo = repo
+	return nil
 }
 
 // CheckoutBranch creates a new branch and checks it out
 func (g *GitHubRepo) CheckoutBranch(branchName string) error {
-	cmd := exec.Command("git", "checkout", "-b", branchName)
-	return cmd.Run()
+	wt, err := g.repo.Worktree()
+	if err != nil {
+		return err
+	}
+	branchRef := plumbing.NewBranchReferenceName(branchName)
+	return wt.Checkout(&git.CheckoutOptions{
+		Branch: branchRef,
+		Create: true,
+	})
 }
 
-// Commit Add adds all changes to the staging area
+// Commit stages and commits all changes with the provided message
 func (g *GitHubRepo) Commit(message string) error {
-	cmd := exec.Command("git", "commit", "-am", message)
-	return cmd.Run()
+	wt, err := g.repo.Worktree()
+	if err != nil {
+		return err
+	}
+	if _, err := wt.Add("."); err != nil {
+		return err
+	}
+	_, err = wt.Commit(message, &git.CommitOptions{})
+	return err
 }
 
-// Push commits to the remote repository
+// Push pushes commits to the remote repository
 func (g *GitHubRepo) Push() error {
-	cmd := exec.Command("git", "push", "origin", "HEAD")
-	return cmd.Run()
+	return g.repo.Push(&git.PushOptions{})
 }
 
-// CreatePR creates a new pull request
+// CreatePR creates a new pull request (still using curl for simplicity)
 func (g *GitHubRepo) CreatePR(title, description, sourceBranch, targetBranch string) (string, error) {
 	prURL := fmt.Sprintf("https://api.github.com/repos/%s/pulls", "OWNER/REPO")
-	cmd := exec.Command("curl", "-X", "POST", "-H", fmt.Sprintf("Authorization: token %s", g.Token),
-		"-H", "Accept: application/vnd.github.v3+json",
-		prURL,
-		"-d", fmt.Sprintf(`{"title":"%s", "body":"%s", "head":"%s", "base":"%s"}`, title, description, sourceBranch, targetBranch))
-
-	output, err := cmd.Output()
+	cmd := fmt.Sprintf(`curl -X POST -H "Authorization: token %s" -H "Accept: application/vnd.github.v3+json" %s -d '{"title":"%s", "body":"%s", "head":"%s", "base":"%s"}'`,
+		g.Token, prURL, title, description, sourceBranch, targetBranch)
+	output, err := exec.Command("bash", "-c", cmd).Output()
 	if err != nil {
 		return "", err
 	}
@@ -70,6 +93,5 @@ func (g *GitHubRepo) CreatePR(title, description, sourceBranch, targetBranch str
 
 // Cleanup deletes the repository from the filesystem.
 func (g *GitHubRepo) Cleanup() error {
-	cmd := exec.Command("rm", "-rf", g.GetPath())
-	return cmd.Run()
+	return os.RemoveAll(g.path)
 }

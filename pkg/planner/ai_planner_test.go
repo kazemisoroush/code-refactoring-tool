@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	agent_mocks "github.com/kazemisoroush/code-refactor-tool/pkg/agent/mocks"
-	analyzer_models "github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/models"
-	"github.com/kazemisoroush/code-refactor-tool/pkg/planner"
-	"github.com/kazemisoroush/code-refactor-tool/pkg/planner/models"
+	agent_mocks "github.com/kazemisoroush/code-refactoring-tool/pkg/agent/mocks"
+	analyzer_models "github.com/kazemisoroush/code-refactoring-tool/pkg/analyzer/models"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/planner"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/planner/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -1,7 +1,7 @@
 package analyzer
 
 import (
-	"github.com/kazemisoroush/code-refactor-tool/pkg/analyzer/models"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/analyzer/models"
 )
 
 // Analyzer is an interface for analyzing Go code
