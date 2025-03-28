@@ -42,7 +42,7 @@ func (g *GitHubRepo) Clone() error {
 		Progress: os.Stdout,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to clone repository: %w", err)
 	}
 	g.repo = repo
 	return nil
@@ -52,7 +52,7 @@ func (g *GitHubRepo) Clone() error {
 func (g *GitHubRepo) CheckoutBranch(branchName string) error {
 	wt, err := g.repo.Worktree()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get worktree: %w", err)
 	}
 	branchRef := plumbing.NewBranchReferenceName(branchName)
 	return wt.Checkout(&git.CheckoutOptions{
@@ -65,13 +65,16 @@ func (g *GitHubRepo) CheckoutBranch(branchName string) error {
 func (g *GitHubRepo) Commit(message string) error {
 	wt, err := g.repo.Worktree()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get worktree: %w", err)
 	}
 	if _, err := wt.Add("."); err != nil {
-		return err
+		return fmt.Errorf("failed to add changes: %w", err)
 	}
 	_, err = wt.Commit(message, &git.CommitOptions{})
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to commit changes: %w", err)
+	}
+	return nil
 }
 
 // Push pushes commits to the remote repository
@@ -81,17 +84,21 @@ func (g *GitHubRepo) Push() error {
 
 // CreatePR creates a new pull request (still using curl for simplicity)
 func (g *GitHubRepo) CreatePR(title, description, sourceBranch, targetBranch string) (string, error) {
-	prURL := fmt.Sprintf("https://api.github.com/repos/%s/pulls", "OWNER/REPO")
+	prURL := fmt.Sprintf("https://api.github.com/repos/%s/pulls", strings.TrimSuffix(g.RepoURL, ".git"))
 	cmd := fmt.Sprintf(`curl -X POST -H "Authorization: token %s" -H "Accept: application/vnd.github.v3+json" %s -d '{"title":"%s", "body":"%s", "head":"%s", "base":"%s"}'`,
 		g.Token, prURL, title, description, sourceBranch, targetBranch)
 	output, err := exec.Command("bash", "-c", cmd).Output()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create pull request: %w", err)
 	}
 	return string(output), nil
 }
 
 // Cleanup deletes the repository from the filesystem.
 func (g *GitHubRepo) Cleanup() error {
-	return os.RemoveAll(g.path)
+	err := os.RemoveAll(g.path)
+	if err != nil {
+		return fmt.Errorf("failed to remove repository: %w", err)
+	}
+	return nil
 }
