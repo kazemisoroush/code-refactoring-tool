@@ -22,7 +22,9 @@ func NewFilePatcher() Patcher {
 }
 
 // Patch applies the changes to the files in the project source path
-func (p *FilePatcher) Patch(projectSourcePath string, plan models.Plan) error {
+func (p *FilePatcher) Patch(projectSourcePath string, inputPlan models.Plan) error {
+	plan := inputPlan.Normalize()
+
 	for _, action := range plan.Actions {
 		fullPath := filepath.Join(projectSourcePath, action.FilePath)
 
