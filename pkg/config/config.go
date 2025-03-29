@@ -15,10 +15,17 @@ import (
 
 // Config represents the configuration for the application
 type Config struct {
-	RepoURL        string     `envconfig:"REPO_URL" required:"true"`
-	GitToken       string     `envconfig:"GITHUB_TOKEN" required:"true"`
+	Git            GitConfig  `envconfig:"GIT"`
 	TimeoutSeconds int        `envconfig:"TIMEOUT_SECONDS" default:"30"`
 	AWSConfig      aws.Config // Loaded using AWS SDK, not from env
+}
+
+// GitConfig represents the Git configuration
+type GitConfig struct {
+	RepoURL string `envconfig:"REPO_URL" required:"true"`
+	Token   string `envconfig:"TOKEN" required:"true"`
+	Author  string `envconfig:"AUTHOR" default:"CodeRefactorBot"`
+	Email   string `envconfig:"EMAIL" default:"bot@example.com"`
 }
 
 // validateRepositoryURL ensures the RepoURL matches the expected GitHub URL pattern
@@ -45,7 +52,7 @@ func LoadConfig() (Config, error) {
 	}
 
 	// Validate RepoURL
-	if err := validateRepositoryURL(cfg.RepoURL); err != nil {
+	if err := validateRepositoryURL(cfg.Git.RepoURL); err != nil {
 		return cfg, fmt.Errorf("invalid GitHub repository URL: %w", err)
 	}
 

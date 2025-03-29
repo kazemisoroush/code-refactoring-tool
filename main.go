@@ -40,7 +40,7 @@ func main() {
 	}
 
 	// Initialize code repository
-	repo := repository.NewGitHubRepo(cfg.RepoURL, cfg.GitToken)
+	repo := repository.NewGitHubRepo(cfg.Git)
 
 	// Use a valid Bedrock model ID (Claude 3 Sonnet here as an example)
 	agnt := agent.NewAWSBedrockAgent(cfg.AWSConfig, claude35Sonnet)

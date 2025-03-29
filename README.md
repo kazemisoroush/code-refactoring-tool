@@ -29,13 +29,13 @@ go build -o code-refactoring-tool ./main.go
 
 ### Environment Variables
 This application uses environment variables for configuration:
-- `REPO_URL` (Required) - GitHub repository URL
-- `GITHUB_TOKEN` (Required) - GitHub authentication token
+- `GIT_REPO_URL` (Required) - GitHub repository URL
+- `GIT_TOKEN` (Required) - GitHub authentication token
 
 Example:
 ```sh
-export REPO_URL="https://github.com/example/repo.git"
-export GITHUB_TOKEN="your_github_token"
+export GIT_REPO_URL="https://github.com/example/repo.git"
+export GIT_TOKEN="your_github_token"
 ./code-refactoring-tool
 ```
 

@@ -7,25 +7,33 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 )
 
 // GitHubRepo represents a GitHub repository
 type GitHubRepo struct {
 	RepoURL string
 	Token   string
+	Author  string
+	Email   string
 	repo    *git.Repository
 	path    string
 }
 
 // NewGitHubRepo creates a new GitHub repository instance
-func NewGitHubRepo(repoURL, token string) Repository {
-	repoName := path.Base(strings.TrimSuffix(repoURL, ".git"))
+func NewGitHubRepo(git config.GitConfig) Repository {
+	repoName := path.Base(strings.TrimSuffix(git.RepoURL, ".git"))
 	return &GitHubRepo{
-		RepoURL: repoURL,
-		Token:   token,
+		RepoURL: git.RepoURL,
+		Token:   git.Token,
+		Author:  git.Author,
+		Email:   git.Email,
 		path:    repoName,
 	}
 }
@@ -70,7 +78,13 @@ func (g *GitHubRepo) Commit(message string) error {
 	if _, err := wt.Add("."); err != nil {
 		return fmt.Errorf("failed to add changes: %w", err)
 	}
-	_, err = wt.Commit(message, &git.CommitOptions{})
+	_, err = wt.Commit(message, &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  g.Author,
+			Email: g.Email,
+			When:  time.Now(),
+		},
+	})
 	if err != nil {
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}
@@ -79,7 +93,15 @@ func (g *GitHubRepo) Commit(message string) error {
 
 // Push pushes commits to the remote repository
 func (g *GitHubRepo) Push() error {
-	return g.repo.Push(&git.PushOptions{})
+	return g.repo.Push(&git.PushOptions{
+		RemoteURL:  g.RepoURL,
+		RemoteName: "origin",
+		Force:      true,
+		Auth: &gitHttp.BasicAuth{
+			Username: g.Author,
+			Password: g.Token,
+		},
+	})
 }
 
 // CreatePR creates a new pull request (still using curl for simplicity)

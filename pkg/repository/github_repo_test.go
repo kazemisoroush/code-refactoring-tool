@@ -3,15 +3,20 @@ package repository_test
 import (
 	"testing"
 
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRepository_GetPath(t *testing.T) {
 	// Arrange
-	repositoryURL := "https://github.com/kazemisoroush/code-refactoring-tool"
-	githubToken := "some_github_token"
-	r := repository.NewGitHubRepo(repositoryURL, githubToken)
+	gitConfig := config.GitConfig{
+		RepoURL: "https://github.com/kazemisoroush/code-refactoring-tool",
+		Token:   "<YOUR_GithubPersonalAccessToken_HERE>",
+		Author:  "kazemisoroush",
+		Email:   "kazemi.soroush@gmail.com",
+	}
+	r := repository.NewGitHubRepo(gitConfig)
 
 	// Act
 	path := r.GetPath()

@@ -79,14 +79,14 @@ func (o *Workflow) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to create plan: %w", err)
 	}
 
-	err = o.Patcher.Patch(path, plan)
-	if err != nil {
-		return fmt.Errorf("failed to patch code: %w", err)
-	}
-
 	err = o.Repository.CheckoutBranch("fix/refactor")
 	if err != nil {
 		return fmt.Errorf("failed to checkout branch: %w", err)
+	}
+
+	err = o.Patcher.Patch(path, plan)
+	if err != nil {
+		return fmt.Errorf("failed to patch code: %w", err)
 	}
 
 	err = o.Repository.Commit("Refactor code")

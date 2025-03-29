@@ -23,9 +23,9 @@ func TestWorkflow_Run(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30)
 	defer cancel()
 
-	err := os.Setenv("REPO_URL", "https://github.com/kazemisoroush/code-refactoring-tool.git")
+	err := os.Setenv("GIT_REPO_URL", "https://github.com/kazemisoroush/code-refactoring-tool.git")
 	require.NoError(t, err, "Setenv should not return an error")
-	err = os.Setenv("GITHUB_TOKEN", "some_github_token")
+	err = os.Setenv("GIT_TOKEN", "some_github_token")
 	require.NoError(t, err, "Setenv should not return an error")
 	cfg, err := config.LoadConfig()
 	require.NoError(t, err, "LoadConfig should not return an error")
