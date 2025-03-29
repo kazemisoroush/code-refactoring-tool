@@ -104,12 +104,42 @@ func (g *GitHubRepo) Push() error {
 	})
 }
 
-// CreatePR creates a new pull request (still using curl for simplicity)
+// CreatePR creates a new pull request if one does not already exist.
 func (g *GitHubRepo) CreatePR(title, description, sourceBranch, targetBranch string) (string, error) {
-	prURL := fmt.Sprintf("https://api.github.com/repos/%s/pulls", strings.TrimSuffix(g.RepoURL, ".git"))
-	cmd := fmt.Sprintf(`curl -X POST -H "Authorization: token %s" -H "Accept: application/vnd.github.v3+json" %s -d '{"title":"%s", "body":"%s", "head":"%s", "base":"%s"}'`,
-		g.Token, prURL, title, description, sourceBranch, targetBranch)
-	output, err := exec.Command("bash", "-c", cmd).Output()
+	repoParts := strings.Split(strings.TrimPrefix(g.RepoURL, "https://github.com/"), "/")
+	if len(repoParts) != 2 {
+		return "", fmt.Errorf("invalid repo URL format: %s", g.RepoURL)
+	}
+	owner := repoParts[0]
+	repo := strings.TrimSuffix(repoParts[1], ".git")
+
+	// Step 1: Check if PR already exists
+	checkURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls?head=%s:%s&base=%s", owner, repo, owner, sourceBranch, targetBranch)
+	checkCmd := exec.Command("curl", "-s", "-H", fmt.Sprintf("Authorization: token %s", g.Token), checkURL)
+	existingPRBytes, err := checkCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to check for existing PR: %w", err)
+	}
+	if strings.Contains(string(existingPRBytes), "\"url\"") {
+		fmt.Println("ℹ️  Pull request already exists. Skipping creation.")
+		return "PR already exists", nil
+	}
+
+	// Step 2: Create new PR
+	createURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls", owner, repo)
+	payload := fmt.Sprintf(`{
+		"title": "%s",
+		"body": "%s",
+		"head": "%s",
+		"base": "%s"
+	}`, title, description, sourceBranch, targetBranch)
+
+	createCmd := exec.Command("curl", "-s", "-X", "POST",
+		"-H", fmt.Sprintf("Authorization: token %s", g.Token),
+		"-H", "Accept: application/vnd.github.v3+json",
+		createURL, "-d", payload)
+
+	output, err := createCmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("failed to create pull request: %w", err)
 	}
