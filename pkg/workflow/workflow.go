@@ -79,7 +79,7 @@ func (o *Workflow) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to create plan: %w", err)
 	}
 
-	err = o.Repository.CheckoutBranch("fix/refactor")
+	err = o.Repository.CheckoutBranch("fix/linter")
 	if err != nil {
 		return fmt.Errorf("failed to checkout branch: %w", err)
 	}
@@ -99,7 +99,12 @@ func (o *Workflow) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to push changes: %w", err)
 	}
 
-	output, err := o.Repository.CreatePR("Refactor code", "This PR refactors the code", "fix/refactor", "main")
+	output, err := o.Repository.CreatePR(
+		plan.Change.Title,
+		plan.Change.Description,
+		"fix/linter",
+		"main",
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create PR: %w", err)
 	}

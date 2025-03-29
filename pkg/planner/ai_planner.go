@@ -26,8 +26,6 @@ func NewAIPlanner(agent agent.Agent) Planner {
 
 // Plan fixes the code in the provided source path
 func (a *AIPlanner) Plan(ctx context.Context, _ string, issues []analyzerModels.LinterIssue) (models.Plan, error) {
-	plan := models.Plan{}
-
 	if len(issues) == 0 {
 		return models.Plan{}, nil
 	}
@@ -45,34 +43,38 @@ func (a *AIPlanner) Plan(ctx context.Context, _ string, issues []analyzerModels.
 	}
 	log.Printf("response: %s", responseString)
 
-	// Parse response to PlannedAction
-	var plannedActions []models.PlannedAction
-	err = json.Unmarshal([]byte(responseString), &plannedActions)
+	// Parse response to Plan
+	var plan models.Plan
+	err = json.Unmarshal([]byte(responseString), &plan)
 	if err != nil {
 		return models.Plan{}, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
-
-	plan.Actions = append(plan.Actions, plannedActions...)
 
 	return plan, nil
 }
 
 // CreatePrompt creates a prompt for the given issue
 func (a *AIPlanner) CreatePrompt(issues []analyzerModels.LinterIssue) (string, error) {
-	schemaExample := []models.PlannedAction{
-		{
-			FilePath: "example-file-path",
-			Edits: []models.EditRegion{
-				{
-					StartLine: 1,
-					EndLine:   1,
-					Replacement: []string{
-						"replacement1",
-						"replacement2",
+	schemaExample := models.Plan{
+		Actions: []models.PlannedAction{
+			{
+				FilePath: "example-file-path",
+				Edits: []models.EditRegion{
+					{
+						StartLine: 1,
+						EndLine:   1,
+						Replacement: []string{
+							"replacement1",
+							"replacement2",
+						},
 					},
 				},
+				Reason: "example-reason",
 			},
-			Reason: "example-reason",
+		},
+		Change: models.Change{
+			Title:       "Example title for the change to let know.",
+			Description: "Example description for what the change is and why is it important.",
 		},
 	}
 

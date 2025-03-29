@@ -9,6 +9,7 @@ import (
 // Plan represents a plan to fix the issues in the source code.
 type Plan struct {
 	Actions []PlannedAction `json:"actions"`
+	Change  Change          `json:"change"`
 }
 
 // PlannedAction represents a planned action to fix a specific issue in the source code.
@@ -16,6 +17,12 @@ type PlannedAction struct {
 	FilePath string       `json:"file_path"`
 	Edits    []EditRegion `json:"edits"`
 	Reason   string       `json:"reason"`
+}
+
+// Change describes change details.
+type Change struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
 }
 
 // EditRegion represents a region in the source code that needs to be edited.

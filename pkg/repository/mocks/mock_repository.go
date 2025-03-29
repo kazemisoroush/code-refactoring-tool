@@ -118,6 +118,22 @@ func (mr *MockRepositoryMockRecorder) GetPath() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPath", reflect.TypeOf((*MockRepository)(nil).GetPath))
 }
 
+// PRExists mocks base method.
+func (m *MockRepository) PRExists(arg0, arg1 string) (bool, int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PRExists", arg0, arg1)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(int)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// PRExists indicates an expected call of PRExists.
+func (mr *MockRepositoryMockRecorder) PRExists(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PRExists", reflect.TypeOf((*MockRepository)(nil).PRExists), arg0, arg1)
+}
+
 // Push mocks base method.
 func (m *MockRepository) Push() error {
 	m.ctrl.T.Helper()
@@ -130,4 +146,33 @@ func (m *MockRepository) Push() error {
 func (mr *MockRepositoryMockRecorder) Push() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Push", reflect.TypeOf((*MockRepository)(nil).Push))
+}
+
+// UpdatePR mocks base method.
+func (m *MockRepository) UpdatePR(arg0 int, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePR", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePR indicates an expected call of UpdatePR.
+func (mr *MockRepositoryMockRecorder) UpdatePR(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePR", reflect.TypeOf((*MockRepository)(nil).UpdatePR), arg0, arg1, arg2)
+}
+
+// UpsertPR mocks base method.
+func (m *MockRepository) UpsertPR(arg0, arg1, arg2, arg3 string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpsertPR", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpsertPR indicates an expected call of UpsertPR.
+func (mr *MockRepositoryMockRecorder) UpsertPR(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertPR", reflect.TypeOf((*MockRepository)(nil).UpsertPR), arg0, arg1, arg2, arg3)
 }

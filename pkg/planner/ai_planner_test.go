@@ -42,23 +42,29 @@ func TestAIPlanner_Issues(t *testing.T) {
 	defer ctrl.Finish()
 
 	agnt := agent_mocks.NewMockAgent(ctrl)
-	expectedPlanActions := []models.PlannedAction{
-		{
-			FilePath: "filePath",
-			Edits: []models.EditRegion{
-				{
-					StartLine:   1,
-					EndLine:     1,
-					Replacement: []string{"replacement"},
+	expectedPlan := models.Plan{
+		Actions: []models.PlannedAction{
+			{
+				FilePath: "filePath",
+				Edits: []models.EditRegion{
+					{
+						StartLine:   1,
+						EndLine:     1,
+						Replacement: []string{"replacement"},
+					},
 				},
+				Reason: "reason",
 			},
-			Reason: "reason",
+		},
+		Change: models.Change{
+			Title:       "Example title for the change to let know.",
+			Description: "Example description for what the change is and why is it important.",
 		},
 	}
-	expectedPlanActionsBytes, err := json.Marshal(expectedPlanActions)
+	expectedPlanBytes, err := json.Marshal(expectedPlan)
 	require.NoError(t, err, "MarshalJSON should not return an error")
 
-	agnt.EXPECT().Ask(ctx, gomock.Any()).Return(string(expectedPlanActionsBytes), nil)
+	agnt.EXPECT().Ask(ctx, gomock.Any()).Return(string(expectedPlanBytes), nil)
 
 	p := planner.NewAIPlanner(agnt)
 
@@ -80,10 +86,7 @@ func TestAIPlanner_Issues(t *testing.T) {
 
 	// Assert
 	assert.NoError(t, err, "Plan should not return an error")
-	assert.Len(t, plan.Actions, len(expectedPlanActions))
-	for i, action := range plan.Actions {
-		if !reflect.DeepEqual(action, expectedPlanActions[i]) {
-			t.Errorf("expected %v, got %v", expectedPlanActions[i], action)
-		}
+	if !reflect.DeepEqual(plan, expectedPlan) {
+		t.Errorf("expected %v, got %v", expectedPlan, plan)
 	}
 }

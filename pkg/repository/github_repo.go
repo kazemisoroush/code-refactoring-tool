@@ -2,6 +2,7 @@
 package repository
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -104,46 +105,80 @@ func (g *GitHubRepo) Push() error {
 	})
 }
 
-// CreatePR creates a new pull request if one does not already exist.
+// CreatePR creates a new pull request
 func (g *GitHubRepo) CreatePR(title, description, sourceBranch, targetBranch string) (string, error) {
-	repoParts := strings.Split(strings.TrimPrefix(g.RepoURL, "https://github.com/"), "/")
-	if len(repoParts) != 2 {
-		return "", fmt.Errorf("invalid repo URL format: %s", g.RepoURL)
-	}
-	owner := repoParts[0]
-	repo := strings.TrimSuffix(repoParts[1], ".git")
-
-	// Step 1: Check if PR already exists
-	checkURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls?head=%s:%s&base=%s", owner, repo, owner, sourceBranch, targetBranch)
-	checkCmd := exec.Command("curl", "-s", "-H", fmt.Sprintf("Authorization: token %s", g.Token), checkURL)
-	existingPRBytes, err := checkCmd.Output()
+	owner, repo, err := g.getOwnerRepo()
 	if err != nil {
-		return "", fmt.Errorf("failed to check for existing PR: %w", err)
-	}
-	if strings.Contains(string(existingPRBytes), "\"url\"") {
-		fmt.Println("ℹ️  Pull request already exists. Skipping creation.")
-		return "PR already exists", nil
+		return "", err
 	}
 
-	// Step 2: Create new PR
 	createURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls", owner, repo)
-	payload := fmt.Sprintf(`{
-		"title": "%s",
-		"body": "%s",
-		"head": "%s",
-		"base": "%s"
-	}`, title, description, sourceBranch, targetBranch)
-
-	createCmd := exec.Command("curl", "-s", "-X", "POST",
-		"-H", fmt.Sprintf("Authorization: token %s", g.Token),
-		"-H", "Accept: application/vnd.github.v3+json",
-		createURL, "-d", payload)
-
-	output, err := createCmd.Output()
+	cmd := fmt.Sprintf(`curl -X POST -H "Authorization: token %s" -H "Accept: application/vnd.github.v3+json" %s -d '{"title":"%s", "body":"%s", "head":"%s", "base":"%s"}'`,
+		g.Token, createURL, title, description, sourceBranch, targetBranch)
+	output, err := exec.Command("bash", "-c", cmd).Output()
 	if err != nil {
 		return "", fmt.Errorf("failed to create pull request: %w", err)
 	}
 	return string(output), nil
+}
+
+// UpsertPR creates a PR if it doesn't exist, otherwise updates the existing one.
+func (g *GitHubRepo) UpsertPR(title, description, sourceBranch, targetBranch string) (string, error) {
+	exists, prNumber, err := g.PRExists(sourceBranch, targetBranch)
+	if err != nil {
+		return "", err
+	}
+	if exists {
+		if err := g.UpdatePR(prNumber, title, description); err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("PR #%d updated", prNumber), nil
+	}
+	return g.CreatePR(title, description, sourceBranch, targetBranch)
+}
+
+// PRExists checks if a PR exists and returns (true, PR number) or (false, 0)
+func (g *GitHubRepo) PRExists(sourceBranch, targetBranch string) (bool, int, error) {
+	owner, repo, err := g.getOwnerRepo()
+	if err != nil {
+		return false, 0, err
+	}
+
+	listURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls?head=%s:%s&base=%s", owner, repo, owner, sourceBranch, targetBranch)
+	cmd := fmt.Sprintf(`curl -s -H "Authorization: token %s" %s`, g.Token, listURL)
+	out, err := exec.Command("bash", "-c", cmd).Output()
+	if err != nil {
+		return false, 0, fmt.Errorf("failed to check existing PRs: %w", err)
+	}
+
+	var prs []struct {
+		Number int `json:"number"`
+	}
+	if err := json.Unmarshal(out, &prs); err != nil {
+		return false, 0, fmt.Errorf("failed to parse PR list: %w", err)
+	}
+
+	if len(prs) > 0 {
+		return true, prs[0].Number, nil
+	}
+	return false, 0, nil
+}
+
+// UpdatePR updates an existing pull request's title and body
+func (g *GitHubRepo) UpdatePR(prNumber int, title, description string) error {
+	owner, repo, err := g.getOwnerRepo()
+	if err != nil {
+		return err
+	}
+
+	updateURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls/%d", owner, repo, prNumber)
+	cmd := fmt.Sprintf(`curl -X PATCH -H "Authorization: token %s" -H "Accept: application/vnd.github.v3+json" %s -d '{"title":"%s", "body":"%s"}'`,
+		g.Token, updateURL, title, description)
+	_, err = exec.Command("bash", "-c", cmd).Output()
+	if err != nil {
+		return fmt.Errorf("failed to update PR: %w", err)
+	}
+	return nil
 }
 
 // Cleanup deletes the repository from the filesystem.
@@ -153,4 +188,15 @@ func (g *GitHubRepo) Cleanup() error {
 		return fmt.Errorf("failed to remove repository: %w", err)
 	}
 	return nil
+}
+
+// getOwnerRepo extracts owner and repo from the GitHub URL
+func (g *GitHubRepo) getOwnerRepo() (string, string, error) {
+	parts := strings.Split(strings.TrimPrefix(g.RepoURL, "https://github.com/"), "/")
+	if len(parts) < 2 {
+		return "", "", fmt.Errorf("invalid GitHub repo URL: %s", g.RepoURL)
+	}
+	owner := parts[0]
+	repo := strings.TrimSuffix(parts[1], ".git")
+	return owner, repo, nil
 }
