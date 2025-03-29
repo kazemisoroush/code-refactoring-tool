@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/agent"
 	analyzerModels "github.com/kazemisoroush/code-refactoring-tool/pkg/analyzer/models"
@@ -78,16 +77,19 @@ func (a *AIPlanner) CreatePrompt(issues []analyzerModels.LinterIssue) (string, e
 	}
 
 	// Marshal to pretty-printed JSON as schema
-	schemaBytes, err := json.MarshalIndent(schemaExample, "", "  ")
+	schemaBytes, err := json.Marshal(schemaExample)
 	if err != nil {
 		return "", err
 	}
 
 	prompt := fmt.Sprintf("You are an AI code refactoring agent. You will be given a linting issue and some Go code. Do not explain anything. Just return a valid JSON. Your task is to return a single JSON object matching the structure below:\n%s\n", string(schemaBytes))
 
-	for _, issue := range issues {
-		prompt = prompt + fmt.Sprintf("Lint rule violation: %s\nCode snippet: %s", issue.Message, strings.Join(issue.SourceSnippet, "\n"))
+	issuesBytes, err := json.Marshal(issues)
+	if err != nil {
+		return "", err
 	}
+
+	prompt += fmt.Sprintf("Here are linting issues:\n%s\n", string(issuesBytes))
 
 	return prompt, nil
 }
