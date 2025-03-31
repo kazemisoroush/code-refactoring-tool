@@ -50,10 +50,10 @@ func (mr *MockAnalyzerMockRecorder) AnalyzeCode(arg0 interface{}) *gomock.Call {
 }
 
 // ExtractIssues mocks base method.
-func (m *MockAnalyzer) ExtractIssues(arg0 models.AnalysisResult) ([]models.LinterIssue, error) {
+func (m *MockAnalyzer) ExtractIssues(arg0 models.AnalysisResult) ([]models.CodeIssue, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExtractIssues", arg0)
-	ret0, _ := ret[0].([]models.LinterIssue)
+	ret0, _ := ret[0].([]models.CodeIssue)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

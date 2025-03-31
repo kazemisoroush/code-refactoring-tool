@@ -47,17 +47,17 @@ func (g GolangCIAnalyzer) AnalyzeCode(sourcePath string) (models.AnalysisResult,
 }
 
 // ExtractIssues transforms golangci-lint issues into a universal linter issue format.
-func (g GolangCIAnalyzer) ExtractIssues(result models.AnalysisResult) ([]models.LinterIssue, error) {
+func (g GolangCIAnalyzer) ExtractIssues(result models.AnalysisResult) ([]models.CodeIssue, error) {
 	var golangCILintReport models.GolangCILintReport
 	err := json.Unmarshal([]byte(result.RawOutput), &golangCILintReport)
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshalling golangci-lint report: %v", err)
 	}
 
-	var linterIssues []models.LinterIssue
+	var linterIssues []models.CodeIssue
 	for _, issue := range golangCILintReport.Issues {
-		linterIssue := models.LinterIssue{
-			LinterName:    issue.FromLinter,
+		linterIssue := models.CodeIssue{
+			Tool:      issue.FromLinter,
 			RuleID:        issue.FromLinter,
 			Message:       issue.Text,
 			FilePath:      issue.Pos.Filename,

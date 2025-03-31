@@ -37,7 +37,7 @@ func (m *MockPlanner) EXPECT() *MockPlannerMockRecorder {
 }
 
 // CreatePrompt mocks base method.
-func (m *MockPlanner) CreatePrompt(arg0 []models.LinterIssue) (string, error) {
+func (m *MockPlanner) CreatePrompt(arg0 []models.CodeIssue) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreatePrompt", arg0)
 	ret0, _ := ret[0].(string)
@@ -52,7 +52,7 @@ func (mr *MockPlannerMockRecorder) CreatePrompt(arg0 interface{}) *gomock.Call {
 }
 
 // Plan mocks base method.
-func (m *MockPlanner) Plan(arg0 context.Context, arg1 string, arg2 []models.LinterIssue) (models0.Plan, error) {
+func (m *MockPlanner) Plan(arg0 context.Context, arg1 string, arg2 []models.CodeIssue) (models0.Plan, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Plan", arg0, arg1, arg2)
 	ret0, _ := ret[0].(models0.Plan)

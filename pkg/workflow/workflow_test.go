@@ -34,9 +34,9 @@ func TestWorkflow_Run(t *testing.T) {
 	defer ctrl.Finish()
 
 	analysisResult := models.AnalysisResult{}
-	issues := []models.LinterIssue{
+	issues := []models.CodeIssue{
 		{
-			LinterName:    "test-linter",
+			Tool:          "test-linter",
 			RuleID:        "test-rule",
 			Message:       "test-message",
 			FilePath:      "test-file-path",

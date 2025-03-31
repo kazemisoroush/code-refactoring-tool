@@ -12,5 +12,5 @@ type Analyzer interface {
 	AnalyzeCode(sourcePath string) (models.AnalysisResult, error)
 
 	// ExtractIssues extracts code metrics from the analysis result
-	ExtractIssues(result models.AnalysisResult) ([]models.LinterIssue, error)
+	ExtractIssues(result models.AnalysisResult) ([]models.CodeIssue, error)
 }

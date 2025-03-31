@@ -26,7 +26,7 @@ func TestAIPlanner_NoIssues(t *testing.T) {
 
 	p := planner.NewAIPlanner(agnt)
 
-	issues := []analyzer_models.LinterIssue{}
+	issues := []analyzer_models.CodeIssue{}
 
 	// Act
 	_, err := p.Plan(ctx, "sourcePath", issues)
@@ -68,9 +68,9 @@ func TestAIPlanner_Issues(t *testing.T) {
 
 	p := planner.NewAIPlanner(agnt)
 
-	issues := []analyzer_models.LinterIssue{
+	issues := []analyzer_models.CodeIssue{
 		{
-			LinterName:    "",
+			Tool:          "",
 			RuleID:        "",
 			Message:       "",
 			FilePath:      "",

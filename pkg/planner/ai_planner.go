@@ -25,7 +25,7 @@ func NewAIPlanner(agent agent.Agent) Planner {
 }
 
 // Plan fixes the code in the provided source path
-func (a *AIPlanner) Plan(ctx context.Context, _ string, issues []analyzerModels.LinterIssue) (models.Plan, error) {
+func (a *AIPlanner) Plan(ctx context.Context, _ string, issues []analyzerModels.CodeIssue) (models.Plan, error) {
 	if len(issues) == 0 {
 		return models.Plan{}, nil
 	}
@@ -54,7 +54,7 @@ func (a *AIPlanner) Plan(ctx context.Context, _ string, issues []analyzerModels.
 }
 
 // CreatePrompt creates a prompt for the given issue
-func (a *AIPlanner) CreatePrompt(issues []analyzerModels.LinterIssue) (string, error) {
+func (a *AIPlanner) CreatePrompt(issues []analyzerModels.CodeIssue) (string, error) {
 	schemaExample := models.Plan{
 		Actions: []models.PlannedAction{
 			{

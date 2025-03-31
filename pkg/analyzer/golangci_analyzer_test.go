@@ -105,5 +105,5 @@ func TestGolangCodeAnalyzer_Integration(t *testing.T) {
 
 	// Assert
 	require.NoError(t, err, "ExtractIssues should not return an error")
-	assert.IsType(t, []models.LinterIssue{}, codeIssues)
+	assert.IsType(t, []models.CodeIssue{}, codeIssues)
 }
