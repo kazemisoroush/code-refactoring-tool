@@ -57,7 +57,7 @@ func (g GolangCIAnalyzer) ExtractIssues(result models.AnalysisResult) ([]models.
 	var linterIssues []models.CodeIssue
 	for _, issue := range golangCILintReport.Issues {
 		linterIssue := models.CodeIssue{
-			Tool:      issue.FromLinter,
+			Tool:          GolangCIToolName,
 			RuleID:        issue.FromLinter,
 			Message:       issue.Text,
 			FilePath:      issue.Pos.Filename,

@@ -49,7 +49,7 @@ func (g GoBuildAnalyzer) ExtractIssues(result models.AnalysisResult) ([]models.C
 			continue
 		}
 		issue := models.CodeIssue{
-			Tool:     "go build",
+			Tool:     GoBuildToolName,
 			RuleID:   buildIssue.Action,
 			Message:  buildIssue.Output,
 			FilePath: buildIssue.ImportPath,
