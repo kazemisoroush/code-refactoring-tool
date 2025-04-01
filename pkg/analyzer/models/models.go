@@ -26,6 +26,9 @@ const (
 
 	// IssueTypeTest Test Issue Type.
 	IssueTypeTest IssueType = "test"
+
+	// IssueTypeCoverage Test Coverage Issue Type.
+	IssueTypeCoverage IssueType = "coverage"
 )
 
 // CodeIssue represents a standardized structure for linter findings across different languages.
