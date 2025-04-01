@@ -56,4 +56,6 @@ func TestDoSomething(t *testing.T) {
 	// Assert
 	assert.NoError(t, extractErr)
 	assert.IsType(t, []models.CodeIssue{}, issues)
+	assert.Len(t, issues, 1)
+	assert.Equal(t, 3, issues[0].Line)
 }
