@@ -51,7 +51,7 @@ func main() {
 	ptchr := patcher.NewFilePatcher()
 
 	// Compose the full workflow
-	wf, err := workflow.NewWorkflow(cfg, anlzr, repo, plnr, ptchr)
+	wf, err := workflow.NewValidateWorkflow(cfg, repo, plnr, ptchr, anlzr)
 	if err != nil {
 		log.Fatalf("❌ failed to create workflow: %v", err)
 	}
