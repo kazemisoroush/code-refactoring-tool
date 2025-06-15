@@ -4,6 +4,7 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os/exec"
 	"strings"
 
@@ -21,7 +22,7 @@ func NewGolangCIAnalyzer() (Analyzer, error) {
 		return GolangCIAnalyzer{}, fmt.Errorf("golangci-lint not found: %v", err)
 	}
 
-	fmt.Println("golangci-lint version:", string(output))
+	slog.Info("golangci-lint version", "output", string(output))
 
 	return GolangCIAnalyzer{}, nil
 }
@@ -35,8 +36,7 @@ func (g GolangCIAnalyzer) AnalyzeCode(sourcePath string) (models.AnalysisResult,
 		return models.AnalysisResult{}, fmt.Errorf("golangci-lint returned no output")
 	}
 	if err != nil {
-		fmt.Println("Error running golangci-lint:", err)
-		fmt.Println("Output:", string(output))
+		slog.Error("Error running golangci-lint:", "error", err, "output", string(output))
 	}
 
 	// Keep only the first line (JSON) and discard any trailing "0 issues." etc.
@@ -51,6 +51,7 @@ func (g GolangCIAnalyzer) ExtractIssues(result models.AnalysisResult) ([]models.
 	var golangCILintReport models.GolangCILintReport
 	err := json.Unmarshal([]byte(result.RawOutput), &golangCILintReport)
 	if err != nil {
+		slog.Info("Raw output", "error", err, "output", result.RawOutput)
 		return nil, fmt.Errorf("error unmarshalling golangci-lint report: %v", err)
 	}
 

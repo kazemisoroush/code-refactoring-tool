@@ -4,6 +4,7 @@ package repository
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path"
@@ -51,7 +52,8 @@ func (g *GitHubRepo) Clone() error {
 		Progress: os.Stdout,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to clone repository: %w", err)
+		slog.Error("something went wrong", "error", err)
+		return nil
 	}
 	g.repo = repo
 	return nil

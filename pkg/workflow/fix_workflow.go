@@ -44,12 +44,12 @@ func NewFixWorkflow(
 func (o *FixWorkflow) Run(ctx context.Context) error {
 	log.Println("Running workflow...")
 
-	defer func() {
-		err := o.Repository.Cleanup()
-		if err != nil {
-			log.Printf("failed to cleanup repository: %v", err)
-		}
-	}()
+	// defer func() {
+	// 	err := o.Repository.Cleanup()
+	// 	if err != nil {
+	// 		log.Printf("failed to cleanup repository: %v", err)
+	// 	}
+	// }()
 
 	// Clone the repository
 	err := o.Repository.Clone()
@@ -81,7 +81,7 @@ func (o *FixWorkflow) Run(ctx context.Context) error {
 		return nil
 	}
 
-	plan, err := o.Planner.Plan(ctx, path, allIssues)
+	plan, err := o.Planner.Plan(ctx, path, []models.CodeIssue{allIssues[0]})
 	if err != nil {
 		return fmt.Errorf("failed to create plan: %w", err)
 	}

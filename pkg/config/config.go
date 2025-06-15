@@ -16,7 +16,7 @@ import (
 // Config represents the configuration for the application
 type Config struct {
 	Git            GitConfig  `envconfig:"GIT"`
-	TimeoutSeconds int        `envconfig:"TIMEOUT_SECONDS" default:"30"`
+	TimeoutSeconds int        `envconfig:"TIMEOUT_SECONDS" default:"180"`
 	AWSConfig      aws.Config // Loaded using AWS SDK, not from env
 }
 
@@ -60,6 +60,7 @@ func LoadConfig() (Config, error) {
 	defer cancel()
 
 	// Load AWS config
+	awsCfg, err := config.LoadDefaultConfig(ctx)
 	awsCfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return cfg, fmt.Errorf("failed to load AWS configuration: %w", err)
