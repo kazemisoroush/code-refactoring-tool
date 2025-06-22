@@ -3,7 +3,10 @@
   "image": "mcr.microsoft.com/devcontainers/go:dev-1.24",
   "features": {
     "ghcr.io/devcontainers/features/aws-cli:1": {},
-    "ghcr.io/devcontainers/features/git:1": {}
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/devcontainers/features/python:1": {},
+    "ghcr.io/devcontainers-extra/features/aws-cdk:2.0.16": {}
   },
   "postCreateCommand": "go install github.com/golang/mock/mockgen@v1.6.0 && go mod tidy"
 }

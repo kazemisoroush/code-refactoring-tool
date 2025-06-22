@@ -2,3 +2,4 @@
 main_test.go
 code-refactoring-test/
 coverage.out
+.DS_Store

@@ -61,7 +61,6 @@ func LoadConfig() (Config, error) {
 
 	// Load AWS config
 	awsCfg, err := config.LoadDefaultConfig(ctx)
-	awsCfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return cfg, fmt.Errorf("failed to load AWS configuration: %w", err)
 	}
