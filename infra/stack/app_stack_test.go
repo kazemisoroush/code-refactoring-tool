@@ -8,7 +8,7 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
-func TestAppStack_S3BucketCreated(t *testing.T) {
+func TestAppStack_ResourcesCreated(t *testing.T) {
 	app := awscdk.NewApp(nil)
 
 	stack := NewAppStack(app, "TestStack", &AppStackProps{
@@ -43,5 +43,9 @@ func TestAppStack_S3BucketCreated(t *testing.T) {
 				},
 			},
 		})
+	})
+
+	t.Run("Secrets Manager secret created", func(t *testing.T) {
+		template.ResourceCountIs(jsii.String("AWS::SecretsManager::Secret"), jsii.Number(1))
 	})
 }
