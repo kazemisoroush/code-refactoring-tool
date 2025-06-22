@@ -48,4 +48,9 @@ func TestAppStack_ResourcesCreated(t *testing.T) {
 	t.Run("Secrets Manager secret created", func(t *testing.T) {
 		template.ResourceCountIs(jsii.String("AWS::SecretsManager::Secret"), jsii.Number(1))
 	})
+
+	t.Run("Aurora PostgreSQL Serverless cluster created", func(t *testing.T) {
+		template.ResourceCountIs(jsii.String("AWS::RDS::DBCluster"), jsii.Number(1))
+	})
+
 }
