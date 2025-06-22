@@ -17,9 +17,12 @@ type AppStackProps struct {
 func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) awscdk.Stack {
 	stack := awscdk.NewStack(scope, &id, &props.StackProps)
 
+	// Generate unique bucket name using account + region
+	bucketName := fmt.Sprintf("code-refactor-bucket-%s-%s", *stack.Account(), *stack.Region())
+
 	// S3 Bucket
 	bucket := awss3.NewBucket(stack, jsii.String("CodeRefactorBucket"), &awss3.BucketProps{
-		BucketName:        jsii.String("code-refactor-bucket"),
+		BucketName:        jsii.String(bucketName),
 		RemovalPolicy:     awscdk.RemovalPolicy_DESTROY,
 		AutoDeleteObjects: jsii.Bool(true),
 		Versioned:         jsii.Bool(true),
@@ -42,13 +45,12 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 							jsii.String(fmt.Sprintf("%s/*", *bucket.BucketArn())),
 						},
 					}),
-					// Placeholder statement: update when SecretsManager secret is created
 					awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
 						Actions: &[]*string{
 							jsii.String("secretsmanager:GetSecretValue"),
 						},
 						Resources: &[]*string{
-							jsii.String("*"), // TEMP: replace later with specific secret
+							jsii.String("*"), // TEMP: replace later
 						},
 					}),
 				},

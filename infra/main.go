@@ -13,7 +13,7 @@ func main() {
 	stack.NewAppStack(app, "CodeRefactorInfra", &stack.AppStackProps{
 		StackProps: awscdk.StackProps{
 			Env: &awscdk.Environment{
-				Region: jsii.String("ap-southeast-2"),
+				Region: jsii.String("us-east-1"),
 			},
 		},
 	})
