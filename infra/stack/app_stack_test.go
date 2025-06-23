@@ -53,4 +53,11 @@ func TestAppStack_ResourcesCreated(t *testing.T) {
 		template.ResourceCountIs(jsii.String("AWS::RDS::DBCluster"), jsii.Number(1))
 	})
 
+	// t.Run("ECS Cluster is created", func(t *testing.T) {
+	// 	template.ResourceCountIs(jsii.String("AWS::ECS::Cluster"), jsii.Number(1))
+	// })
+
+	// t.Run("Fargate Service is created", func(t *testing.T) {
+	// 	template.ResourceCountIs(jsii.String("AWS::ECS::Service"), jsii.Number(1))
+	// })
 }

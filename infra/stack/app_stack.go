@@ -5,7 +5,9 @@ import (
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awsecs"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awslogs"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsrds"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awss3"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awssecretsmanager"
@@ -24,7 +26,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 	region := *stack.Region()
 	account := *stack.Account()
 
-	// VPC for RDS
+	// VPC for RDS and Fargate
 	vpc := awsec2.NewVpc(stack, jsii.String("RefactorVpc"), &awsec2.VpcProps{
 		MaxAzs: jsii.Number(2),
 	})
@@ -98,6 +100,39 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 		},
 	})
 	awscdk.Tags_Of(role).Add(jsii.String("Project"), projectTag, nil)
+
+	// ECS Cluster and Fargate Task
+	ecsCluster := awsecs.NewCluster(stack, jsii.String("RefactorCluster"), &awsecs.ClusterProps{
+		Vpc: vpc,
+	})
+	awscdk.Tags_Of(ecsCluster).Add(jsii.String("Project"), projectTag, nil)
+
+	logGroup := awslogs.NewLogGroup(stack, jsii.String("FargateLogGroup"), &awslogs.LogGroupProps{
+		LogGroupName:  jsii.String("/ecs/code-refactor"),
+		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
+	})
+
+	taskRole := awsiam.NewRole(stack, jsii.String("RefactorTaskRole"), &awsiam.RoleProps{
+		AssumedBy: awsiam.NewServicePrincipal(jsii.String("ecs-tasks.amazonaws.com"), nil),
+	})
+	taskDef := awsecs.NewFargateTaskDefinition(stack, jsii.String("RefactorTaskDef"), &awsecs.FargateTaskDefinitionProps{
+		Cpu:            jsii.Number(512),
+		MemoryLimitMiB: jsii.Number(1024),
+		TaskRole:       taskRole,
+	})
+
+	container := taskDef.AddContainer(jsii.String("RefactorContainer"), &awsecs.ContainerDefinitionOptions{
+		Image: awsecs.ContainerImage_FromAsset(jsii.String("../../"), nil),
+		Logging: awsecs.LogDrivers_AwsLogs(&awsecs.AwsLogDriverProps{
+			StreamPrefix: jsii.String("refactor"),
+			LogGroup:     logGroup,
+		}),
+	})
+	container.AddPortMappings(&awsecs.PortMapping{
+		ContainerPort: jsii.Number(8080),
+	})
+
+	awscdk.Tags_Of(taskDef).Add(jsii.String("Project"), projectTag, nil)
 
 	return stack
 }
