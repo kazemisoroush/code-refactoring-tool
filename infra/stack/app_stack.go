@@ -121,6 +121,15 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 		TaskRole:       taskRole,
 	})
 
+	awsecs.NewFargateService(stack, jsii.String("RefactorFargateService"), &awsecs.FargateServiceProps{
+		Cluster:        ecsCluster,
+		TaskDefinition: taskDef,
+		AssignPublicIp: jsii.Bool(true), // optional, depending on VPC setup
+		VpcSubnets: &awsec2.SubnetSelection{
+			SubnetType: awsec2.SubnetType_PUBLIC,
+		},
+	})
+
 	container := taskDef.AddContainer(jsii.String("RefactorContainer"), &awsecs.ContainerDefinitionOptions{
 		Image: awsecs.ContainerImage_FromAsset(jsii.String("../../"), nil),
 		Logging: awsecs.LogDrivers_AwsLogs(&awsecs.AwsLogDriverProps{
