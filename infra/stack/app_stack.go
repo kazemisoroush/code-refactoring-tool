@@ -120,8 +120,9 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 		MemoryLimitMiB: jsii.Number(1024),
 		TaskRole:       taskRole,
 	})
+	awscdk.Tags_Of(taskRole).Add(jsii.String("Project"), projectTag, nil)
 
-	awsecs.NewFargateService(stack, jsii.String("RefactorFargateService"), &awsecs.FargateServiceProps{
+	fargateService := awsecs.NewFargateService(stack, jsii.String("RefactorFargateService"), &awsecs.FargateServiceProps{
 		Cluster:        ecsCluster,
 		TaskDefinition: taskDef,
 		AssignPublicIp: jsii.Bool(true), // optional, depending on VPC setup
@@ -129,6 +130,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 			SubnetType: awsec2.SubnetType_PUBLIC,
 		},
 	})
+	awscdk.Tags_Of(fargateService).Add(jsii.String("Project"), projectTag, nil)
 
 	container := taskDef.AddContainer(jsii.String("RefactorContainer"), &awsecs.ContainerDefinitionOptions{
 		Image: awsecs.ContainerImage_FromAsset(jsii.String("../../"), nil),
@@ -140,6 +142,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 	container.AddPortMappings(&awsecs.PortMapping{
 		ContainerPort: jsii.Number(8080),
 	})
+	awscdk.Tags_Of(logGroup).Add(jsii.String("Project"), projectTag, nil)
 
 	awscdk.Tags_Of(taskDef).Add(jsii.String("Project"), projectTag, nil)
 
