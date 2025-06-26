@@ -56,7 +56,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 	awscdk.Tags_Of(secret).Add(jsii.String("Project"), projectTag, nil)
 
 	// RDS Aurora Serverless v2
-	cluster := awsrds.NewDatabaseCluster(stack, jsii.String("RefactorVectorDb"), &awsrds.DatabaseClusterProps{
+	rdsAuroraCluster := awsrds.NewDatabaseCluster(stack, jsii.String("RefactorVectorDb"), &awsrds.DatabaseClusterProps{
 		Engine: awsrds.DatabaseClusterEngine_AuroraPostgres(&awsrds.AuroraPostgresClusterEngineProps{
 			Version: awsrds.AuroraPostgresEngineVersion_VER_15_3(),
 		}),
@@ -69,7 +69,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 		ServerlessV2MaxCapacity: jsii.Number(2),
 		RemovalPolicy:           awscdk.RemovalPolicy_DESTROY,
 	})
-	awscdk.Tags_Of(cluster).Add(jsii.String("Project"), projectTag, nil)
+	awscdk.Tags_Of(rdsAuroraCluster).Add(jsii.String("Project"), projectTag, nil)
 
 	// IAM Role for Bedrock KnowledgeBase
 	role := awsiam.NewRole(stack, jsii.String("BedrockKnowledgeBaseRole"), &awsiam.RoleProps{
@@ -93,6 +93,20 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 						},
 						Resources: &[]*string{
 							secret.SecretArn(),
+						},
+					}),
+					awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
+						Actions: &[]*string{
+							jsii.String("rds-data:ExecuteStatement"),
+							jsii.String("rds-data:BatchExecuteStatement"),
+							jsii.String("rds-data:BeginTransaction"),
+							jsii.String("rds-data:CommitTransaction"),
+							jsii.String("rds-data:RollbackTransaction"),
+							jsii.String("rds-data:ExecuteSql"),
+							jsii.String("rds-data:DescribeTable"),
+						},
+						Resources: &[]*string{
+							rdsAuroraCluster.ClusterArn(), // Aurora cluster ARN
 						},
 					}),
 				},
