@@ -21,19 +21,19 @@ func TestAppStack_ResourcesCreated(t *testing.T) {
 
 	template := assertions.Template_FromStack(stack, nil)
 
-	t.Run("VPC is created", func(t *testing.T) {
+	t.Run("VPC is created", func(_ *testing.T) {
 		template.ResourceCountIs(jsii.String("AWS::EC2::VPC"), jsii.Number(1))
 	})
 
-	t.Run("Subnets are created", func(t *testing.T) {
+	t.Run("Subnets are created", func(_ *testing.T) {
 		template.ResourceCountIs(jsii.String("AWS::EC2::Subnet"), jsii.Number(4))
 	})
 
-	t.Run("Security Groups are created", func(t *testing.T) {
+	t.Run("Security Groups are created", func(_ *testing.T) {
 		template.ResourceCountIs(jsii.String("AWS::EC2::SecurityGroup"), jsii.Number(2))
 	})
 
-	t.Run("S3 bucket is versioned", func(t *testing.T) {
+	t.Run("S3 bucket is versioned", func(_ *testing.T) {
 		template.HasResourceProperties(jsii.String("AWS::S3::Bucket"), map[string]interface{}{
 			"VersioningConfiguration": map[string]interface{}{
 				"Status": "Enabled",
@@ -41,7 +41,7 @@ func TestAppStack_ResourcesCreated(t *testing.T) {
 		})
 	})
 
-	t.Run("IAM role for Bedrock created", func(t *testing.T) {
+	t.Run("IAM role for Bedrock created", func(_ *testing.T) {
 		template.HasResourceProperties(jsii.String("AWS::IAM::Role"), map[string]interface{}{
 			"AssumeRolePolicyDocument": map[string]interface{}{
 				"Statement": []interface{}{
@@ -57,27 +57,27 @@ func TestAppStack_ResourcesCreated(t *testing.T) {
 		})
 	})
 
-	t.Run("Secrets Manager secret created", func(t *testing.T) {
+	t.Run("Secrets Manager secret created", func(_ *testing.T) {
 		template.ResourceCountIs(jsii.String("AWS::SecretsManager::Secret"), jsii.Number(1))
 	})
 
-	t.Run("Aurora PostgreSQL Serverless cluster created", func(t *testing.T) {
+	t.Run("Aurora PostgreSQL Serverless cluster created", func(_ *testing.T) {
 		template.ResourceCountIs(jsii.String("AWS::RDS::DBCluster"), jsii.Number(1))
 	})
 
-	t.Run("ECS Cluster is created", func(t *testing.T) {
+	t.Run("ECS Cluster is created", func(_ *testing.T) {
 		template.ResourceCountIs(jsii.String("AWS::ECS::Cluster"), jsii.Number(1))
 	})
 
-	t.Run("ECS Task Definition is created", func(t *testing.T) {
+	t.Run("ECS Task Definition is created", func(_ *testing.T) {
 		template.ResourceCountIs(jsii.String("AWS::ECS::TaskDefinition"), jsii.Number(1))
 	})
 
-	t.Run("IAM Role for ECS Task Execution is created", func(t *testing.T) {
+	t.Run("IAM Role for ECS Task Execution is created", func(_ *testing.T) {
 		template.ResourceCountIs(jsii.String("AWS::IAM::Role"), jsii.Number(4)) // One for Bedrock, one for ECS Task
 	})
 
-	t.Run("Fargate Service is created", func(t *testing.T) {
+	t.Run("Fargate Service is created", func(_ *testing.T) {
 		template.ResourceCountIs(jsii.String("AWS::ECS::Service"), jsii.Number(1))
 	})
 }

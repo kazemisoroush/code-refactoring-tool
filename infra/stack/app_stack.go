@@ -1,3 +1,4 @@
+// Package stack provides the CDK stack for the application infrastructure.
 package stack
 
 import (
@@ -5,6 +6,7 @@ import (
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awsecr"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsecs"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslogs"
@@ -15,10 +17,12 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
+// AppStackProps defines the properties for the application stack.
 type AppStackProps struct {
 	awscdk.StackProps
 }
 
+// NewAppStack creates a new CDK stack for the application.
 func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) awscdk.Stack {
 	stack := awscdk.NewStack(scope, &id, &props.StackProps)
 
@@ -146,8 +150,16 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 	})
 	awscdk.Tags_Of(fargateService).Add(jsii.String("Project"), projectTag, nil)
 
+	// Define a dedicated ECR repo for the app
+	ecrRepo := awsecr.NewRepository(stack, jsii.String("RefactorEcrRepo"), &awsecr.RepositoryProps{
+		RepositoryName: jsii.String("refactor-ecr-repo"),
+		RemovalPolicy:  awscdk.RemovalPolicy_DESTROY,
+	})
+	awscdk.Tags_Of(ecrRepo).Add(jsii.String("Project"), projectTag, nil)
+
+	// Add container using an image from that ECR repo (tag must be pre-pushed)
 	container := taskDef.AddContainer(jsii.String("RefactorContainer"), &awsecs.ContainerDefinitionOptions{
-		Image: awsecs.ContainerImage_FromAsset(jsii.String("../"), nil),
+		Image: awsecs.ContainerImage_FromEcrRepository(ecrRepo, jsii.String("latest")),
 		Logging: awsecs.LogDrivers_AwsLogs(&awsecs.AwsLogDriverProps{
 			StreamPrefix: jsii.String("refactor"),
 			LogGroup:     logGroup,

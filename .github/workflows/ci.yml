@@ -19,11 +19,13 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.24.1' # Use the correct Go version
+          go-version: '1.24.1'
           cache: false
 
       - name: Install Dependencies
-        run: go mod tidy
+        run: |
+          go mod tidy
+          cd infra/stack && go mod tidy
 
       - name: Install golangci-lint v2
         run: |
@@ -32,7 +34,11 @@ jobs:
           golangci-lint version
 
       - name: Run Linter
-        run: golangci-lint run
+        run: |
+          golangci-lint -v run
+          cd infra/stack && golangci-lint -v run
 
       - name: Run Tests
-        run: go test -v ./...
+        run: |
+          go test -v ./...
+          cd infra/stack && go test -v ./...
