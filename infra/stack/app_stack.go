@@ -147,7 +147,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 	awscdk.Tags_Of(fargateService).Add(jsii.String("Project"), projectTag, nil)
 
 	container := taskDef.AddContainer(jsii.String("RefactorContainer"), &awsecs.ContainerDefinitionOptions{
-		Image: awsecs.ContainerImage_FromAsset(jsii.String("../../"), nil),
+		Image: awsecs.ContainerImage_FromAsset(jsii.String("../"), nil),
 		Logging: awsecs.LogDrivers_AwsLogs(&awsecs.AwsLogDriverProps{
 			StreamPrefix: jsii.String("refactor"),
 			LogGroup:     logGroup,

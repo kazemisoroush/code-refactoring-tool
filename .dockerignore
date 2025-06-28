@@ -1,0 +1,6 @@
+cdk.out
+.git
+*.pyc
+__pycache__/
+node_modules
+infra/
