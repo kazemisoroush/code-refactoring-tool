@@ -6,7 +6,6 @@ import (
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
-	"github.com/aws/aws-cdk-go/awscdk/v2/awsecr"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsecs"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslogs"
@@ -16,6 +15,9 @@ import (
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 )
+
+// RDSAuroraDatabaseName is the name of the RDS Aurora database.
+const RDSAuroraDatabaseName = "RefactorVectorDb"
 
 // AppStackProps defines the properties for the application stack.
 type AppStackProps struct {
@@ -60,7 +62,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 	awscdk.Tags_Of(secret).Add(jsii.String("Project"), projectTag, nil)
 
 	// RDS Aurora Serverless v2
-	rdsAuroraCluster := awsrds.NewDatabaseCluster(stack, jsii.String("RefactorVectorDb"), &awsrds.DatabaseClusterProps{
+	rdsAuroraCluster := awsrds.NewDatabaseCluster(stack, jsii.String(RDSAuroraDatabaseName), &awsrds.DatabaseClusterProps{
 		Engine: awsrds.DatabaseClusterEngine_AuroraPostgres(&awsrds.AuroraPostgresClusterEngineProps{
 			Version: awsrds.AuroraPostgresEngineVersion_VER_15_3(),
 		}),
@@ -150,21 +152,31 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 	})
 	awscdk.Tags_Of(fargateService).Add(jsii.String("Project"), projectTag, nil)
 
-	// Define a dedicated ECR repo for the app
-	ecrRepo := awsecr.NewRepository(stack, jsii.String("RefactorEcrRepo"), &awsecr.RepositoryProps{
-		RepositoryName: jsii.String("refactor-ecr-repo"),
-		RemovalPolicy:  awscdk.RemovalPolicy_DESTROY,
-	})
-	awscdk.Tags_Of(ecrRepo).Add(jsii.String("Project"), projectTag, nil)
+	// TODO: Use this in production
+	// // Define a dedicated ECR repo for the app
+	// ecrRepo := awsecr.NewRepository(stack, jsii.String("RefactorEcrRepo"), &awsecr.RepositoryProps{
+	// 	RepositoryName: jsii.String("refactor-ecr-repo"),
+	// 	RemovalPolicy:  awscdk.RemovalPolicy_DESTROY,
+	// })
+	// awscdk.Tags_Of(ecrRepo).Add(jsii.String("Project"), projectTag, nil)
+	//
+	// // Add container using an image from that ECR repo (tag must be pre-pushed)
+	// container := taskDef.AddContainer(jsii.String("RefactorContainer"), &awsecs.ContainerDefinitionOptions{
+	// 	Image: awsecs.ContainerImage_FromEcrRepository(ecrRepo, jsii.String("latest")),
+	// 	Logging: awsecs.LogDrivers_AwsLogs(&awsecs.AwsLogDriverProps{
+	// 		StreamPrefix: jsii.String("refactor"),
+	// 		LogGroup:     logGroup,
+	// 	}),
+	// })
 
-	// Add container using an image from that ECR repo (tag must be pre-pushed)
 	container := taskDef.AddContainer(jsii.String("RefactorContainer"), &awsecs.ContainerDefinitionOptions{
-		Image: awsecs.ContainerImage_FromEcrRepository(ecrRepo, jsii.String("latest")),
+		Image: awsecs.ContainerImage_FromAsset(jsii.String("../../"), nil),
 		Logging: awsecs.LogDrivers_AwsLogs(&awsecs.AwsLogDriverProps{
 			StreamPrefix: jsii.String("refactor"),
 			LogGroup:     logGroup,
 		}),
 	})
+
 	container.AddPortMappings(&awsecs.PortMapping{
 		ContainerPort: jsii.Number(8080),
 	})

@@ -18,8 +18,17 @@ func TestLoadConfig_Success(t *testing.T) {
 	require.NoError(t, err, "Setenv should not return an error")
 	err = os.Setenv("GIT_TOKEN", expectedToken)
 	require.NoError(t, err, "Setenv should not return an error")
-	defer os.Unsetenv("GIT_REPO_URL")  //nolint:errcheck
-	defer os.Unsetenv("GIT_TOKEN") //nolint:errcheck
+	err = os.Setenv("KNOWLEDGE_BASE_ROLE_ARN", "arn:aws:iam::123456789012:role/KnowledgeBaseRole")
+	require.NoError(t, err, "Setenv should not return an error")
+	err = os.Setenv("RDS_CREDENTIALS_SECRET_ARN", "arn:aws:secretsmanager:us-west-2:123456789012:secret:rds-credentials")
+	require.NoError(t, err, "Setenv should not return an error")
+	err = os.Setenv("RDS_AURORA_CLUSTER_ARN", "arn:aws:rds:us-west-2:123456789012:cluster:my-aurora-cluster")
+	require.NoError(t, err, "Setenv should not return an error")
+	defer os.Unsetenv("GIT_REPO_URL")               //nolint:errcheck
+	defer os.Unsetenv("GIT_TOKEN")                  //nolint:errcheck
+	defer os.Unsetenv("KNOWLEDGE_BASE_ROLE_ARN")    //nolint:errcheck
+	defer os.Unsetenv("RDS_CREDENTIALS_SECRET_ARN") //nolint:errcheck
+	defer os.Unsetenv("RDS_AURORA_CLUSTER_ARN")     //nolint:errcheck
 
 	// Act: Load configuration
 	cfg, err := config.LoadConfig()
@@ -50,9 +59,17 @@ func TestLoadConfig_InvalidGitHubURL(t *testing.T) {
 	require.NoError(t, err, "Setenv should not return an error")
 	err = os.Setenv("GIT_TOKEN", "ghp_testtoken123")
 	require.NoError(t, err, "Setenv should not return an error")
-
-	defer os.Unsetenv("GIT_REPO_URL")  //nolint:errcheck
-	defer os.Unsetenv("GIT_TOKEN") //nolint:errcheck
+	err = os.Setenv("KNOWLEDGE_BASE_ROLE_ARN", "arn:aws:iam::123456789012:role/KnowledgeBaseRole")
+	require.NoError(t, err, "Setenv should not return an error")
+	err = os.Setenv("RDS_CREDENTIALS_SECRET_ARN", "arn:aws:secretsmanager:us-west-2:123456789012:secret:rds-credentials")
+	require.NoError(t, err, "Setenv should not return an error")
+	err = os.Setenv("RDS_AURORA_CLUSTER_ARN", "arn:aws:rds:us-west-2:123456789012:cluster:my-aurora-cluster")
+	require.NoError(t, err, "Setenv should not return an error")
+	defer os.Unsetenv("GIT_REPO_URL")               //nolint:errcheck
+	defer os.Unsetenv("GIT_TOKEN")                  //nolint:errcheck
+	defer os.Unsetenv("KNOWLEDGE_BASE_ROLE_ARN")    //nolint:errcheck
+	defer os.Unsetenv("RDS_CREDENTIALS_SECRET_ARN") //nolint:errcheck
+	defer os.Unsetenv("RDS_AURORA_CLUSTER_ARN")     //nolint:errcheck
 
 	// Act: Attempt to load configuration
 	_, err = config.LoadConfig()
