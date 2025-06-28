@@ -13,15 +13,15 @@ import (
 type RAGBuilder interface {
 	// Build constructs the RAG pipeline from the provided repository.
 	Build(ctx context.Context, repo repository.Repository) (RAGMetadata, error)
+
+	// TearDown cleans up any resources created during the RAG pipeline setup.
+	TearDown(ctx context.Context, vectorStoreID string) error
 }
 
 // RAGMetadata represents the abstract result of a RAG pipeline setup.
 type RAGMetadata struct {
 	// VectorStoreID could be a Bedrock Knowledge Base ID, Pinecone Index, etc.
 	VectorStoreID string
-
-	// AgentID could refer to a Bedrock agent, OpenAI assistant ID, or similar.
-	AgentID string
 
 	// DataLocation is the URI (e.g., S3 bucket, GCS, local path) where the codebase was stored.
 	DataLocation string
