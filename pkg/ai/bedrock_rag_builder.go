@@ -4,16 +4,12 @@ package ai
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockagent"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockagent/types"
 	"github.com/aws/aws-sdk-go-v2/service/rdsdata"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/storage"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
 )
 
@@ -33,11 +29,10 @@ const (
 
 // BedrockRAGBuilder is an implementation of RAGBuilder that uses AWS Bedrock for building the RAG pipeline.
 type BedrockRAGBuilder struct {
-	s3Client                *s3.Client
 	kbClient                *bedrockagent.Client
 	rdsClient               *rdsdata.Client
 	repository              repository.Repository
-	s3BucketName            string
+	storage                 storage.Storage
 	kbRoleARN               string
 	rdsCredentialsSecretARN string
 	rdsAuroraClusterARN     string
@@ -47,17 +42,16 @@ type BedrockRAGBuilder struct {
 func NewBedrockRAGBuilder(
 	cfg aws.Config,
 	repository repository.Repository,
-	s3BucketName,
+	storage storage.Storage,
 	kbRoleARN,
 	rdsCredentialsSecretARN,
 	rdsAuroraClusterARN string,
 ) RAGBuilder {
 	return &BedrockRAGBuilder{
-		s3Client:                s3.NewFromConfig(cfg),
 		kbClient:                bedrockagent.NewFromConfig(cfg),
 		rdsClient:               rdsdata.NewFromConfig(cfg),
 		repository:              repository,
-		s3BucketName:            s3BucketName,
+		storage:                 storage,
 		kbRoleARN:               kbRoleARN,
 		rdsCredentialsSecretARN: rdsCredentialsSecretARN,
 		rdsAuroraClusterARN:     rdsAuroraClusterARN,
@@ -68,7 +62,7 @@ func NewBedrockRAGBuilder(
 func (b BedrockRAGBuilder) Build(ctx context.Context, _ repository.Repository) (RAGMetadata, error) {
 	// TODO: Upload the codebase to S3 if not already done
 	repoPath := b.repository.GetPath()
-	err := uploadDirectoryToS3(ctx, b.s3Client, repoPath, b.s3BucketName, repoPath)
+	err := b.storage.UploadDirectory(ctx, repoPath, repoPath)
 	if err != nil {
 		return RAGMetadata{}, fmt.Errorf("failed to upload codebase to S3: %w", err)
 	}
@@ -130,7 +124,7 @@ func (b BedrockRAGBuilder) Build(ctx context.Context, _ repository.Repository) (
 func (b BedrockRAGBuilder) TearDown(ctx context.Context, vectorStoreID string) error {
 	// TODO: Remove the codebase from S3 if needed
 	repoPath := b.repository.GetPath()
-	err := deleteS3Prefix(ctx, b.s3Client, b.s3BucketName, repoPath)
+	err := b.storage.DeleteDirectory(ctx, repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to remove codebase from S3: %w", err)
 	}
@@ -161,63 +155,4 @@ func (b BedrockRAGBuilder) TearDown(ctx context.Context, vectorStoreID string) e
 // getRDSAuroraTableName returns the name of the RDS table used for vector storage.
 func (b BedrockRAGBuilder) getRDSAuroraTableName() string {
 	return b.repository.GetPath()
-}
-
-// uploadDirectoryToS3 uploads all files in a directory to S3 under the given prefix.
-func uploadDirectoryToS3(ctx context.Context, s3Client *s3.Client, localDir, bucket, prefix string) error {
-	uploader := manager.NewUploader(s3Client)
-	return filepath.Walk(localDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return fmt.Errorf("failed to walk path %s: %w", path, err)
-		}
-		if info.IsDir() {
-			return nil
-		}
-		relPath, err := filepath.Rel(localDir, path)
-		if err != nil {
-			return fmt.Errorf("failed to get relative path for %s: %w", path, err)
-		}
-		key := filepath.ToSlash(filepath.Join(prefix, relPath))
-		f, err := os.Open(path)
-		if err != nil {
-			return fmt.Errorf("failed to open file %s: %w", path, err)
-		}
-		defer func() {
-			if cerr := f.Close(); cerr != nil {
-				fmt.Fprintf(os.Stderr, "failed to close file %s: %v\n", path, cerr)
-			}
-		}()
-		_, err = uploader.Upload(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String(key),
-			Body:   f,
-		})
-		return fmt.Errorf("failed to upload %s to S3: %w", key, err)
-	})
-}
-
-// deleteS3Prefix deletes all objects under a given prefix in the bucket.
-func deleteS3Prefix(ctx context.Context, s3Client *s3.Client, bucket, prefix string) error {
-	var toDelete []s3types.ObjectIdentifier
-	paginator := s3.NewListObjectsV2Paginator(s3Client, &s3.ListObjectsV2Input{
-		Bucket: aws.String(bucket),
-		Prefix: aws.String(prefix),
-	})
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to list objects in bucket %s with prefix %s: %w", bucket, prefix, err)
-		}
-		for _, obj := range page.Contents {
-			toDelete = append(toDelete, s3types.ObjectIdentifier{Key: obj.Key})
-		}
-	}
-	if len(toDelete) == 0 {
-		return nil
-	}
-	_, err := s3Client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
-		Bucket: aws.String(bucket),
-		Delete: &s3types.Delete{Objects: toDelete},
-	})
-	return fmt.Errorf("failed to delete objects in bucket %s with prefix %s: %w", bucket, prefix, err)
 }

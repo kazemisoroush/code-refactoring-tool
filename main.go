@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/storage"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/workflow"
@@ -33,11 +34,14 @@ func main() {
 	// Initialize code repository
 	repo := repository.NewGitHubRepo(cfg.Git)
 
+	// Initialize S3 storage
+	storage := storage.NewS3Storage(cfg.S3BucketName)
+
 	// Initialize RAG builder with AWS configuration
 	ragBuilder := ai.NewBedrockRAGBuilder(
 		cfg.AWSConfig,
 		repo,
-		cfg.S3BucketName,
+		storage,
 		cfg.KnowledgeBaseRoleARN,
 		cfg.RDSCredentialsSecretARN,
 		cfg.RDSAuroraClusterARN,
