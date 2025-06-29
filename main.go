@@ -37,6 +37,7 @@ func main() {
 	ragBuilder := ai.NewBedrockRAGBuilder(
 		cfg.AWSConfig,
 		repo,
+		cfg.S3BucketName,
 		cfg.KnowledgeBaseRoleARN,
 		cfg.RDSCredentialsSecretARN,
 		cfg.RDSAuroraClusterARN,

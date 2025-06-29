@@ -23,9 +23,6 @@ type RAGMetadata struct {
 	// VectorStoreID could be a Bedrock Knowledge Base ID, Pinecone Index, etc.
 	VectorStoreID string
 
-	// DataLocation is the URI (e.g., S3 bucket, GCS, local path) where the codebase was stored.
-	DataLocation string
-
 	// Provider describes which system was used (e.g., "bedrock", "openai", "mock")
 	Provider string
 }
