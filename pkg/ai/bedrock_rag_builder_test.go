@@ -8,7 +8,6 @@ import (
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai"
 	mocks_rag "github.com/kazemisoroush/code-refactoring-tool/pkg/ai/rag/mocks"
 	mocks_storage "github.com/kazemisoroush/code-refactoring-tool/pkg/ai/storage/mocks"
-	mocks_vector "github.com/kazemisoroush/code-refactoring-tool/pkg/ai/vector/mocks"
 	mocks_repo "github.com/kazemisoroush/code-refactoring-tool/pkg/repository/mocks"
 	"github.com/stretchr/testify/require"
 )
@@ -24,10 +23,10 @@ func TestBedrockRAGBuilder_Build(t *testing.T) {
 	repo := mocks_repo.NewMockRepository(ctrl)
 	repo.EXPECT().GetPath().Return("test-repo-path").AnyTimes()
 
-	storage := mocks_storage.NewMockStorage(ctrl)
-	storage.EXPECT().UploadDirectory(ctx, "test-repo-path", "test-repo-path").Return(nil).Times(1)
+	dataStore := mocks_storage.NewMockDataStore(ctrl)
+	dataStore.EXPECT().UploadDirectory(ctx, "test-repo-path", "test-repo-path").Return(nil).Times(1)
 
-	vectorStorage := mocks_vector.NewMockStorage(ctrl)
+	vectorStorage := mocks_storage.NewMockVector(ctrl)
 	vectorStorage.EXPECT().EnsureSchema(ctx, gomock.Any()).Return(nil).Times(1)
 
 	rag := mocks_rag.NewMockRAG(ctrl)
@@ -35,7 +34,7 @@ func TestBedrockRAGBuilder_Build(t *testing.T) {
 
 	builder := ai.NewBedrockRAGBuilder(
 		repo,
-		storage,
+		dataStore,
 		vectorStorage,
 		rag,
 	)

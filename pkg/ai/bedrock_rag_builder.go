@@ -7,7 +7,6 @@ import (
 
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/rag"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/storage"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/vector"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
 )
 
@@ -19,16 +18,16 @@ const (
 // BedrockRAGBuilder is an implementation of RAGBuilder that uses AWS Bedrock for building the RAG pipeline.
 type BedrockRAGBuilder struct {
 	repository      repository.Repository
-	storage         storage.Storage
+	storage         storage.DataStore
 	rag             rag.RAG
-	vectorDataStore vector.Storage
+	vectorDataStore storage.Vector
 }
 
 // NewBedrockRAGBuilder creates a new instance of BedrockRAGBuilder.
 func NewBedrockRAGBuilder(
 	repository repository.Repository,
-	storage storage.Storage,
-	vectorDataStore vector.Storage,
+	storage storage.DataStore,
+	vectorDataStore storage.Vector,
 	rag rag.RAG,
 ) RAGBuilder {
 	return &BedrockRAGBuilder{
@@ -60,11 +59,15 @@ func (b BedrockRAGBuilder) Build(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("failed to create RAG pipeline: %w", err)
 	}
 
+	// TODO: Create data source for the codebase in the RAG pipeline
+
 	return kbID, nil
 }
 
 // TearDown implements RAGBuilder.
 func (b BedrockRAGBuilder) TearDown(ctx context.Context, vectorStoreID string) error {
+	// TODO: Delete the data source from the RAG pipeline if it exists
+
 	// Remove the codebase from S3 if needed
 	repoPath := b.repository.GetPath()
 	err := b.storage.DeleteDirectory(ctx, repoPath)

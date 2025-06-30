@@ -20,7 +20,7 @@ type S3Storage struct {
 }
 
 // NewS3Storage creates a new S3Storage instance with the provided bucket name.
-func NewS3Storage(bucketName string) Storage {
+func NewS3Storage(bucketName string) DataStore {
 	return &S3Storage{
 		s3Client:   s3.NewFromConfig(aws.Config{}),
 		bucketName: bucketName,

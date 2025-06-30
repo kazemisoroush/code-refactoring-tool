@@ -1,5 +1,5 @@
-// Package vector provides an implementation of a vector data store using AWS RDS Aurora.
-package vector
+// Package storage provides an implementation of a vector data store using AWS RDS Aurora.
+package storage
 
 import (
 	"context"
@@ -10,20 +10,20 @@ import (
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 )
 
-// RDSVectorStorage is an interface for vector data stores.
-type RDSVectorStorage struct {
+// RDSVector is an interface for vector data stores.
+type RDSVector struct {
 	rdsClient               *rdsdata.Client
 	rdsAuroraClusterARN     string
 	rdsCredentialsSecretARN string
 	rdsAuroraDatabaseName   string
 }
 
-// NewRDSVectorStore creates a new instance of RDSVectorStore with the provided AWS configuration and parameters.
-func NewRDSVectorStore(
+// NewRDSVector creates a new instance of RDSVectorStore with the provided AWS configuration and parameters.
+func NewRDSVector(
 	awsConfig aws.Config,
 	rdsAurora config.RDSAurora,
-) Storage {
-	return &RDSVectorStorage{
+) Vector {
+	return &RDSVector{
 		rdsClient:               rdsdata.NewFromConfig(awsConfig),
 		rdsAuroraClusterARN:     rdsAurora.ClusterARN,
 		rdsCredentialsSecretARN: rdsAurora.CredentialsSecretARN,
@@ -32,7 +32,7 @@ func NewRDSVectorStore(
 }
 
 // EnsureSchema implements VectorStore.
-func (r *RDSVectorStorage) EnsureSchema(ctx context.Context, tableName string) error {
+func (r *RDSVector) EnsureSchema(ctx context.Context, tableName string) error {
 	createTableSQL := fmt.Sprintf(`
         CREATE TABLE IF NOT EXISTS %s (
             id VARCHAR(255) PRIMARY KEY,
@@ -56,7 +56,7 @@ func (r *RDSVectorStorage) EnsureSchema(ctx context.Context, tableName string) e
 }
 
 // DropSchema implements VectorStore.
-func (r *RDSVectorStorage) DropSchema(ctx context.Context, tableName string) error {
+func (r *RDSVector) DropSchema(ctx context.Context, tableName string) error {
 	dropTableSQL := fmt.Sprintf("DROP TABLE IF EXISTS %s", tableName)
 	_, err := r.rdsClient.ExecuteStatement(ctx, &rdsdata.ExecuteStatementInput{
 		ResourceArn: aws.String(r.rdsAuroraClusterARN),
