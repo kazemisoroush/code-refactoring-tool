@@ -9,8 +9,6 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	ai "github.com/kazemisoroush/code-refactoring-tool/pkg/ai"
-	repository "github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
 )
 
 // MockRAGBuilder is a mock of RAGBuilder interface.
@@ -37,18 +35,18 @@ func (m *MockRAGBuilder) EXPECT() *MockRAGBuilderMockRecorder {
 }
 
 // Build mocks base method.
-func (m *MockRAGBuilder) Build(arg0 context.Context, arg1 repository.Repository) (ai.RAGMetadata, error) {
+func (m *MockRAGBuilder) Build(arg0 context.Context) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Build", arg0, arg1)
-	ret0, _ := ret[0].(ai.RAGMetadata)
+	ret := m.ctrl.Call(m, "Build", arg0)
+	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Build indicates an expected call of Build.
-func (mr *MockRAGBuilderMockRecorder) Build(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockRAGBuilderMockRecorder) Build(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Build", reflect.TypeOf((*MockRAGBuilder)(nil).Build), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Build", reflect.TypeOf((*MockRAGBuilder)(nil).Build), arg0)
 }
 
 // TearDown mocks base method.

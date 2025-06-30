@@ -3,8 +3,6 @@ package ai
 
 import (
 	"context"
-
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
 )
 
 // RAGBuilder is responsible for building a RAG pipeline for a given code repository.
@@ -12,17 +10,8 @@ import (
 //go:generate mockgen -destination=./mocks/mock_ragbuilder.go -mock_names=RAGBuilder=MockRAGBuilder -package=mocks . RAGBuilder
 type RAGBuilder interface {
 	// Build constructs the RAG pipeline from the provided repository.
-	Build(ctx context.Context, repo repository.Repository) (RAGMetadata, error)
+	Build(ctx context.Context) (string, error)
 
 	// TearDown cleans up any resources created during the RAG pipeline setup.
 	TearDown(ctx context.Context, vectorStoreID string) error
-}
-
-// RAGMetadata represents the abstract result of a RAG pipeline setup.
-type RAGMetadata struct {
-	// VectorStoreID could be a Bedrock Knowledge Base ID, Pinecone Index, etc.
-	VectorStoreID string
-
-	// Provider describes which system was used (e.g., "bedrock", "openai", "mock")
-	Provider string
 }

@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/rag"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/storage"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/vector"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/workflow"
@@ -37,14 +39,18 @@ func main() {
 	// Initialize S3 storage
 	storage := storage.NewS3Storage(cfg.S3BucketName)
 
+	// Initialize vector data store
+	vectorDataStore := vector.NewRDSVectorStore(cfg.AWSConfig, cfg.RDSAuroraClusterARN, cfg.RDSCredentialsSecretARN)
+
+	// Initialize RAG pipeline
+	rag := rag.NewBedrockRAG(cfg.AWSConfig, cfg.KnowledgeBaseRoleARN, cfg.RDSCredentialsSecretARN, cfg.RDSAuroraClusterARN)
+
 	// Initialize RAG builder with AWS configuration
 	ragBuilder := ai.NewBedrockRAGBuilder(
-		cfg.AWSConfig,
 		repo,
 		storage,
-		cfg.KnowledgeBaseRoleARN,
-		cfg.RDSCredentialsSecretARN,
-		cfg.RDSAuroraClusterARN,
+		vectorDataStore,
+		rag,
 	)
 
 	// Compose the full workflow

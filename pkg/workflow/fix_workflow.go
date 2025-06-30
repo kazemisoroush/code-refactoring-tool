@@ -35,7 +35,7 @@ func NewFixWorkflow(
 func (o *FixWorkflow) Run(ctx context.Context) error {
 	log.Println("Running workflow...")
 
-	ragMetadata, err := o.RAGBuilder.Build(ctx, o.Repository)
+	ragMetadata, err := o.RAGBuilder.Build(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to build RAG pipeline: %w", err)
 	}

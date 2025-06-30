@@ -13,6 +13,6 @@ func NewBedrockAgentBuilder() (AgentBuilder, error) {
 }
 
 // Build implements AgentBuilder.
-func (b BedrockAgentBuilder) Build(_ context.Context, _ *RAGMetadata) (AgentMetadata, error) {
+func (b BedrockAgentBuilder) Build(_ context.Context, _ string) (AgentMetadata, error) {
 	panic("unimplemented")
 }
