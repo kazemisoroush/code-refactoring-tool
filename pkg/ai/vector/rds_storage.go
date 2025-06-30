@@ -7,11 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/rdsdata"
-)
-
-const (
-	// RDSAuroraDatabaseName is the name of the RDS Aurora database.
-	RDSAuroraDatabaseName = "RefactorVectorDb"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 )
 
 // RDSVectorStorage is an interface for vector data stores.
@@ -19,18 +15,19 @@ type RDSVectorStorage struct {
 	rdsClient               *rdsdata.Client
 	rdsAuroraClusterARN     string
 	rdsCredentialsSecretARN string
+	rdsAuroraDatabaseName   string
 }
 
 // NewRDSVectorStore creates a new instance of RDSVectorStore with the provided AWS configuration and parameters.
 func NewRDSVectorStore(
 	awsConfig aws.Config,
-	rdsAuroraClusterARN string,
-	rdsCredentialsSecretARN string,
+	rdsAurora config.RDSAurora,
 ) Storage {
 	return &RDSVectorStorage{
 		rdsClient:               rdsdata.NewFromConfig(awsConfig),
-		rdsAuroraClusterARN:     rdsAuroraClusterARN,
-		rdsCredentialsSecretARN: rdsCredentialsSecretARN,
+		rdsAuroraClusterARN:     rdsAurora.ClusterARN,
+		rdsCredentialsSecretARN: rdsAurora.CredentialsSecretARN,
+		rdsAuroraDatabaseName:   rdsAurora.DatabaseName,
 	}
 }
 
@@ -48,7 +45,7 @@ func (r *RDSVectorStorage) EnsureSchema(ctx context.Context, tableName string) e
 	_, err := r.rdsClient.ExecuteStatement(ctx, &rdsdata.ExecuteStatementInput{
 		ResourceArn: aws.String(r.rdsAuroraClusterARN),
 		SecretArn:   aws.String(r.rdsCredentialsSecretARN),
-		Database:    aws.String(RDSAuroraDatabaseName),
+		Database:    aws.String(r.rdsAuroraDatabaseName),
 		Sql:         aws.String(createTableSQL),
 	})
 	if err != nil {
@@ -64,7 +61,7 @@ func (r *RDSVectorStorage) DropSchema(ctx context.Context, tableName string) err
 	_, err := r.rdsClient.ExecuteStatement(ctx, &rdsdata.ExecuteStatementInput{
 		ResourceArn: aws.String(r.rdsAuroraClusterARN),
 		SecretArn:   aws.String(r.rdsCredentialsSecretARN),
-		Database:    aws.String(RDSAuroraDatabaseName),
+		Database:    aws.String(r.rdsAuroraDatabaseName),
 		Sql:         aws.String(dropTableSQL),
 	})
 	if err != nil {

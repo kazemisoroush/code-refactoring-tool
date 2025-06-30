@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockagent"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockagent/types"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/vector"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 )
 
 const (
@@ -25,20 +25,21 @@ type BedrockRAG struct {
 	kbRoleARN               string
 	rdsCredentialsSecretARN string
 	rdsAuroraClusterARN     string
+	rdsAuroraDatabaseName   string
 }
 
 // NewBedrockRAG creates a new instance of BedrockRAG with the provided AWS configuration and parameters.
 func NewBedrockRAG(
 	awsConfig aws.Config,
 	kbRoleARN string,
-	rdsCredentialsSecretARN string,
-	rdsAuroraClusterARN string,
+	rdsAurora config.RDSAurora,
 ) RAG {
 	return &BedrockRAG{
 		kbClient:                bedrockagent.NewFromConfig(awsConfig),
 		kbRoleARN:               kbRoleARN,
-		rdsCredentialsSecretARN: rdsCredentialsSecretARN,
-		rdsAuroraClusterARN:     rdsAuroraClusterARN,
+		rdsCredentialsSecretARN: rdsAurora.CredentialsSecretARN,
+		rdsAuroraClusterARN:     rdsAurora.ClusterARN,
+		rdsAuroraDatabaseName:   rdsAurora.DatabaseName,
 	}
 }
 
@@ -55,7 +56,7 @@ func (b *BedrockRAG) Create(ctx context.Context, tableName string) (string, erro
 		StorageConfiguration: &types.StorageConfiguration{
 			RdsConfiguration: &types.RdsConfiguration{
 				CredentialsSecretArn: aws.String(b.rdsCredentialsSecretARN),
-				DatabaseName:         aws.String(vector.RDSAuroraDatabaseName), // TODO: Make configurable?
+				DatabaseName:         aws.String(b.rdsAuroraDatabaseName),
 				FieldMapping: &types.RdsFieldMapping{
 					PrimaryKeyField: aws.String("id"),
 					TextField:       aws.String("text"),
@@ -65,6 +66,9 @@ func (b *BedrockRAG) Create(ctx context.Context, tableName string) (string, erro
 				ResourceArn: aws.String(b.rdsAuroraClusterARN),
 				TableName:   aws.String(tableName),
 			},
+		},
+		Tags: map[string]string{
+			config.DefaultResourceTagKey: config.DefaultResourceTagValue,
 		},
 	})
 	if err != nil {

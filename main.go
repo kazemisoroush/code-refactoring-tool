@@ -40,10 +40,10 @@ func main() {
 	storage := storage.NewS3Storage(cfg.S3BucketName)
 
 	// Initialize vector data store
-	vectorDataStore := vector.NewRDSVectorStore(cfg.AWSConfig, cfg.RDSAuroraClusterARN, cfg.RDSCredentialsSecretARN)
+	vectorDataStore := vector.NewRDSVectorStore(cfg.AWSConfig, cfg.RDSAurora)
 
 	// Initialize RAG pipeline
-	rag := rag.NewBedrockRAG(cfg.AWSConfig, cfg.KnowledgeBaseRoleARN, cfg.RDSCredentialsSecretARN, cfg.RDSAuroraClusterARN)
+	rag := rag.NewBedrockRAG(cfg.AWSConfig, cfg.KnowledgeBaseRoleARN, cfg.RDSAurora)
 
 	// Initialize RAG builder with AWS configuration
 	ragBuilder := ai.NewBedrockRAGBuilder(

@@ -13,16 +13,30 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
+const (
+	// DefaultResourceTagKey and DefaultResourceTagValue are used for tagging AWS resources
+	DefaultResourceTagKey = "project"
+
+	// DefaultResourceTagValue is the default value for the resource tag
+	DefaultResourceTagValue = "CodeRefactoring"
+)
+
 // Config represents the configuration for the application
 type Config struct {
 	Git            GitConfig  `envconfig:"GIT"`
 	TimeoutSeconds int        `envconfig:"TIMEOUT_SECONDS" default:"180"`
 	AWSConfig      aws.Config // Loaded using AWS SDK, not from env
 
-	S3BucketName            string `envconfig:"S3_BUCKET_NAME" required:"true"`
-	KnowledgeBaseRoleARN    string `envconfig:"KNOWLEDGE_BASE_ROLE_ARN" required:"true"`
-	RDSCredentialsSecretARN string `envconfig:"RDS_CREDENTIALS_SECRET_ARN" required:"true"`
-	RDSAuroraClusterARN     string `envconfig:"RDS_AURORA_CLUSTER_ARN" required:"true"`
+	S3BucketName         string    `envconfig:"S3_BUCKET_NAME" required:"true"`
+	KnowledgeBaseRoleARN string    `envconfig:"KNOWLEDGE_BASE_ROLE_ARN" required:"true"`
+	RDSAurora            RDSAurora `envconfig:"RDS_AURORA" required:"true"`
+}
+
+// RDSAurora represents the configuration for AWS RDS Aurora
+type RDSAurora struct {
+	CredentialsSecretARN string `envconfig:"RDS_CREDENTIALS_SECRET_ARN" required:"true"`
+	ClusterARN           string `envconfig:"RDS_AURORA_CLUSTER_ARN" required:"true"`
+	DatabaseName         string `envconfig:"RDS_AURORA_DATABASE_NAME" default:"RefactorVectorDb"`
 }
 
 // GitConfig represents the Git configuration
