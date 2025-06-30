@@ -9,22 +9,92 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/service/bedrockagent"
+	bedrocktypes "github.com/aws/aws-sdk-go-v2/service/bedrockagent/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+)
+
+const (
+	// DataSourceName is the name of the data source used for the code refactoring tool.
+	DataSourceName = "code-refactoring-tool-data-source"
+
+	// DataSourceDescription is the description of the data source used for the code refactoring tool.
+	DataSourceDescription = "Data source for the code refactoring tool knowledge base. This data source is used to store the codebase and other relevant files for the RAG pipeline."
 )
 
 // S3Storage implements the Storage interface for AWS S3.
 type S3Storage struct {
 	s3Client   *s3.Client
 	bucketName string
+	client     *bedrockagent.Client
 }
 
 // NewS3Storage creates a new S3Storage instance with the provided bucket name.
-func NewS3Storage(bucketName string) DataStore {
+func NewS3Storage(awsConfig aws.Config, bucketName string) DataStore {
 	return &S3Storage{
-		s3Client:   s3.NewFromConfig(aws.Config{}),
+		s3Client:   s3.NewFromConfig(awsConfig),
 		bucketName: bucketName,
+		client:     bedrockagent.NewFromConfig(awsConfig),
 	}
+}
+
+// Create checks if the S3 bucket exists and is accessible.
+func (s S3Storage) Create(ctx context.Context, ragID string) error {
+	// S3 does not require explicit creation of a bucket, but we can check if it exists.
+	_, err := s.s3Client.HeadBucket(ctx, &s3.HeadBucketInput{
+		Bucket: aws.String(s.bucketName),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to access bucket %s: %w", s.bucketName, err)
+	}
+
+	bucketARN := fmt.Sprintf("arn:aws:s3:::%s", s.bucketName)
+
+	// Create bedrock data store
+	_, err = s.client.CreateDataSource(ctx, &bedrockagent.CreateDataSourceInput{
+		Name:               aws.String(DataSourceName),
+		KnowledgeBaseId:    aws.String(ragID),
+		DataDeletionPolicy: bedrocktypes.DataDeletionPolicyDelete,
+		DataSourceConfiguration: &bedrocktypes.DataSourceConfiguration{
+			S3Configuration: &bedrocktypes.S3DataSourceConfiguration{
+				BucketArn: aws.String(bucketARN),
+			},
+		},
+		VectorIngestionConfiguration: &bedrocktypes.VectorIngestionConfiguration{
+			// TODO: Fix chunking here...
+			ChunkingConfiguration: &bedrocktypes.ChunkingConfiguration{
+				ChunkingStrategy: bedrocktypes.ChunkingStrategyFixedSize,
+				FixedSizeChunkingConfiguration: &bedrocktypes.FixedSizeChunkingConfiguration{
+					MaxTokens:         aws.Int32(300),
+					OverlapPercentage: aws.Int32(50),
+				},
+			},
+			// TODO: Look into these settings...
+			// ContextEnrichmentConfiguration
+			// CustomTransformationConfiguration
+			// ParsingConfiguration
+		},
+		Description: aws.String(DataSourceDescription),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create data source: %w", err)
+	}
+
+	return nil
+}
+
+// Detele deletes the data source from the knowledge base.
+func (s S3Storage) Detele(ctx context.Context, dataSourceID string, ragID string) error {
+	_, err := s.client.DeleteDataSource(ctx, &bedrockagent.DeleteDataSourceInput{
+		DataSourceId:    aws.String(dataSourceID),
+		KnowledgeBaseId: aws.String(ragID),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to delete data source: %w", err)
+	}
+
+	return nil
 }
 
 // UploadDirectory uploads all files in a directory to S3 under the given prefix.

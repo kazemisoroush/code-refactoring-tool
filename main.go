@@ -36,7 +36,7 @@ func main() {
 	repo := repository.NewGitHubRepo(cfg.Git)
 
 	// Initialize S3 dataStore
-	dataStore := storage.NewS3Storage(cfg.S3BucketName)
+	dataStore := storage.NewS3Storage(cfg.AWSConfig, cfg.S3BucketName)
 
 	// Initialize vector data store
 	vectorStorage := storage.NewRDSVector(cfg.AWSConfig, cfg.RDSAurora)
