@@ -8,7 +8,7 @@ import "context"
 //go:generate mockgen -destination=./mocks/mock_datastore.go -mock_names=DataStore=MockDataStore -package=mocks . DataStore
 type DataStore interface {
 	// Create initializes the data store, preparing it for use.
-	Create(ctx context.Context, ragID string) error
+	Create(ctx context.Context, ragID string) (string, error)
 
 	// Delete removes the data store, cleaning up any resources it holds.
 	Detele(ctx context.Context, dataSourceID string, ragID string) error

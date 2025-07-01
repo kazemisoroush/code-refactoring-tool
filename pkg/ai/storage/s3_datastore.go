@@ -21,6 +21,12 @@ const (
 
 	// DataSourceDescription is the description of the data source used for the code refactoring tool.
 	DataSourceDescription = "Data source for the code refactoring tool knowledge base. This data source is used to store the codebase and other relevant files for the RAG pipeline."
+
+	// EnrichmentModelARN is the ARN of the model used for context enrichment in the RAG pipeline.
+	EnrichmentModelARN = "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-text-express-v1:0" // TODO: Use a more suitable model
+
+	// ParsingModelARN is the ARN of the model used for parsing in the RAG pipeline.
+	ParsingModelARN = "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-text-express-v1:0" // TODO: Use a more suitable model
 )
 
 // S3Storage implements the Storage interface for AWS S3.
@@ -40,48 +46,96 @@ func NewS3Storage(awsConfig aws.Config, bucketName string) DataStore {
 }
 
 // Create checks if the S3 bucket exists and is accessible.
-func (s S3Storage) Create(ctx context.Context, ragID string) error {
+func (s S3Storage) Create(ctx context.Context, ragID string) (string, error) {
 	// S3 does not require explicit creation of a bucket, but we can check if it exists.
 	_, err := s.s3Client.HeadBucket(ctx, &s3.HeadBucketInput{
 		Bucket: aws.String(s.bucketName),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to access bucket %s: %w", s.bucketName, err)
+		return "", fmt.Errorf("failed to access bucket %s: %w", s.bucketName, err)
 	}
 
 	bucketARN := fmt.Sprintf("arn:aws:s3:::%s", s.bucketName)
 
 	// Create bedrock data store
-	_, err = s.client.CreateDataSource(ctx, &bedrockagent.CreateDataSourceInput{
+	response, err := s.client.CreateDataSource(ctx, &bedrockagent.CreateDataSourceInput{
 		Name:               aws.String(DataSourceName),
 		KnowledgeBaseId:    aws.String(ragID),
 		DataDeletionPolicy: bedrocktypes.DataDeletionPolicyDelete,
 		DataSourceConfiguration: &bedrocktypes.DataSourceConfiguration{
 			S3Configuration: &bedrocktypes.S3DataSourceConfiguration{
 				BucketArn: aws.String(bucketARN),
+				// BucketOwnerAccountId // TODO: Do we need this?
+				// InclusionPrefixes: []string{}, // TODO: Use a more suitable prefix
 			},
 		},
 		VectorIngestionConfiguration: &bedrocktypes.VectorIngestionConfiguration{
 			// TODO: Fix chunking here...
 			ChunkingConfiguration: &bedrocktypes.ChunkingConfiguration{
-				ChunkingStrategy: bedrocktypes.ChunkingStrategyFixedSize,
-				FixedSizeChunkingConfiguration: &bedrocktypes.FixedSizeChunkingConfiguration{
-					MaxTokens:         aws.Int32(300),
-					OverlapPercentage: aws.Int32(50),
+				ChunkingStrategy: bedrocktypes.ChunkingStrategyHierarchical,
+				HierarchicalChunkingConfiguration: &bedrocktypes.HierarchicalChunkingConfiguration{
+					LevelConfigurations: []bedrocktypes.HierarchicalChunkingLevelConfiguration{
+						{
+							MaxTokens: aws.Int32(1000), // TODO: Use a more suitable value
+						},
+						{
+							MaxTokens: aws.Int32(500), // TODO: Use a more suitable value
+						},
+					},
+					OverlapTokens: aws.Int32(50), // TODO: Use a more suitable value
 				},
 			},
-			// TODO: Look into these settings...
-			// ContextEnrichmentConfiguration
-			// CustomTransformationConfiguration
-			// ParsingConfiguration
+
+			// TODO: Do we need this?
+			ContextEnrichmentConfiguration: &bedrocktypes.ContextEnrichmentConfiguration{
+				Type: bedrocktypes.ContextEnrichmentTypeBedrockFoundationModel,
+				BedrockFoundationModelConfiguration: &bedrocktypes.BedrockFoundationModelContextEnrichmentConfiguration{
+					EnrichmentStrategyConfiguration: &bedrocktypes.EnrichmentStrategyConfiguration{
+						Method: bedrocktypes.EnrichmentStrategyMethodChunkEntityExtraction,
+					},
+					ModelArn: aws.String(EnrichmentModelARN),
+				},
+			},
+
+			// TODO: This might be needed for code parsing
+			CustomTransformationConfiguration: &bedrocktypes.CustomTransformationConfiguration{
+				IntermediateStorage: &bedrocktypes.IntermediateStorage{
+					S3Location: &bedrocktypes.S3Location{
+						Uri: aws.String(fmt.Sprintf("s3://%s/intermediate/", s.bucketName)), // TODO: Use a more suitable path
+					},
+				},
+				Transformations: []bedrocktypes.Transformation{
+					{
+						StepToApply: bedrocktypes.StepTypePostChunking,
+						TransformationFunction: &bedrocktypes.TransformationFunction{
+							TransformationLambdaConfiguration: &bedrocktypes.TransformationLambdaConfiguration{
+								LambdaArn: aws.String("arn:aws:lambda:us-east-1:123456789012:function:MyTransformationFunction"), // TODO: Use a more suitable Lambda function
+							},
+						},
+					},
+				},
+			},
+
+			// TODO: Do we need this?
+			ParsingConfiguration: &bedrocktypes.ParsingConfiguration{
+				ParsingStrategy: bedrocktypes.ParsingStrategyBedrockFoundationModel,
+				BedrockFoundationModelConfiguration: &bedrocktypes.BedrockFoundationModelConfiguration{
+					ModelArn: aws.String(ParsingModelARN),
+					// Code base could have images, so we use multimodal parsing
+					ParsingModality: bedrocktypes.ParsingModalityMultimodal,
+					ParsingPrompt: &bedrocktypes.ParsingPrompt{
+						ParsingPromptText: aws.String("Extract code and comments from the provided files."), // TODO: Use a more suitable prompt
+					},
+				},
+			},
 		},
 		Description: aws.String(DataSourceDescription),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create data source: %w", err)
+		return "", fmt.Errorf("failed to create data source: %w", err)
 	}
 
-	return nil
+	return *response.DataSource.DataSourceId, nil
 }
 
 // Detele deletes the data source from the knowledge base.

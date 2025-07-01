@@ -35,11 +35,12 @@ func (m *MockDataStore) EXPECT() *MockDataStoreMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockDataStore) Create(arg0 context.Context, arg1 string) error {
+func (m *MockDataStore) Create(arg0 context.Context, arg1 string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
