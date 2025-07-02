@@ -8,7 +8,7 @@ import (
 // AgentBuilder defines how an agent is configured based on RAG metadata.
 type AgentBuilder interface {
 	// Build creates an agent connected to the RAG metadata (vector store).
-	Build(ctx context.Context, ragID string) (AgentMetadata, error)
+	Build(ctx context.Context, ragID string) (string, error)
 }
 
 // AgentMetadata contains information needed to use or call the agent.
