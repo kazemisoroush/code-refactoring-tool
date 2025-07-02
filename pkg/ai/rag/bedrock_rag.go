@@ -49,6 +49,25 @@ func (b *BedrockRAG) Create(ctx context.Context, tableName string) (string, erro
 	kbOutput, err := b.kbClient.CreateKnowledgeBase(ctx, &bedrockagent.CreateKnowledgeBaseInput{
 		KnowledgeBaseConfiguration: &types.KnowledgeBaseConfiguration{
 			Type: types.KnowledgeBaseTypeVector,
+			VectorKnowledgeBaseConfiguration: &types.VectorKnowledgeBaseConfiguration{
+				EmbeddingModelArn: aws.String("arn:aws:bedrock:us-west-2::embedding-model"), // TODO: make this configurable
+				EmbeddingModelConfiguration: &types.EmbeddingModelConfiguration{
+					BedrockEmbeddingModelConfiguration: &types.BedrockEmbeddingModelConfiguration{
+						Dimensions:        aws.Int32(1536),                // TODO: Example dimension size, adjust as needed
+						EmbeddingDataType: types.EmbeddingDataTypeFloat32, // TODO: Adjust based on your model
+					},
+				},
+				SupplementalDataStorageConfiguration: &types.SupplementalDataStorageConfiguration{ // TODO: Do we need this?
+					StorageLocations: []types.SupplementalDataStorageLocation{
+						{
+							Type: types.SupplementalDataStorageLocationTypeS3,
+							S3Location: &types.S3Location{
+								Uri: aws.String("s3://some-bucket/table"), // TODO: make this configurable
+							},
+						},
+					},
+				},
+			},
 		},
 		Name:        aws.String(CodeRefactoringKBName),
 		RoleArn:     aws.String(b.kbRoleARN),

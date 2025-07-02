@@ -13,5 +13,5 @@ type RAGBuilder interface {
 	Build(ctx context.Context) (string, error)
 
 	// TearDown cleans up any resources created during the RAG pipeline setup.
-	TearDown(ctx context.Context, vectorStoreID string) error
+	TearDown(ctx context.Context, vectorStoreID string, ragID string) error
 }

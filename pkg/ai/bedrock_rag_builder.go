@@ -17,10 +17,10 @@ const (
 
 // BedrockRAGBuilder is an implementation of RAGBuilder that uses AWS Bedrock for building the RAG pipeline.
 type BedrockRAGBuilder struct {
-	repository      repository.Repository
-	storage         storage.DataStore
-	rag             rag.RAG
-	vectorDataStore storage.Vector
+	repository    repository.Repository
+	dataStore     storage.DataStore
+	rag           rag.RAG
+	vectorStorage storage.Vector
 }
 
 // NewBedrockRAGBuilder creates a new instance of BedrockRAGBuilder.
@@ -31,24 +31,17 @@ func NewBedrockRAGBuilder(
 	rag rag.RAG,
 ) RAGBuilder {
 	return &BedrockRAGBuilder{
-		vectorDataStore: vectorDataStore,
-		repository:      repository,
-		storage:         storage,
-		rag:             rag,
+		vectorStorage: vectorDataStore,
+		repository:    repository,
+		dataStore:     storage,
+		rag:           rag,
 	}
 }
 
 // Build implements RAGBuilder.
 func (b BedrockRAGBuilder) Build(ctx context.Context) (string, error) {
-	// Upload the codebase to S3 if not already done
-	repoPath := b.repository.GetPath()
-	err := b.storage.UploadDirectory(ctx, repoPath, repoPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to upload codebase to S3: %w", err)
-	}
-
 	// Create RDS Aurora table if it doesn't exist
-	err = b.vectorDataStore.EnsureSchema(ctx, b.getRDSAuroraTableName())
+	err := b.vectorStorage.EnsureSchema(ctx, b.getRDSAuroraTableName())
 	if err != nil {
 		return "", fmt.Errorf("failed to ensure RDS Aurora table schema: %w", err)
 	}
@@ -59,18 +52,33 @@ func (b BedrockRAGBuilder) Build(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("failed to create RAG pipeline: %w", err)
 	}
 
-	// TODO: Create data source for the codebase in the RAG pipeline
+	// Upload the codebase to S3 if not already done
+	repoPath := b.repository.GetPath()
+	err = b.dataStore.UploadDirectory(ctx, repoPath, repoPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to upload codebase to S3: %w", err)
+	}
+
+	// Create data source for the codebase in the RAG pipeline
+	_, err = b.dataStore.Create(ctx, kbID)
+	if err != nil {
+		return "", fmt.Errorf("failed to create data source: %w", err)
+	}
 
 	return kbID, nil
 }
 
 // TearDown implements RAGBuilder.
-func (b BedrockRAGBuilder) TearDown(ctx context.Context, vectorStoreID string) error {
-	// TODO: Delete the data source from the RAG pipeline if it exists
+func (b BedrockRAGBuilder) TearDown(ctx context.Context, vectorStoreID string, ragID string) error {
+	// Delete the data source from the RAG pipeline if it exists
+	err := b.dataStore.Detele(ctx, vectorStoreID, ragID)
+	if err != nil {
+		return fmt.Errorf("failed to delete data source: %w", err)
+	}
 
 	// Remove the codebase from S3 if needed
 	repoPath := b.repository.GetPath()
-	err := b.storage.DeleteDirectory(ctx, repoPath)
+	err = b.dataStore.DeleteDirectory(ctx, repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to remove codebase from S3: %w", err)
 	}
@@ -82,7 +90,7 @@ func (b BedrockRAGBuilder) TearDown(ctx context.Context, vectorStoreID string) e
 	}
 
 	// Drop the RDS Aurora table used for vector storage
-	err = b.vectorDataStore.DropSchema(ctx, b.getRDSAuroraTableName())
+	err = b.vectorStorage.DropSchema(ctx, b.getRDSAuroraTableName())
 	if err != nil {
 		return fmt.Errorf("failed to drop RDS Aurora table: %w", err)
 	}

@@ -50,15 +50,15 @@ func (mr *MockRAGBuilderMockRecorder) Build(arg0 interface{}) *gomock.Call {
 }
 
 // TearDown mocks base method.
-func (m *MockRAGBuilder) TearDown(arg0 context.Context, arg1 string) error {
+func (m *MockRAGBuilder) TearDown(arg0 context.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TearDown", arg0, arg1)
+	ret := m.ctrl.Call(m, "TearDown", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // TearDown indicates an expected call of TearDown.
-func (mr *MockRAGBuilderMockRecorder) TearDown(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockRAGBuilderMockRecorder) TearDown(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TearDown", reflect.TypeOf((*MockRAGBuilder)(nil).TearDown), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TearDown", reflect.TypeOf((*MockRAGBuilder)(nil).TearDown), arg0, arg1, arg2)
 }
