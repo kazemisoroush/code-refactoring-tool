@@ -38,17 +38,19 @@ func NewFixWorkflow(
 func (o *FixWorkflow) Run(ctx context.Context) error {
 	log.Println("Running workflow...")
 
+	// Build the RAG
 	ragID, err := o.RAGBuilder.Build(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to build RAG pipeline: %w", err)
 	}
 	log.Printf("RAG pipeline built successfully RagID: %+v", ragID)
 
-	agentID, err := o.AgentBuilder.Build(ctx, ragID)
+	// Build the agent
+	agentID, agentAliasID, err := o.AgentBuilder.Build(ctx, ragID)
 	if err != nil {
 		return fmt.Errorf("failed to build agent: %w", err)
 	}
-	log.Printf("Agent built successfully AgentID: %+v", agentID)
+	log.Printf("Agent built successfully AgentID: %s, AgentAliasID: %s", agentID, agentAliasID)
 
 	// TODO: Ask agent to fix the codebase
 

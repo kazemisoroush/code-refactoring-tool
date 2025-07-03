@@ -23,6 +23,12 @@ const (
 
 	// CodeRefactoringAgentPrompt is the prompt used to initialize the agent for code refactoring tasks.
 	CodeRefactoringAgentPrompt = "You are an agent that helps with code refactoring tasks."
+
+	// DefaultAgentAliasName is the default alias name for the agent.
+	DefaultAgentAliasName = "default" // TODO: Do we need to make this unique per project?
+
+	// DefaultAgentAliasDescription is the default description for the agent alias.
+	DefaultAgentAliasDescription = "Default alias for the code refactoring agent" // TODO: Do we need to make this unique per project?
 )
 
 // BedrockAgentBuilder is an implementation of AgentBuilder that uses AWS Bedrock for building agents.
@@ -40,8 +46,8 @@ func NewBedrockAgentBuilder(awsConfig aws.Config, agentRoleARN string) AgentBuil
 }
 
 // Build implements AgentBuilder.
-func (b BedrockAgentBuilder) Build(ctx context.Context, kbID string) (string, error) {
-	output, err := b.kbClient.CreateAgent(ctx, &bedrockagent.CreateAgentInput{
+func (b BedrockAgentBuilder) Build(ctx context.Context, kbID string) (string, string, error) {
+	createAgentOutput, err := b.kbClient.CreateAgent(ctx, &bedrockagent.CreateAgentInput{
 		AgentName:            aws.String(CodeRefactoringAgentName), // TODO: How to make unique per project?
 		AgentCollaboration:   types.AgentCollaborationDisabled,
 		AgentResourceRoleArn: aws.String(b.agentRoleARN),
@@ -69,21 +75,35 @@ func (b BedrockAgentBuilder) Build(ctx context.Context, kbID string) (string, er
 		},
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to create agent: %w", err)
+		return "", "", fmt.Errorf("failed to create agent: %w", err)
 	}
-	if output.Agent == nil || output.Agent.AgentId == nil {
-		return "", fmt.Errorf("agent is nil in response")
+	if createAgentOutput.Agent == nil || createAgentOutput.Agent.AgentId == nil {
+		return "", "", fmt.Errorf("agent is nil in response")
 	}
 
 	_, err = b.kbClient.AssociateAgentKnowledgeBase(ctx, &bedrockagent.AssociateAgentKnowledgeBaseInput{
-		AgentId:         output.Agent.AgentId,
+		AgentId:         createAgentOutput.Agent.AgentId,
 		KnowledgeBaseId: aws.String(kbID),
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to associate agent with knowledge base: %w", err)
+		return "", "", fmt.Errorf("failed to associate agent with knowledge base: %w", err)
 	}
 
-	return *output.Agent.AgentId, nil
+	createAgentAliasOutput, err := b.kbClient.CreateAgentAlias(ctx, &bedrockagent.CreateAgentAliasInput{
+		AgentId:        createAgentOutput.Agent.AgentId,
+		AgentAliasName: aws.String(DefaultAgentAliasName),
+		// ClientToken *string // TODO: Do we need this?
+		Description: aws.String(DefaultAgentAliasDescription),
+		// RoutingConfiguration []types.AgentAliasRoutingConfigurationListItem // TODO: Do we need this?
+		Tags: map[string]string{
+			config.DefaultResourceTagKey: config.DefaultResourceTagValue,
+		},
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("failed to create agent alias: %w", err)
+	}
+
+	return *createAgentOutput.Agent.AgentId, *createAgentAliasOutput.AgentAlias.AgentAliasId, nil
 }
 
 // TearDown implements AgentBuilder.
