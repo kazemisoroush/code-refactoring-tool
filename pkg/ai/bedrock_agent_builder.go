@@ -32,11 +32,11 @@ type BedrockAgentBuilder struct {
 }
 
 // NewBedrockAgentBuilder creates a new instance of BedrockAgentBuilder.
-func NewBedrockAgentBuilder(awsConfig aws.Config, agentRoleARN string) (AgentBuilder, error) {
+func NewBedrockAgentBuilder(awsConfig aws.Config, agentRoleARN string) AgentBuilder {
 	return BedrockAgentBuilder{
 		kbClient:     bedrockagent.NewFromConfig(awsConfig),
 		agentRoleARN: agentRoleARN,
-	}, nil
+	}
 }
 
 // Build implements AgentBuilder.

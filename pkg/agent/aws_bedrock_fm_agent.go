@@ -16,8 +16,8 @@ type AWSBedrockAgent struct {
 	ModelID string
 }
 
-// NewAWSBedrockAgent creates a new AWSBedrockAgent.
-func NewAWSBedrockAgent(cfg aws.Config, modelID string) Agent {
+// NewAWSBedrockFMAgent creates a new AWSBedrockAgent.
+func NewAWSBedrockFMAgent(cfg aws.Config, modelID string) Agent {
 	client := bedrockruntime.NewFromConfig(cfg)
 	return &AWSBedrockAgent{
 		Client:  client,

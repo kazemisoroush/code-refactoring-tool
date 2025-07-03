@@ -29,6 +29,7 @@ type Config struct {
 
 	S3BucketName         string    `envconfig:"S3_BUCKET_NAME" required:"true"`
 	KnowledgeBaseRoleARN string    `envconfig:"KNOWLEDGE_BASE_ROLE_ARN" required:"true"`
+	AgentRoleARN         string    `envconfig:"AGENT_ROLE_ARN" required:"true"`
 	RDSAurora            RDSAurora `envconfig:"RDS_AURORA" required:"true"`
 }
 

@@ -52,8 +52,14 @@ func main() {
 		rag,
 	)
 
+	// Initialize agent builder with AWS configuration
+	agentBuilder := ai.NewBedrockAgentBuilder(
+		cfg.AWSConfig,
+		cfg.AgentRoleARN,
+	)
+
 	// Compose the full workflow
-	wf, err := workflow.NewFixWorkflow(cfg, repo, ragBuilder)
+	wf, err := workflow.NewFixWorkflow(cfg, repo, ragBuilder, agentBuilder)
 	if err != nil {
 		log.Fatalf("❌ failed to create workflow: %v", err)
 	}
