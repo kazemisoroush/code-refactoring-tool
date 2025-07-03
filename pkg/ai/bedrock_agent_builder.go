@@ -85,3 +85,25 @@ func (b BedrockAgentBuilder) Build(ctx context.Context, kbID string) (string, er
 
 	return *output.Agent.AgentId, nil
 }
+
+// TearDown implements AgentBuilder.
+func (b BedrockAgentBuilder) TearDown(ctx context.Context, agentID string, agentVersion string, kbID string) error {
+	_, err := b.kbClient.DisassociateAgentKnowledgeBase(ctx, &bedrockagent.DisassociateAgentKnowledgeBaseInput{
+		AgentId:         aws.String(agentID),
+		AgentVersion:    aws.String(agentVersion),
+		KnowledgeBaseId: aws.String(kbID),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to disassociate agent from knowledge base: %w", err)
+	}
+
+	_, err = b.kbClient.DeleteAgent(ctx, &bedrockagent.DeleteAgentInput{
+		AgentId:                aws.String(agentID),
+		SkipResourceInUseCheck: true,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to delete agent: %w", err)
+	}
+
+	return nil
+}
