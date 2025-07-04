@@ -18,15 +18,15 @@ func main() {
 		},
 	})
 
-    // Output BedrockKnowledgeBaseRoleArn
-    awscdk.NewCfnOutput(infrastructureStack, jsii.String("BedrockKnowledgeBaseRoleArn"), &awscdk.CfnOutputProps{
-        Value: infrastructureStack.BedrockKnowledgeBaseRole.RoleArn(),
-    })
+	// Output BedrockKnowledgeBaseRoleArn
+	awscdk.NewCfnOutput(infrastructureStack.Stack, jsii.String("BedrockKnowledgeBaseRoleArn"), &awscdk.CfnOutputProps{
+		Value: infrastructureStack.BedrockKnowledgeBaseRole.RoleArn(),
+	})
 
-    // Output BedrockAgentRoleArn
-    awscdk.NewCfnOutput(infrastructureStack, jsii.String("BedrockAgentRoleArn"), &awscdk.CfnOutputProps{
-        Value: infrastructureStack.BedrockAgentRole.RoleArn(),
-    })
+	// Output BedrockAgentRoleArn
+	awscdk.NewCfnOutput(infrastructureStack.Stack, jsii.String("BedrockAgentRoleArn"), &awscdk.CfnOutputProps{
+		Value: infrastructureStack.BedrockAgentRole.RoleArn(),
+	})
 
 	app.Synth(nil)
 }
