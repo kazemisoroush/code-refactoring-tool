@@ -10,13 +10,23 @@ import (
 func main() {
 	app := awscdk.NewApp(nil)
 
-	stack.NewAppStack(app, "CodeRefactorInfra", &stack.AppStackProps{
+	infrastructureStack := stack.NewAppStack(app, "CodeRefactorInfra", &stack.AppStackProps{
 		StackProps: awscdk.StackProps{
 			Env: &awscdk.Environment{
 				Region: jsii.String("us-east-1"),
 			},
 		},
 	})
+
+    // Output BedrockKnowledgeBaseRoleArn
+    awscdk.NewCfnOutput(infrastructureStack, jsii.String("BedrockKnowledgeBaseRoleArn"), &awscdk.CfnOutputProps{
+        Value: infrastructureStack.BedrockKnowledgeBaseRole.RoleArn(),
+    })
+
+    // Output BedrockAgentRoleArn
+    awscdk.NewCfnOutput(infrastructureStack, jsii.String("BedrockAgentRoleArn"), &awscdk.CfnOutputProps{
+        Value: infrastructureStack.BedrockAgentRole.RoleArn(),
+    })
 
 	app.Synth(nil)
 }

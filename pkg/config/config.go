@@ -10,6 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	cfn "github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -27,10 +28,10 @@ type Config struct {
 	TimeoutSeconds int        `envconfig:"TIMEOUT_SECONDS" default:"180"`
 	AWSConfig      aws.Config // Loaded using AWS SDK, not from env
 
-	S3BucketName         string    `envconfig:"S3_BUCKET_NAME" required:"true"`
-	KnowledgeBaseRoleARN string    `envconfig:"KNOWLEDGE_BASE_ROLE_ARN" required:"true"`
-	AgentRoleARN         string    `envconfig:"AGENT_ROLE_ARN" required:"true"`
-	RDSAurora            RDSAurora `envconfig:"RDS_AURORA" required:"true"`
+	S3BucketName                string    `envconfig:"S3_BUCKET_NAME" required:"true"`
+	KnowledgeBaseServiceRoleARN string    `envconfig:"KNOWLEDGE_BASE_SERVICE_ROLE_ARN" required:"true"`
+	AgentServiceRoleARN         string    `envconfig:"AGENT_SERVICE_ROLE_ARN" required:"true"`
+	RDSAurora                   RDSAurora `envconfig:"RDS_AURORA" required:"true"`
 }
 
 // RDSAurora represents the configuration for AWS RDS Aurora
@@ -85,6 +86,26 @@ func LoadConfig() (Config, error) {
 		return cfg, fmt.Errorf("failed to load AWS configuration: %w", err)
 	}
 	cfg.AWSConfig = awsCfg
+
+	// Populate BedrockKnowledgeBaseRoleARN and AgentServiceRoleARN from CloudFormation outputs if not set
+	if cfg.KnowledgeBaseServiceRoleARN == "" || cfg.AgentServiceRoleARN == "" {
+		stackName := "CodeRefactorInfra" // Change if your stack name is different
+		cfnClient := cfn.NewFromConfig(awsCfg)
+		resp, err := cfnClient.DescribeStacks(ctx, &cfn.DescribeStacksInput{
+			StackName: &stackName,
+		})
+		if err != nil {
+			return cfg, fmt.Errorf("failed to describe CloudFormation stack: %w", err)
+		}
+		for _, output := range resp.Stacks[0].Outputs {
+			switch *output.OutputKey {
+			case "BedrockKnowledgeBaseRoleArn":
+				cfg.KnowledgeBaseServiceRoleARN = *output.OutputValue
+			case "BedrockAgentRoleArn":
+				cfg.AgentServiceRoleARN = *output.OutputValue
+			}
+		}
+	}
 
 	return cfg, nil
 }

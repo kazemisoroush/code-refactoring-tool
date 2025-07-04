@@ -3,6 +3,7 @@ package stack
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
@@ -16,19 +17,33 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
-// RDSAuroraDatabaseName is the name of the RDS Aurora database.
-const RDSAuroraDatabaseName = "RefactorVectorDb"
+const (
+	// RDSAuroraDatabaseName is the name of the RDS Aurora database.
+	RDSAuroraDatabaseName = "RefactorVectorDb"
+
+	// DefaultResourceTagKey and DefaultResourceTagValue are used for tagging AWS resources
+	DefaultResourceTagKey = "project"
+
+	// DefaultResourceTagValue is the default value for the resource tag
+	DefaultResourceTagValue = "CodeRefactoring"
+)
 
 // AppStackProps defines the properties for the application stack.
 type AppStackProps struct {
 	awscdk.StackProps
 }
 
+// AppStack is the main CDK stack for the application, containing all resources.
+type AppStack struct {
+	awscdk.Stack
+	BedrockKnowledgeBaseRole awsiam.Role
+	BedrockAgentRole         awsiam.Role
+}
+
 // NewAppStack creates a new CDK stack for the application.
-func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) awscdk.Stack {
+func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *AppStack {
 	stack := awscdk.NewStack(scope, &id, &props.StackProps)
 
-	projectTag := jsii.String("code-refactoring-tool")
 	region := *stack.Region()
 	account := *stack.Account()
 
@@ -36,7 +51,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 	vpc := awsec2.NewVpc(stack, jsii.String("RefactorVpc"), &awsec2.VpcProps{
 		MaxAzs: jsii.Number(2),
 	})
-	awscdk.Tags_Of(vpc).Add(jsii.String("Project"), projectTag, nil)
+	awscdk.Tags_Of(vpc).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	// S3 Bucket
 	bucketName := fmt.Sprintf("code-refactor-bucket-%s-%s", account, region)
@@ -47,7 +62,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 		Versioned:         jsii.Bool(true),
 		BlockPublicAccess: awss3.BlockPublicAccess_BLOCK_ALL(),
 	})
-	awscdk.Tags_Of(bucket).Add(jsii.String("Project"), projectTag, nil)
+	awscdk.Tags_Of(bucket).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	// Secrets Manager Secret
 	secret := awssecretsmanager.NewSecret(stack, jsii.String("CodeRefactorDbSecret"), &awssecretsmanager.SecretProps{
@@ -59,7 +74,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 		},
 		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
-	awscdk.Tags_Of(secret).Add(jsii.String("Project"), projectTag, nil)
+	awscdk.Tags_Of(secret).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	// RDS Aurora Serverless v2
 	rdsAuroraCluster := awsrds.NewDatabaseCluster(stack, jsii.String(RDSAuroraDatabaseName), &awsrds.DatabaseClusterProps{
@@ -75,7 +90,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 		ServerlessV2MaxCapacity: jsii.Number(2),
 		RemovalPolicy:           awscdk.RemovalPolicy_DESTROY,
 	})
-	awscdk.Tags_Of(rdsAuroraCluster).Add(jsii.String("Project"), projectTag, nil)
+	awscdk.Tags_Of(rdsAuroraCluster).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	// IAM Role for Bedrock KnowledgeBase
 	role := awsiam.NewRole(stack, jsii.String("BedrockKnowledgeBaseRole"), &awsiam.RoleProps{
@@ -119,13 +134,64 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 			}),
 		},
 	})
-	awscdk.Tags_Of(role).Add(jsii.String("Project"), projectTag, nil)
+	awscdk.Tags_Of(role).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
-	// ECS Cluster and Fargate Task
+	// IAM Role for Bedrock Agent
+	agentRole := awsiam.NewRole(stack, jsii.String("BedrockAgentRole"), &awsiam.RoleProps{
+		AssumedBy: awsiam.NewServicePrincipal(jsii.String("bedrock.amazonaws.com"), nil),
+		InlinePolicies: &map[string]awsiam.PolicyDocument{
+			"BedrockAgentPolicy": awsiam.NewPolicyDocument(&awsiam.PolicyDocumentProps{
+				Statements: &[]awsiam.PolicyStatement{
+					// Model invocation permissions
+					awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
+						Sid:    jsii.String("AgentModelInvocationPermissions"),
+						Effect: awsiam.Effect_ALLOW,
+						Actions: &[]*string{
+							jsii.String("bedrock:InvokeModel"),
+						},
+						Resources: &[]*string{
+							jsii.String(fmt.Sprintf("arn:aws:bedrock:%s::foundation-model/anthropic.claude-v2", region)),
+							jsii.String(fmt.Sprintf("arn:aws:bedrock:%s::foundation-model/anthropic.claude-v2:1", region)),
+							jsii.String(fmt.Sprintf("arn:aws:bedrock:%s::foundation-model/anthropic.claude-instant-v1", region)),
+							// Add your actual model ARNs here
+						},
+					}),
+					// Knowledge base query permissions
+					awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
+						Sid:    jsii.String("AgentKnowledgeBaseQuery"),
+						Effect: awsiam.Effect_ALLOW,
+						Actions: &[]*string{
+							jsii.String("bedrock:Retrieve"),
+							jsii.String("bedrock:RetrieveAndGenerate"),
+						},
+						Resources: &[]*string{
+							jsii.String(fmt.Sprintf("arn:aws:bedrock:%s:%s:knowledge-base/knowledge-base-id", region, account)),
+							// TODO: Replace knowledge-base-id with your actual KB ID
+						},
+					}),
+					// Prompt management console access
+					awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
+						Sid:    jsii.String("AgentPromptManagementConsole"),
+						Effect: awsiam.Effect_ALLOW,
+						Actions: &[]*string{
+							jsii.String("bedrock:GetPrompt"),
+						},
+						Resources: &[]*string{
+							jsii.String(fmt.Sprintf("arn:aws:bedrock:%s:%s:prompt/prompt-id", region, account)),
+							// Replace prompt-id with your actual prompt ID
+						},
+					}),
+				},
+			}),
+		},
+	})
+	awscdk.Tags_Of(agentRole).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	// ...existing code...	// ECS Cluster and Fargate Task
 	ecsCluster := awsecs.NewCluster(stack, jsii.String("RefactorCluster"), &awsecs.ClusterProps{
 		Vpc: vpc,
 	})
-	awscdk.Tags_Of(ecsCluster).Add(jsii.String("Project"), projectTag, nil)
+	awscdk.Tags_Of(ecsCluster).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	logGroup := awslogs.NewLogGroup(stack, jsii.String("FargateLogGroup"), &awslogs.LogGroupProps{
 		LogGroupName:  jsii.String("/ecs/code-refactor"),
@@ -140,7 +206,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 		MemoryLimitMiB: jsii.Number(1024),
 		TaskRole:       taskRole,
 	})
-	awscdk.Tags_Of(taskRole).Add(jsii.String("Project"), projectTag, nil)
+	awscdk.Tags_Of(taskRole).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	fargateService := awsecs.NewFargateService(stack, jsii.String("RefactorFargateService"), &awsecs.FargateServiceProps{
 		Cluster:        ecsCluster,
@@ -150,7 +216,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 			SubnetType: awsec2.SubnetType_PUBLIC,
 		},
 	})
-	awscdk.Tags_Of(fargateService).Add(jsii.String("Project"), projectTag, nil)
+	awscdk.Tags_Of(fargateService).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	// TODO: Use this in production
 	// // Define a dedicated ECR repo for the app
@@ -158,7 +224,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 	// 	RepositoryName: jsii.String("refactor-ecr-repo"),
 	// 	RemovalPolicy:  awscdk.RemovalPolicy_DESTROY,
 	// })
-	// awscdk.Tags_Of(ecrRepo).Add(jsii.String("Project"), projectTag, nil)
+	// awscdk.Tags_Of(ecrRepo).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 	//
 	// // Add container using an image from that ECR repo (tag must be pre-pushed)
 	// container := taskDef.AddContainer(jsii.String("RefactorContainer"), &awsecs.ContainerDefinitionOptions{
@@ -169,8 +235,14 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 	// 	}),
 	// })
 
+	// Determine container asset path based on environment variable or default
+	assetPath := jsii.String("../")
+	if v := os.Getenv("CDK_DOCKER_ASSET_PATH"); v != "" {
+		assetPath = jsii.String(v)
+	}
+
 	container := taskDef.AddContainer(jsii.String("RefactorContainer"), &awsecs.ContainerDefinitionOptions{
-		Image: awsecs.ContainerImage_FromAsset(jsii.String("../../"), nil),
+		Image: awsecs.ContainerImage_FromAsset(assetPath, nil),
 		Logging: awsecs.LogDrivers_AwsLogs(&awsecs.AwsLogDriverProps{
 			StreamPrefix: jsii.String("refactor"),
 			LogGroup:     logGroup,
@@ -180,9 +252,13 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) aw
 	container.AddPortMappings(&awsecs.PortMapping{
 		ContainerPort: jsii.Number(8080),
 	})
-	awscdk.Tags_Of(logGroup).Add(jsii.String("Project"), projectTag, nil)
+	awscdk.Tags_Of(logGroup).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
-	awscdk.Tags_Of(taskDef).Add(jsii.String("Project"), projectTag, nil)
+	awscdk.Tags_Of(taskDef).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
-	return stack
+	return &AppStack{
+		Stack:                    stack,
+		BedrockKnowledgeBaseRole: role,
+		BedrockAgentRole:         agentRole,
+	}
 }

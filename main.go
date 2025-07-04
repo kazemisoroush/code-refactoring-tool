@@ -42,7 +42,7 @@ func main() {
 	vectorStorage := storage.NewRDSVector(cfg.AWSConfig, cfg.RDSAurora)
 
 	// Initialize RAG pipeline
-	rag := rag.NewBedrockRAG(cfg.AWSConfig, cfg.KnowledgeBaseRoleARN, cfg.RDSAurora)
+	rag := rag.NewBedrockRAG(cfg.AWSConfig, cfg.KnowledgeBaseServiceRoleARN, cfg.RDSAurora)
 
 	// Initialize RAG builder with AWS configuration
 	ragBuilder := ai.NewBedrockRAGBuilder(
@@ -55,7 +55,7 @@ func main() {
 	// Initialize agent builder with AWS configuration
 	agentBuilder := ai.NewBedrockAgentBuilder(
 		cfg.AWSConfig,
-		cfg.AgentRoleARN,
+		cfg.AgentServiceRoleARN,
 	)
 
 	// Compose the full workflow
