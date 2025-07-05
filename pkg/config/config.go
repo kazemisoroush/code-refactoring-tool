@@ -22,6 +22,19 @@ const (
 	DefaultResourceTagValue = "CodeRefactoring"
 )
 
+var (
+	// FoundationModels is a list of foundation models to be used in the application.
+	FoundationModels = []string{
+		"anthropic.claude-v2",
+		"anthropic.claude-v2:1",
+		"anthropic.claude-instant-v1",
+		"anthropic.claude-3-sonnet-20240229-v1:0",
+		"anthropic.claude-3-5-sonnet-20240620-v1:0",
+		"mistral.mistral-7b-instruct-v0:2",
+		"mistral.mistral-large-2402-v1:0",
+	}
+)
+
 // Config represents the configuration for the application
 type Config struct {
 	Git            GitConfig  `envconfig:"GIT"`

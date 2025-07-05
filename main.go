@@ -14,13 +14,6 @@ import (
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/workflow"
 )
 
-// const (
-// claude3Sonnet  = "anthropic.claude-3-sonnet-20240229-v1:0"
-// claude35Sonnet = "anthropic.claude-3-5-sonnet-20240620-v1:0"
-// mistral7B      = "mistral.mistral-7b-instruct-v0:2"
-// mistralLarge   = "mistral.mistral-large-2402-v1:0"
-// )
-
 // main is the entry point for the application.
 func main() {
 	// Load environment + AWS config
