@@ -12,9 +12,6 @@ import (
 )
 
 const (
-	// CodeRefactoringAgentName is the name of the agent used for code refactoring tasks
-	CodeRefactoringAgentName = "CodeRefactoringAgent"
-
 	// CodeRefactoringAgentDescription agent description.
 	CodeRefactoringAgentDescription = "Sample description"
 
@@ -34,13 +31,15 @@ const (
 // BedrockAgentBuilder is an implementation of AgentBuilder that uses AWS Bedrock for building agents.
 type BedrockAgentBuilder struct {
 	kbClient     *bedrockagent.Client
+	repoPath     string
 	agentRoleARN string
 }
 
 // NewBedrockAgentBuilder creates a new instance of BedrockAgentBuilder.
-func NewBedrockAgentBuilder(awsConfig aws.Config, agentRoleARN string) AgentBuilder {
+func NewBedrockAgentBuilder(awsConfig aws.Config, repoPath string, agentRoleARN string) AgentBuilder {
 	return BedrockAgentBuilder{
 		kbClient:     bedrockagent.NewFromConfig(awsConfig),
+		repoPath:     repoPath,
 		agentRoleARN: agentRoleARN,
 	}
 }
@@ -48,13 +47,13 @@ func NewBedrockAgentBuilder(awsConfig aws.Config, agentRoleARN string) AgentBuil
 // Build implements AgentBuilder.
 func (b BedrockAgentBuilder) Build(ctx context.Context, kbID string) (string, string, error) {
 	createAgentOutput, err := b.kbClient.CreateAgent(ctx, &bedrockagent.CreateAgentInput{
-		AgentName:            aws.String(CodeRefactoringAgentName), // TODO: How to make unique per project?
+		AgentName:            aws.String(b.repoPath),
 		AgentCollaboration:   types.AgentCollaborationDisabled,
 		AgentResourceRoleArn: aws.String(b.agentRoleARN),
 		// ClientToken *string
 		// CustomOrchestration *types.CustomOrchestration
 		// CustomerEncryptionKeyArn *string
-		Description:     aws.String(CodeRefactoringAgentDescription),     // TODO: How to make unique per project?
+		Description:     aws.String(fmt.Sprintf("%s - %s", CodeRefactoringAgentDescription, b.repoPath)),
 		FoundationModel: aws.String(CodeRefactoringAgentFoundationModel), // TODO: Replace with actual foundation model ARN
 		// GuardrailConfiguration *types.GuardrailConfiguration
 		// IdleSessionTTLInSeconds *int32

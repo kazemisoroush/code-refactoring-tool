@@ -39,7 +39,7 @@ func main() {
 
 	// Initialize RAG builder with AWS configuration
 	ragBuilder := ai.NewBedrockRAGBuilder(
-		repo,
+		repo.GetPath(),
 		dataStore,
 		vectorStorage,
 		rag,
@@ -48,6 +48,7 @@ func main() {
 	// Initialize agent builder with AWS configuration
 	agentBuilder := ai.NewBedrockAgentBuilder(
 		cfg.AWSConfig,
+		repo.GetPath(),
 		cfg.AgentServiceRoleARN,
 	)
 

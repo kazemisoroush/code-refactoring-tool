@@ -7,7 +7,6 @@ import (
 
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/rag"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/storage"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
 )
 
 const (
@@ -17,7 +16,7 @@ const (
 
 // BedrockRAGBuilder is an implementation of RAGBuilder that uses AWS Bedrock for building the RAG pipeline.
 type BedrockRAGBuilder struct {
-	repository    repository.Repository
+	repoPath      string
 	dataStore     storage.DataStore
 	rag           rag.RAG
 	vectorStorage storage.Vector
@@ -25,14 +24,14 @@ type BedrockRAGBuilder struct {
 
 // NewBedrockRAGBuilder creates a new instance of BedrockRAGBuilder.
 func NewBedrockRAGBuilder(
-	repository repository.Repository,
+	repoPath string,
 	storage storage.DataStore,
 	vectorDataStore storage.Vector,
 	rag rag.RAG,
 ) RAGBuilder {
 	return &BedrockRAGBuilder{
+		repoPath:      repoPath,
 		vectorStorage: vectorDataStore,
-		repository:    repository,
 		dataStore:     storage,
 		rag:           rag,
 	}
@@ -53,8 +52,7 @@ func (b BedrockRAGBuilder) Build(ctx context.Context) (string, error) {
 	}
 
 	// Upload the codebase to S3 if not already done
-	repoPath := b.repository.GetPath()
-	err = b.dataStore.UploadDirectory(ctx, repoPath, repoPath)
+	err = b.dataStore.UploadDirectory(ctx, b.repoPath, b.repoPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to upload codebase to S3: %w", err)
 	}
@@ -77,8 +75,7 @@ func (b BedrockRAGBuilder) TearDown(ctx context.Context, vectorStoreID string, r
 	}
 
 	// Remove the codebase from S3 if needed
-	repoPath := b.repository.GetPath()
-	err = b.dataStore.DeleteDirectory(ctx, repoPath)
+	err = b.dataStore.DeleteDirectory(ctx, b.repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to remove codebase from S3: %w", err)
 	}
@@ -100,5 +97,5 @@ func (b BedrockRAGBuilder) TearDown(ctx context.Context, vectorStoreID string, r
 
 // getRDSAuroraTableName returns the name of the RDS table used for vector storage.
 func (b BedrockRAGBuilder) getRDSAuroraTableName() string {
-	return b.repository.GetPath()
+	return b.repoPath
 }
