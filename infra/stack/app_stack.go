@@ -31,13 +31,34 @@ const (
 var (
 	// FoundationModels is a list of foundation models to be used in the application.
 	FoundationModels = []string{
+		// Anthropic Claude
+		"anthropic.claude-instant-v1",
 		"anthropic.claude-v2",
 		"anthropic.claude-v2:1",
-		"anthropic.claude-instant-v1",
 		"anthropic.claude-3-sonnet-20240229-v1:0",
 		"anthropic.claude-3-5-sonnet-20240620-v1:0",
+
+		// Mistral
 		"mistral.mistral-7b-instruct-v0:2",
 		"mistral.mistral-large-2402-v1:0",
+
+		// Meta (Llama)
+		"meta.llama2-13b-chat-v1",
+		"meta.llama2-70b-chat-v1",
+
+		// Cohere
+		"cohere.command-r-v1",
+		"cohere.command-r-plus-v1",
+
+		// AI21 Labs
+		"ai21.j2-mid-v1",
+		"ai21.j2-ultra-v1",
+		"ai21.j2-light-v1",
+
+		// Amazon Titan (Text and Embeddings)
+		"amazon.titan-text-lite-v1",
+		"amazon.titan-text-express-v1",
+		"amazon.titan-embed-text-v1",
 	}
 )
 
@@ -94,13 +115,13 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 		Engine: awsrds.DatabaseClusterEngine_AuroraPostgres(&awsrds.AuroraPostgresClusterEngineProps{
 			Version: awsrds.AuroraPostgresEngineVersion_VER_15_3(),
 		}),
-		Credentials: awsrds.Credentials_FromSecret(secret, jsii.String("postgres")),
-		InstanceProps: &awsrds.InstanceProps{
-			InstanceType: awsec2.InstanceType_Of(awsec2.InstanceClass_BURSTABLE3, awsec2.InstanceSize_MEDIUM),
-			Vpc:          vpc,
-		},
+		Vpc: vpc,
+		Writer: awsrds.ClusterInstance_ServerlessV2(jsii.String("writer"), &awsrds.ServerlessV2ClusterInstanceProps{
+			ScaleWithWriter: jsii.Bool(true),
+		}),
+		Credentials:             awsrds.Credentials_FromSecret(secret, jsii.String("postgres")),
 		ServerlessV2MinCapacity: jsii.Number(0.5),
-		ServerlessV2MaxCapacity: jsii.Number(2),
+		ServerlessV2MaxCapacity: jsii.Number(1),
 		RemovalPolicy:           awscdk.RemovalPolicy_DESTROY,
 	})
 	awscdk.Tags_Of(rdsAuroraCluster).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
