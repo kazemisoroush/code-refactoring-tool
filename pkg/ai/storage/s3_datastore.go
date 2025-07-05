@@ -32,14 +32,16 @@ const (
 // S3Storage implements the Storage interface for AWS S3.
 type S3Storage struct {
 	s3Client   *s3.Client
+	repoName   string
 	bucketName string
 	client     *bedrockagent.Client
 }
 
 // NewS3Storage creates a new S3Storage instance with the provided bucket name.
-func NewS3Storage(awsConfig aws.Config, bucketName string) DataStore {
+func NewS3Storage(awsConfig aws.Config, bucketName string, repoName string) DataStore {
 	return &S3Storage{
 		s3Client:   s3.NewFromConfig(awsConfig),
+		repoName:   repoName,
 		bucketName: bucketName,
 		client:     bedrockagent.NewFromConfig(awsConfig),
 	}
@@ -64,9 +66,8 @@ func (s S3Storage) Create(ctx context.Context, ragID string) (string, error) {
 		DataDeletionPolicy: bedrocktypes.DataDeletionPolicyDelete,
 		DataSourceConfiguration: &bedrocktypes.DataSourceConfiguration{
 			S3Configuration: &bedrocktypes.S3DataSourceConfiguration{
-				BucketArn: aws.String(bucketARN),
-				// BucketOwnerAccountId // TODO: Do we need this?
-				// InclusionPrefixes: []string{}, // TODO: Use a more suitable prefix
+				BucketArn:         aws.String(bucketARN),
+				InclusionPrefixes: []string{s.repoName},
 			},
 		},
 		VectorIngestionConfiguration: &bedrocktypes.VectorIngestionConfiguration{
@@ -101,7 +102,7 @@ func (s S3Storage) Create(ctx context.Context, ragID string) (string, error) {
 			CustomTransformationConfiguration: &bedrocktypes.CustomTransformationConfiguration{
 				IntermediateStorage: &bedrocktypes.IntermediateStorage{
 					S3Location: &bedrocktypes.S3Location{
-						Uri: aws.String(fmt.Sprintf("s3://%s/intermediate/", s.bucketName)), // TODO: Use a more suitable path
+						Uri: aws.String(fmt.Sprintf("s3://%s/%s/", s.bucketName, s.repoName)),
 					},
 				},
 				Transformations: []bedrocktypes.Transformation{
