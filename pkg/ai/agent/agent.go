@@ -11,4 +11,8 @@ import (
 type Agent interface {
 	// Ask for prompt from the agent
 	Ask(ctx context.Context, prompt string) (string, error)
+
+	Create(ctx context.Context) (string, error)
+
+	Delete(ctx context.Context, id string) error
 }
