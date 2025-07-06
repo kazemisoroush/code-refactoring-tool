@@ -5,67 +5,58 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/rdsdata"
+	"github.com/jackc/pgx/v5"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 )
 
 // RDSVector is an interface for vector data stores.
 type RDSVector struct {
-	rdsClient               *rdsdata.Client
-	RDSPostgresInstanceARN  string
-	rdsCredentialsSecretARN string
-	rdsPostgresDatabaseName string
+	conn *pgx.Conn
 }
 
 // NewRDSVector creates a new instance of RDSVectorStore with the provided AWS configuration and parameters.
-func NewRDSVector(
-	awsConfig aws.Config,
-	rdsPostgres config.RDSPostgres,
-) Vector {
-	return &RDSVector{
-		rdsClient:               rdsdata.NewFromConfig(awsConfig),
-		RDSPostgresInstanceARN:  rdsPostgres.ClusterARN,
-		rdsCredentialsSecretARN: rdsPostgres.CredentialsSecretARN,
-		rdsPostgresDatabaseName: rdsPostgres.DatabaseName,
+func NewRDSVector(ctx context.Context, cfg config.RDSPostgres) (Vector, error) {
+	connStr := fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s",
+		cfg.Username,
+		cfg.Password,
+		cfg.Host,
+		cfg.Port,
+		cfg.DatabaseName,
+	)
+
+	conn, err := pgx.Connect(ctx, connStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to Postgres: %w", err)
 	}
+
+	return &RDSVector{conn: conn}, nil
 }
 
-// EnsureSchema implements VectorStore.
+// EnsureSchema creates the table if it doesn't exist.
 func (r *RDSVector) EnsureSchema(ctx context.Context, tableName string) error {
 	createTableSQL := fmt.Sprintf(`
-        CREATE TABLE IF NOT EXISTS %s (
-            id VARCHAR(255) PRIMARY KEY,
-            text TEXT,
-            embedding VECTOR,
-            metadata JSON
-        )
-    `, tableName)
+		CREATE TABLE IF NOT EXISTS %s (
+			id VARCHAR(255) PRIMARY KEY,
+			text TEXT,
+			embedding VECTOR,
+			metadata JSON
+		)`, tableName)
 
-	_, err := r.rdsClient.ExecuteStatement(ctx, &rdsdata.ExecuteStatementInput{
-		ResourceArn: aws.String(r.RDSPostgresInstanceARN),
-		SecretArn:   aws.String(r.rdsCredentialsSecretARN),
-		Database:    aws.String(r.rdsPostgresDatabaseName),
-		Sql:         aws.String(createTableSQL),
-	})
+	_, err := r.conn.Exec(ctx, createTableSQL)
 	if err != nil {
-		return fmt.Errorf("failed to create/check RDS Postgres table: %w", err)
+		return fmt.Errorf("failed to create/check table: %w", err)
 	}
 
 	return nil
 }
 
-// DropSchema implements VectorStore.
+// DropSchema drops the table if it exists.
 func (r *RDSVector) DropSchema(ctx context.Context, tableName string) error {
-	dropTableSQL := fmt.Sprintf("DROP TABLE IF EXISTS %s", tableName)
-	_, err := r.rdsClient.ExecuteStatement(ctx, &rdsdata.ExecuteStatementInput{
-		ResourceArn: aws.String(r.RDSPostgresInstanceARN),
-		SecretArn:   aws.String(r.rdsCredentialsSecretARN),
-		Database:    aws.String(r.rdsPostgresDatabaseName),
-		Sql:         aws.String(dropTableSQL),
-	})
+	dropTableSQL := fmt.Sprintf(`DROP TABLE IF EXISTS %s`, tableName)
+	_, err := r.conn.Exec(ctx, dropTableSQL)
 	if err != nil {
-		return fmt.Errorf("failed to drop RDS Postgres table: %w", err)
+		return fmt.Errorf("failed to drop table: %w", err)
 	}
 
 	return nil

@@ -41,7 +41,7 @@ func NewBedrockRAG(
 		repoPath:                repoPath,
 		kbRoleARN:               kbRoleARN,
 		rdsCredentialsSecretARN: rdsPostgres.CredentialsSecretARN,
-		RDSPostgresInstanceARN:  rdsPostgres.ClusterARN,
+		RDSPostgresInstanceARN:  rdsPostgres.InstanceARN,
 		rdsPostgresDatabaseName: rdsPostgres.DatabaseName,
 	}
 }

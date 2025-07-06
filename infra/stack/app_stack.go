@@ -141,11 +141,10 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 			SubnetType: awsec2.SubnetType_PUBLIC,
 		},
 	})
-
 	awscdk.Tags_Of(rdsPostgresInstance).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	// IAM Role for Bedrock KnowledgeBase
-	role := awsiam.NewRole(stack, jsii.String("BedrockKnowledgeBaseRole"), &awsiam.RoleProps{
+	knowledgeBaseRole := awsiam.NewRole(stack, jsii.String("BedrockKnowledgeBaseRole"), &awsiam.RoleProps{
 		AssumedBy: awsiam.NewServicePrincipal(jsii.String("bedrock.amazonaws.com"), nil),
 		InlinePolicies: &map[string]awsiam.PolicyDocument{
 			"BedrockKbPolicy": awsiam.NewPolicyDocument(&awsiam.PolicyDocumentProps{
@@ -186,7 +185,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 			}),
 		},
 	})
-	awscdk.Tags_Of(role).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+	awscdk.Tags_Of(knowledgeBaseRole).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	// Store the role for later use
 	foundationModelResources := make([]*string, len(FoundationModels))
@@ -284,7 +283,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 
 	return &AppStack{
 		Stack:                           stack,
-		BedrockKnowledgeBaseRole:        role.RoleArn(),
+		BedrockKnowledgeBaseRole:        knowledgeBaseRole.RoleArn(),
 		BedrockAgentRole:                agentRole.RoleArn(),
 		BucketName:                      bucketName,
 		Account:                         account,
