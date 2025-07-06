@@ -20,6 +20,9 @@ const (
 
 	// DefaultResourceTagValue is the default value for the resource tag
 	DefaultResourceTagValue = "CodeRefactoring"
+
+	// DefaultRepositoryTagKey get repository tag key per code base.
+	DefaultRepositoryTagKey = "repository"
 )
 
 var (

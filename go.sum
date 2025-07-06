@@ -29,6 +29,8 @@ github.com/aws/aws-sdk-go-v2/internal/ini v1.8.3 h1:bIqFDwgGXXN1Kpp99pDOdKMTTb5d
 github.com/aws/aws-sdk-go-v2/internal/ini v1.8.3/go.mod h1:H5O/EsxDWyU+LP/V8i5sm8cxoZgc2fdNR9bxlOFrQTo=
 github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.36 h1:GMYy2EOWfzdP3wfVAGXBNKY5vK4K8vMET4sYOYltmqs=
 github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.36/go.mod h1:gDhdAV6wL3PmPqBhiPbnlS447GoWs8HTTOYef9/9Inw=
+github.com/aws/aws-sdk-go-v2/service/bedrock v1.38.0 h1:wBlJMfquOKOMdSzZezhtzoTuVXc8kkkteymE/bBEXcg=
+github.com/aws/aws-sdk-go-v2/service/bedrock v1.38.0/go.mod h1:1GlpVDmL9pBaVwNfgPXR3zuJhhXtNOZoiBa16pNbINY=
 github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.44.2 h1:gedxMyluRPy1ENN1dlOM7rK8Jek1wUvpA9z1Cz2s9N4=
 github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.44.2/go.mod h1:8zZaELHNLx6LNNfMrzCtVVsOFFKP1905FKmsSFuhArM=
 github.com/aws/aws-sdk-go-v2/service/bedrockagentruntime v1.45.2 h1:bTaJuyz2i4XvlxMLBzXpdw9rjth9noDMKHB+lh/w3kk=

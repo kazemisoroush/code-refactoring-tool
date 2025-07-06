@@ -22,6 +22,7 @@ const (
 // BedrockRAG is an implementation of RAG that uses AWS Bedrock to create and manage a Knowledge Base for code refactoring tasks.
 type BedrockRAG struct {
 	kbClient                *bedrockagent.Client
+	repoPath                string
 	kbRoleARN               string
 	rdsCredentialsSecretARN string
 	rdsAuroraClusterARN     string
@@ -31,11 +32,13 @@ type BedrockRAG struct {
 // NewBedrockRAG creates a new instance of BedrockRAG with the provided AWS configuration and parameters.
 func NewBedrockRAG(
 	awsConfig aws.Config,
+	repoPath string,
 	kbRoleARN string,
 	rdsAurora config.RDSAurora,
 ) RAG {
 	return &BedrockRAG{
 		kbClient:                bedrockagent.NewFromConfig(awsConfig),
+		repoPath:                repoPath,
 		kbRoleARN:               kbRoleARN,
 		rdsCredentialsSecretARN: rdsAurora.CredentialsSecretARN,
 		rdsAuroraClusterARN:     rdsAurora.ClusterARN,
@@ -69,7 +72,7 @@ func (b *BedrockRAG) Create(ctx context.Context, tableName string) (string, erro
 				},
 			},
 		},
-		Name:        aws.String(CodeRefactoringKBName),
+		Name:        aws.String(b.getName()),
 		RoleArn:     aws.String(b.kbRoleARN),
 		Description: aws.String(CodeRefactoringKBDescription),
 		StorageConfiguration: &types.StorageConfiguration{
@@ -87,7 +90,8 @@ func (b *BedrockRAG) Create(ctx context.Context, tableName string) (string, erro
 			},
 		},
 		Tags: map[string]string{
-			config.DefaultResourceTagKey: config.DefaultResourceTagValue,
+			config.DefaultResourceTagKey:   config.DefaultResourceTagValue,
+			config.DefaultRepositoryTagKey: b.getRepositoryTag(),
 		},
 	})
 	if err != nil {
@@ -108,4 +112,14 @@ func (b *BedrockRAG) Delete(ctx context.Context, ragID string) error {
 	}
 
 	return nil
+}
+
+// getName gets resource names.
+func (b *BedrockRAG) getName() string {
+	return b.repoPath
+}
+
+// getRepositoryTag gets repository tag name.
+func (b *BedrockRAG) getRepositoryTag() string {
+	return b.repoPath
 }

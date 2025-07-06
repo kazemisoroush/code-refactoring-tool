@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/bedrock"
+	bedrocktypes "github.com/aws/aws-sdk-go-v2/service/bedrock/types"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockagent"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockagent/types"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
@@ -30,23 +32,25 @@ const (
 
 // BedrockAgentBuilder is an implementation of AgentBuilder that uses AWS Bedrock for building agents.
 type BedrockAgentBuilder struct {
-	kbClient     *bedrockagent.Client
-	repoPath     string
-	agentRoleARN string
+	bedrockClient      *bedrock.Client
+	bedrockAgentClient *bedrockagent.Client
+	repoPath           string
+	agentRoleARN       string
 }
 
 // NewBedrockAgentBuilder creates a new instance of BedrockAgentBuilder.
 func NewBedrockAgentBuilder(awsConfig aws.Config, repoPath string, agentRoleARN string) AgentBuilder {
-	return BedrockAgentBuilder{
-		kbClient:     bedrockagent.NewFromConfig(awsConfig),
-		repoPath:     repoPath,
-		agentRoleARN: agentRoleARN,
+	return &BedrockAgentBuilder{
+		bedrockClient:      bedrock.NewFromConfig(awsConfig),
+		bedrockAgentClient: bedrockagent.NewFromConfig(awsConfig),
+		repoPath:           repoPath,
+		agentRoleARN:       agentRoleARN,
 	}
 }
 
 // Build implements AgentBuilder.
 func (b BedrockAgentBuilder) Build(ctx context.Context, kbID string) (string, string, error) {
-	createAgentOutput, err := b.kbClient.CreateAgent(ctx, &bedrockagent.CreateAgentInput{
+	createAgentOutput, err := b.bedrockAgentClient.CreateAgent(ctx, &bedrockagent.CreateAgentInput{
 		AgentName:            aws.String(b.repoPath),
 		AgentCollaboration:   types.AgentCollaborationDisabled,
 		AgentResourceRoleArn: aws.String(b.agentRoleARN),
@@ -80,7 +84,7 @@ func (b BedrockAgentBuilder) Build(ctx context.Context, kbID string) (string, st
 		return "", "", fmt.Errorf("agent is nil in response")
 	}
 
-	_, err = b.kbClient.AssociateAgentKnowledgeBase(ctx, &bedrockagent.AssociateAgentKnowledgeBaseInput{
+	_, err = b.bedrockAgentClient.AssociateAgentKnowledgeBase(ctx, &bedrockagent.AssociateAgentKnowledgeBaseInput{
 		AgentId:         createAgentOutput.Agent.AgentId,
 		KnowledgeBaseId: aws.String(kbID),
 	})
@@ -88,7 +92,7 @@ func (b BedrockAgentBuilder) Build(ctx context.Context, kbID string) (string, st
 		return "", "", fmt.Errorf("failed to associate agent with knowledge base: %w", err)
 	}
 
-	createAgentAliasOutput, err := b.kbClient.CreateAgentAlias(ctx, &bedrockagent.CreateAgentAliasInput{
+	createAgentAliasOutput, err := b.bedrockAgentClient.CreateAgentAlias(ctx, &bedrockagent.CreateAgentAliasInput{
 		AgentId:        createAgentOutput.Agent.AgentId,
 		AgentAliasName: aws.String(DefaultAgentAliasName),
 		// ClientToken *string // TODO: Do we need this?
@@ -102,12 +106,39 @@ func (b BedrockAgentBuilder) Build(ctx context.Context, kbID string) (string, st
 		return "", "", fmt.Errorf("failed to create agent alias: %w", err)
 	}
 
+	// Create inference profile for the agent
+	_, err = b.bedrockClient.CreateInferenceProfile(ctx, &bedrock.CreateInferenceProfileInput{
+		InferenceProfileName: aws.String(b.getName()),
+
+		// TODO: What is this?
+		// ModelSource: bedrocktypes.InferenceProfileModel,
+
+		// TODO: Do we need this?
+		// ClientRequestToken *string
+
+		Description: aws.String(b.getName()),
+
+		Tags: []bedrocktypes.Tag{
+			{
+				Key:   aws.String(config.DefaultResourceTagKey),
+				Value: aws.String(config.DefaultResourceTagValue),
+			},
+			{
+				Key:   aws.String(config.DefaultRepositoryTagKey),
+				Value: aws.String(b.getRepositoryTag()),
+			},
+		},
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("failed to create agent inference profile: %w", err)
+	}
+
 	return *createAgentOutput.Agent.AgentId, *createAgentAliasOutput.AgentAlias.AgentAliasId, nil
 }
 
 // TearDown implements AgentBuilder.
 func (b BedrockAgentBuilder) TearDown(ctx context.Context, agentID string, agentVersion string, kbID string) error {
-	_, err := b.kbClient.DisassociateAgentKnowledgeBase(ctx, &bedrockagent.DisassociateAgentKnowledgeBaseInput{
+	_, err := b.bedrockAgentClient.DisassociateAgentKnowledgeBase(ctx, &bedrockagent.DisassociateAgentKnowledgeBaseInput{
 		AgentId:         aws.String(agentID),
 		AgentVersion:    aws.String(agentVersion),
 		KnowledgeBaseId: aws.String(kbID),
@@ -116,7 +147,7 @@ func (b BedrockAgentBuilder) TearDown(ctx context.Context, agentID string, agent
 		return fmt.Errorf("failed to disassociate agent from knowledge base: %w", err)
 	}
 
-	_, err = b.kbClient.DeleteAgent(ctx, &bedrockagent.DeleteAgentInput{
+	_, err = b.bedrockAgentClient.DeleteAgent(ctx, &bedrockagent.DeleteAgentInput{
 		AgentId:                aws.String(agentID),
 		SkipResourceInUseCheck: true,
 	})
@@ -125,4 +156,14 @@ func (b BedrockAgentBuilder) TearDown(ctx context.Context, agentID string, agent
 	}
 
 	return nil
+}
+
+// getName gets resource names.
+func (b BedrockAgentBuilder) getName() string {
+	return b.repoPath
+}
+
+// getRepositoryTag gets repository tag name.
+func (b BedrockAgentBuilder) getRepositoryTag() string {
+	return b.repoPath
 }
