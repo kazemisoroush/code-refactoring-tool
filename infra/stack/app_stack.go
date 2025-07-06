@@ -83,7 +83,20 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 
 	// VPC for RDS and Fargate
 	vpc := awsec2.NewVpc(stack, jsii.String("RefactorVpc"), &awsec2.VpcProps{
-		MaxAzs: jsii.Number(2),
+		MaxAzs:      jsii.Number(2),
+		NatGateways: jsii.Number(0),
+		SubnetConfiguration: &[]*awsec2.SubnetConfiguration{
+			{
+				CidrMask:   jsii.Number(24),
+				Name:       jsii.String("Public"),
+				SubnetType: awsec2.SubnetType_PUBLIC,
+			},
+			{
+				CidrMask:   jsii.Number(24),
+				Name:       jsii.String("Private"),
+				SubnetType: awsec2.SubnetType_PRIVATE_WITH_EGRESS,
+			},
+		},
 	})
 	awscdk.Tags_Of(vpc).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
