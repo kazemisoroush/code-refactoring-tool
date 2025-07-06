@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/agent"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/agent"
 	analyzerModels "github.com/kazemisoroush/code-refactoring-tool/pkg/analyzer/models"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/planner/models"
 )

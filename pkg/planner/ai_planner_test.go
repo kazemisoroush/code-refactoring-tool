@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	agent_mocks "github.com/kazemisoroush/code-refactoring-tool/pkg/agent/mocks"
+	agent_mocks "github.com/kazemisoroush/code-refactoring-tool/pkg/ai/agent/mocks"
 	analyzer_models "github.com/kazemisoroush/code-refactoring-tool/pkg/analyzer/models"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/planner"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/planner/models"
