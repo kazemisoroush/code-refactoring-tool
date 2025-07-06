@@ -25,8 +25,8 @@ type BedrockRAG struct {
 	repoPath                string
 	kbRoleARN               string
 	rdsCredentialsSecretARN string
-	rdsAuroraClusterARN     string
-	rdsAuroraDatabaseName   string
+	RDSPostgresInstanceARN  string
+	rdsPostgresDatabaseName string
 }
 
 // NewBedrockRAG creates a new instance of BedrockRAG with the provided AWS configuration and parameters.
@@ -34,15 +34,15 @@ func NewBedrockRAG(
 	awsConfig aws.Config,
 	repoPath string,
 	kbRoleARN string,
-	rdsAurora config.RDSAurora,
+	rdsPostgres config.RDSPostgres,
 ) RAG {
 	return &BedrockRAG{
 		kbClient:                bedrockagent.NewFromConfig(awsConfig),
 		repoPath:                repoPath,
 		kbRoleARN:               kbRoleARN,
-		rdsCredentialsSecretARN: rdsAurora.CredentialsSecretARN,
-		rdsAuroraClusterARN:     rdsAurora.ClusterARN,
-		rdsAuroraDatabaseName:   rdsAurora.DatabaseName,
+		rdsCredentialsSecretARN: rdsPostgres.CredentialsSecretARN,
+		RDSPostgresInstanceARN:  rdsPostgres.ClusterARN,
+		rdsPostgresDatabaseName: rdsPostgres.DatabaseName,
 	}
 }
 
@@ -78,14 +78,14 @@ func (b *BedrockRAG) Create(ctx context.Context, tableName string) (string, erro
 		StorageConfiguration: &types.StorageConfiguration{
 			RdsConfiguration: &types.RdsConfiguration{
 				CredentialsSecretArn: aws.String(b.rdsCredentialsSecretARN),
-				DatabaseName:         aws.String(b.rdsAuroraDatabaseName),
+				DatabaseName:         aws.String(b.rdsPostgresDatabaseName),
 				FieldMapping: &types.RdsFieldMapping{
 					PrimaryKeyField: aws.String("id"),
 					TextField:       aws.String("text"),
 					VectorField:     aws.String("embedding"),
 					MetadataField:   aws.String("metadata"),
 				},
-				ResourceArn: aws.String(b.rdsAuroraClusterARN),
+				ResourceArn: aws.String(b.RDSPostgresInstanceARN),
 				TableName:   aws.String(tableName),
 			},
 		},

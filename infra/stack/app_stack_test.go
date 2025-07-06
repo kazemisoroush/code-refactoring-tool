@@ -26,7 +26,7 @@ func TestAppStack_ResourcesCreated(t *testing.T) {
 	})
 
 	t.Run("Subnets are created", func(_ *testing.T) {
-		template.ResourceCountIs(jsii.String("AWS::EC2::Subnet"), jsii.Number(4))
+		template.ResourceCountIs(jsii.String("AWS::EC2::Subnet"), jsii.Number(2))
 	})
 
 	t.Run("Security Groups are created", func(_ *testing.T) {
@@ -61,8 +61,8 @@ func TestAppStack_ResourcesCreated(t *testing.T) {
 		template.ResourceCountIs(jsii.String("AWS::SecretsManager::Secret"), jsii.Number(1))
 	})
 
-	t.Run("Aurora PostgreSQL Serverless cluster created", func(_ *testing.T) {
-		template.ResourceCountIs(jsii.String("AWS::RDS::DBCluster"), jsii.Number(1))
+	t.Run("RDS PostgreSQL Serverless cluster created", func(_ *testing.T) {
+		template.ResourceCountIs(jsii.String("AWS::RDS::DBInstance"), jsii.Number(1))
 	})
 
 	t.Run("ECS Cluster is created", func(_ *testing.T) {

@@ -39,14 +39,14 @@ func NewBedrockRAGBuilder(
 
 // Build implements RAGBuilder.
 func (b BedrockRAGBuilder) Build(ctx context.Context) (string, error) {
-	// Create RDS Aurora table if it doesn't exist
-	err := b.vectorStorage.EnsureSchema(ctx, b.getRDSAuroraTableName())
+	// Create RDS table if it doesn't exist
+	err := b.vectorStorage.EnsureSchema(ctx, b.getRDSTableName())
 	if err != nil {
-		return "", fmt.Errorf("failed to ensure RDS Aurora table schema: %w", err)
+		return "", fmt.Errorf("failed to ensure RDS table schema: %w", err)
 	}
 
 	// Create the RAG object
-	kbID, err := b.rag.Create(ctx, b.getRDSAuroraTableName())
+	kbID, err := b.rag.Create(ctx, b.getRDSTableName())
 	if err != nil {
 		return "", fmt.Errorf("failed to create RAG pipeline: %w", err)
 	}
@@ -86,16 +86,16 @@ func (b BedrockRAGBuilder) TearDown(ctx context.Context, vectorStoreID string, r
 		return fmt.Errorf("failed to delete RAG pipeline: %w", err)
 	}
 
-	// Drop the RDS Aurora table used for vector storage
-	err = b.vectorStorage.DropSchema(ctx, b.getRDSAuroraTableName())
+	// Drop the RDS table used for vector storage
+	err = b.vectorStorage.DropSchema(ctx, b.getRDSTableName())
 	if err != nil {
-		return fmt.Errorf("failed to drop RDS Aurora table: %w", err)
+		return fmt.Errorf("failed to drop RDS table: %w", err)
 	}
 
 	return nil
 }
 
-// getRDSAuroraTableName returns the name of the RDS table used for vector storage.
-func (b BedrockRAGBuilder) getRDSAuroraTableName() string {
+// getRDSTableName returns the name of the RDS table used for vector storage.
+func (b BedrockRAGBuilder) getRDSTableName() string {
 	return b.repoPath
 }

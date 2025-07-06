@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	// RDSAuroraDatabaseName is the name of the RDS Aurora database.
-	RDSAuroraDatabaseName = "RefactorVectorDb"
+	// RDSPostgresDatabaseName is the name of the RDS Postgres database.
+	RDSPostgresDatabaseName = "RefactorVectorDb"
 
 	// DefaultResourceTagKey and DefaultResourceTagValue are used for tagging AWS resources
 	DefaultResourceTagKey = "project"
@@ -70,13 +70,13 @@ type AppStackProps struct {
 // AppStack is the main CDK stack for the application, containing all resources.
 type AppStack struct {
 	awscdk.Stack
-	BedrockKnowledgeBaseRole      *string
-	BedrockAgentRole              *string
-	BucketName                    string
-	Region                        string
-	Account                       string
-	RDSAuroraClusterARN           string
-	RDSAuroraCredentialsSecretARN string
+	BedrockKnowledgeBaseRole        *string
+	BedrockAgentRole                *string
+	BucketName                      string
+	Region                          string
+	Account                         string
+	RDSPostgresInstanceARN          string
+	RDSPostgresCredentialsSecretARN string
 }
 
 // NewAppStack creates a new CDK stack for the application.
@@ -96,11 +96,6 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 				Name:       jsii.String("Public"),
 				SubnetType: awsec2.SubnetType_PUBLIC,
 			},
-			{
-				CidrMask:   jsii.Number(24),
-				Name:       jsii.String("Private"),
-				SubnetType: awsec2.SubnetType_PRIVATE_WITH_EGRESS,
-			},
 		},
 	})
 	awscdk.Tags_Of(vpc).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
@@ -117,7 +112,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 	awscdk.Tags_Of(bucket).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	// Secrets Manager Secret
-	rdsAuroraCredentialsSecret := awssecretsmanager.NewSecret(stack, jsii.String("CodeRefactorDbSecret"), &awssecretsmanager.SecretProps{
+	rdsPostgresCredentialsSecret := awssecretsmanager.NewSecret(stack, jsii.String("CodeRefactorDbSecret"), &awssecretsmanager.SecretProps{
 		SecretName: jsii.String("code-refactor-db-secret"),
 		GenerateSecretString: &awssecretsmanager.SecretStringGenerator{
 			SecretStringTemplate: jsii.String("{\"username\": \"postgres\"}"),
@@ -126,25 +121,28 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 		},
 		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
-	awscdk.Tags_Of(rdsAuroraCredentialsSecret).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+	awscdk.Tags_Of(rdsPostgresCredentialsSecret).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
-	// RDS Aurora Serverless v2
-	rdsAuroraCluster := awsrds.NewDatabaseCluster(stack, jsii.String(RDSAuroraDatabaseName), &awsrds.DatabaseClusterProps{
-		Engine: awsrds.DatabaseClusterEngine_AuroraPostgres(&awsrds.AuroraPostgresClusterEngineProps{
-			Version: awsrds.AuroraPostgresEngineVersion_VER_15_3(),
+	// RDS Postgres Serverless v2
+	rdsPostgresInstance := awsrds.NewDatabaseInstance(stack, jsii.String(RDSPostgresDatabaseName), &awsrds.DatabaseInstanceProps{
+		Engine: awsrds.DatabaseInstanceEngine_Postgres(&awsrds.PostgresInstanceEngineProps{
+			Version: awsrds.PostgresEngineVersion_VER_17_5(),
 		}),
-		Vpc: vpc,
-		Writer: awsrds.ClusterInstance_ServerlessV2(jsii.String("writer"), &awsrds.ServerlessV2ClusterInstanceProps{
-			ScaleWithWriter: jsii.Bool(true),
-		}),
-		Credentials:             awsrds.Credentials_FromSecret(rdsAuroraCredentialsSecret, jsii.String("postgres")),
-		ServerlessV2MinCapacity: jsii.Number(0.5),
-		ServerlessV2MaxCapacity: jsii.Number(1),
-		RemovalPolicy:           awscdk.RemovalPolicy_DESTROY,
-		EnableDataApi:           jsii.Bool(true),
-		DefaultDatabaseName:     jsii.String(RDSAuroraDatabaseName),
+		InstanceType:           awsec2.InstanceType_Of(awsec2.InstanceClass_T3, awsec2.InstanceSize_MICRO),
+		Vpc:                    vpc,
+		MultiAz:                jsii.Bool(false),
+		AllocatedStorage:       jsii.Number(20),
+		Credentials:            awsrds.Credentials_FromSecret(rdsPostgresCredentialsSecret, jsii.String("postgres")),
+		DatabaseName:           jsii.String(RDSPostgresDatabaseName),
+		PubliclyAccessible:     jsii.Bool(false),
+		RemovalPolicy:          awscdk.RemovalPolicy_DESTROY,
+		DeleteAutomatedBackups: jsii.Bool(true),
+		VpcSubnets: &awsec2.SubnetSelection{
+			SubnetType: awsec2.SubnetType_PUBLIC,
+		},
 	})
-	awscdk.Tags_Of(rdsAuroraCluster).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	awscdk.Tags_Of(rdsPostgresInstance).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	// IAM Role for Bedrock KnowledgeBase
 	role := awsiam.NewRole(stack, jsii.String("BedrockKnowledgeBaseRole"), &awsiam.RoleProps{
@@ -167,7 +165,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 							jsii.String("secretsmanager:GetSecretValue"),
 						},
 						Resources: &[]*string{
-							rdsAuroraCredentialsSecret.SecretArn(),
+							rdsPostgresCredentialsSecret.SecretArn(),
 						},
 					}),
 					awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
@@ -181,7 +179,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 							jsii.String("rds-data:DescribeTable"),
 						},
 						Resources: &[]*string{
-							rdsAuroraCluster.ClusterArn(),
+							rdsPostgresInstance.InstanceArn(),
 						},
 					}),
 				},
@@ -285,13 +283,13 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 	awscdk.Tags_Of(taskDef).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	return &AppStack{
-		Stack:                         stack,
-		BedrockKnowledgeBaseRole:      role.RoleArn(),
-		BedrockAgentRole:              agentRole.RoleArn(),
-		BucketName:                    bucketName,
-		Account:                       account,
-		Region:                        region,
-		RDSAuroraClusterARN:           *rdsAuroraCluster.ClusterArn(),
-		RDSAuroraCredentialsSecretARN: *rdsAuroraCredentialsSecret.SecretArn(),
+		Stack:                           stack,
+		BedrockKnowledgeBaseRole:        role.RoleArn(),
+		BedrockAgentRole:                agentRole.RoleArn(),
+		BucketName:                      bucketName,
+		Account:                         account,
+		Region:                          region,
+		RDSPostgresInstanceARN:          *rdsPostgresInstance.InstanceArn(),
+		RDSPostgresCredentialsSecretARN: *rdsPostgresCredentialsSecret.SecretArn(),
 	}
 }

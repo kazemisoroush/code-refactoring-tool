@@ -43,14 +43,14 @@ func main() {
 		Value: &infrastructureStack.Region,
 	})
 
-	// Output RDSAuroraClusterARN
-	awscdk.NewCfnOutput(infrastructureStack.Stack, jsii.String("RDSAuroraClusterARN"), &awscdk.CfnOutputProps{
-		Value: &infrastructureStack.RDSAuroraClusterARN,
+	// Output RDSPostgresInstanceARN
+	awscdk.NewCfnOutput(infrastructureStack.Stack, jsii.String("RDSPostgresInstanceARN"), &awscdk.CfnOutputProps{
+		Value: &infrastructureStack.RDSPostgresInstanceARN,
 	})
 
-	// Output RDSAuroraCredentialsSecretARN
-	awscdk.NewCfnOutput(infrastructureStack.Stack, jsii.String("RDSAuroraCredentialsSecretARN"), &awscdk.CfnOutputProps{
-		Value: &infrastructureStack.RDSAuroraCredentialsSecretARN,
+	// Output RDSPostgresCredentialsSecretARN
+	awscdk.NewCfnOutput(infrastructureStack.Stack, jsii.String("RDSPostgresCredentialsSecretARN"), &awscdk.CfnOutputProps{
+		Value: &infrastructureStack.RDSPostgresCredentialsSecretARN,
 	})
 
 	app.Synth(nil)

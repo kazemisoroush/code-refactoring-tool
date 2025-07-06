@@ -24,7 +24,7 @@ func TestLoadConfig_Success(t *testing.T) {
 	require.NoError(t, err, "Setenv should not return an error")
 	err = os.Setenv("RDS_CREDENTIALS_SECRET_ARN", "arn:aws:secretsmanager:us-west-2:123456789012:secret:rds-credentials")
 	require.NoError(t, err, "Setenv should not return an error")
-	err = os.Setenv("RDS_AURORA_CLUSTER_ARN", "arn:aws:rds:us-west-2:123456789012:cluster:my-aurora-cluster")
+	err = os.Setenv("RDS_POSTGRES_CLUSTER_ARN", "arn:aws:rds:us-west-2:123456789012:cluster:my-aurora-cluster")
 	require.NoError(t, err, "Setenv should not return an error")
 	err = os.Setenv("S3_BUCKET_NAME", "my-s3-bucket")
 	require.NoError(t, err, "Setenv should not return an error")
@@ -33,7 +33,7 @@ func TestLoadConfig_Success(t *testing.T) {
 	defer os.Unsetenv("GIT_TOKEN")                       //nolint:errcheck
 	defer os.Unsetenv("KNOWLEDGE_BASE_SERVICE_ROLE_ARN") //nolint:errcheck
 	defer os.Unsetenv("RDS_CREDENTIALS_SECRET_ARN")      //nolint:errcheck
-	defer os.Unsetenv("RDS_AURORA_CLUSTER_ARN")          //nolint:errcheck
+	defer os.Unsetenv("RDS_POSTGRES_CLUSTER_ARN")        //nolint:errcheck
 	defer os.Unsetenv("S3_BUCKET_NAME")                  //nolint:errcheck
 
 	// Act: Load configuration
@@ -71,7 +71,7 @@ func TestLoadConfig_InvalidGitHubURL(t *testing.T) {
 	require.NoError(t, err, "Setenv should not return an error")
 	err = os.Setenv("RDS_CREDENTIALS_SECRET_ARN", "arn:aws:secretsmanager:us-west-2:123456789012:secret:rds-credentials")
 	require.NoError(t, err, "Setenv should not return an error")
-	err = os.Setenv("RDS_AURORA_CLUSTER_ARN", "arn:aws:rds:us-west-2:123456789012:cluster:my-aurora-cluster")
+	err = os.Setenv("RDS_POSTGRES_CLUSTER_ARN", "arn:aws:rds:us-west-2:123456789012:cluster:my-aurora-cluster")
 	require.NoError(t, err, "Setenv should not return an error")
 	err = os.Setenv("S3_BUCKET_NAME", "my-s3-bucket")
 	require.NoError(t, err, "Setenv should not return an error")
@@ -80,7 +80,7 @@ func TestLoadConfig_InvalidGitHubURL(t *testing.T) {
 	defer os.Unsetenv("GIT_TOKEN")                       //nolint:errcheck
 	defer os.Unsetenv("KNOWLEDGE_BASE_SERVICE_ROLE_ARN") //nolint:errcheck
 	defer os.Unsetenv("RDS_CREDENTIALS_SECRET_ARN")      //nolint:errcheck
-	defer os.Unsetenv("RDS_AURORA_CLUSTER_ARN")          //nolint:errcheck
+	defer os.Unsetenv("RDS_POSTGRES_CLUSTER_ARN")        //nolint:errcheck
 	defer os.Unsetenv("S3_BUCKET_NAME")                  //nolint:errcheck
 
 	// Act: Attempt to load configuration

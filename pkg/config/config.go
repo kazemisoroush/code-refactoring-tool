@@ -77,18 +77,18 @@ type Config struct {
 	TimeoutSeconds int        `envconfig:"TIMEOUT_SECONDS" default:"180"`
 	AWSConfig      aws.Config // Loaded using AWS SDK, not from env
 
-	S3BucketName                string    `envconfig:"S3_BUCKET_NAME"`
-	Account                     string    `envconfig:"ACCOUNT"`
-	KnowledgeBaseServiceRoleARN string    `envconfig:"KNOWLEDGE_BASE_SERVICE_ROLE_ARN"`
-	AgentServiceRoleARN         string    `envconfig:"AGENT_SERVICE_ROLE_ARN"`
-	RDSAurora                   RDSAurora `envconfig:"RDS_AURORA"`
+	S3BucketName                string      `envconfig:"S3_BUCKET_NAME"`
+	Account                     string      `envconfig:"ACCOUNT"`
+	KnowledgeBaseServiceRoleARN string      `envconfig:"KNOWLEDGE_BASE_SERVICE_ROLE_ARN"`
+	AgentServiceRoleARN         string      `envconfig:"AGENT_SERVICE_ROLE_ARN"`
+	RDSPostgres                 RDSPostgres `envconfig:"RDS_POSTGRES"`
 }
 
-// RDSAurora represents the configuration for AWS RDS Aurora
-type RDSAurora struct {
+// RDSPostgres represents the configuration for AWS RDS Postgres
+type RDSPostgres struct {
 	CredentialsSecretARN string `envconfig:"RDS_CREDENTIALS_SECRET_ARN"`
-	ClusterARN           string `envconfig:"RDS_AURORA_CLUSTER_ARN"`
-	DatabaseName         string `envconfig:"RDS_AURORA_DATABASE_NAME" default:"RefactorVectorDb"`
+	ClusterARN           string `envconfig:"RDS_POSTGRES_CLUSTER_ARN"`
+	DatabaseName         string `envconfig:"RDS_POSTGRES_DATABASE_NAME" default:"RefactorVectorDb"`
 }
 
 // GitConfig represents the Git configuration
@@ -139,8 +139,8 @@ func LoadConfig() (Config, error) {
 
 	// Populate BedrockKnowledgeBaseRoleARN and AgentServiceRoleARN from CloudFormation outputs if not set
 	if cfg.KnowledgeBaseServiceRoleARN == "" || cfg.AgentServiceRoleARN == "" ||
-		cfg.S3BucketName == "" || cfg.Account == "" || cfg.RDSAurora.ClusterARN == "" ||
-		cfg.RDSAurora.CredentialsSecretARN == "" {
+		cfg.S3BucketName == "" || cfg.Account == "" || cfg.RDSPostgres.ClusterARN == "" ||
+		cfg.RDSPostgres.CredentialsSecretARN == "" {
 		stackName := "CodeRefactorInfra"
 		cfnClient := cfn.NewFromConfig(awsCfg)
 		resp, err := cfnClient.DescribeStacks(ctx, &cfn.DescribeStacksInput{
@@ -159,10 +159,10 @@ func LoadConfig() (Config, error) {
 				cfg.S3BucketName = *output.OutputValue
 			case "Account":
 				cfg.Account = *output.OutputValue
-			case "RDSAuroraClusterARN":
-				cfg.RDSAurora.ClusterARN = *output.OutputValue
-			case "RDSAuroraCredentialsSecretARN":
-				cfg.RDSAurora.CredentialsSecretARN = *output.OutputValue
+			case "RDSPostgresInstanceARN":
+				cfg.RDSPostgres.ClusterARN = *output.OutputValue
+			case "RDSPostgresCredentialsSecretARN":
+				cfg.RDSPostgres.CredentialsSecretARN = *output.OutputValue
 			}
 		}
 	}

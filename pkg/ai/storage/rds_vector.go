@@ -1,4 +1,4 @@
-// Package storage provides an implementation of a vector data store using AWS RDS Aurora.
+// Package storage provides an implementation of a vector data store using AWS RDS Postgres.
 package storage
 
 import (
@@ -13,21 +13,21 @@ import (
 // RDSVector is an interface for vector data stores.
 type RDSVector struct {
 	rdsClient               *rdsdata.Client
-	rdsAuroraClusterARN     string
+	RDSPostgresInstanceARN  string
 	rdsCredentialsSecretARN string
-	rdsAuroraDatabaseName   string
+	rdsPostgresDatabaseName string
 }
 
 // NewRDSVector creates a new instance of RDSVectorStore with the provided AWS configuration and parameters.
 func NewRDSVector(
 	awsConfig aws.Config,
-	rdsAurora config.RDSAurora,
+	rdsPostgres config.RDSPostgres,
 ) Vector {
 	return &RDSVector{
 		rdsClient:               rdsdata.NewFromConfig(awsConfig),
-		rdsAuroraClusterARN:     rdsAurora.ClusterARN,
-		rdsCredentialsSecretARN: rdsAurora.CredentialsSecretARN,
-		rdsAuroraDatabaseName:   rdsAurora.DatabaseName,
+		RDSPostgresInstanceARN:  rdsPostgres.ClusterARN,
+		rdsCredentialsSecretARN: rdsPostgres.CredentialsSecretARN,
+		rdsPostgresDatabaseName: rdsPostgres.DatabaseName,
 	}
 }
 
@@ -43,13 +43,13 @@ func (r *RDSVector) EnsureSchema(ctx context.Context, tableName string) error {
     `, tableName)
 
 	_, err := r.rdsClient.ExecuteStatement(ctx, &rdsdata.ExecuteStatementInput{
-		ResourceArn: aws.String(r.rdsAuroraClusterARN),
+		ResourceArn: aws.String(r.RDSPostgresInstanceARN),
 		SecretArn:   aws.String(r.rdsCredentialsSecretARN),
-		Database:    aws.String(r.rdsAuroraDatabaseName),
+		Database:    aws.String(r.rdsPostgresDatabaseName),
 		Sql:         aws.String(createTableSQL),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create/check RDS Aurora table: %w", err)
+		return fmt.Errorf("failed to create/check RDS Postgres table: %w", err)
 	}
 
 	return nil
@@ -59,13 +59,13 @@ func (r *RDSVector) EnsureSchema(ctx context.Context, tableName string) error {
 func (r *RDSVector) DropSchema(ctx context.Context, tableName string) error {
 	dropTableSQL := fmt.Sprintf("DROP TABLE IF EXISTS %s", tableName)
 	_, err := r.rdsClient.ExecuteStatement(ctx, &rdsdata.ExecuteStatementInput{
-		ResourceArn: aws.String(r.rdsAuroraClusterARN),
+		ResourceArn: aws.String(r.RDSPostgresInstanceARN),
 		SecretArn:   aws.String(r.rdsCredentialsSecretARN),
-		Database:    aws.String(r.rdsAuroraDatabaseName),
+		Database:    aws.String(r.rdsPostgresDatabaseName),
 		Sql:         aws.String(dropTableSQL),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to drop RDS Aurora table: %w", err)
+		return fmt.Errorf("failed to drop RDS Postgres table: %w", err)
 	}
 
 	return nil
