@@ -141,6 +141,8 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 		ServerlessV2MinCapacity: jsii.Number(0.5),
 		ServerlessV2MaxCapacity: jsii.Number(1),
 		RemovalPolicy:           awscdk.RemovalPolicy_DESTROY,
+		EnableDataApi:           jsii.Bool(true),
+		DefaultDatabaseName:     jsii.String(RDSAuroraDatabaseName),
 	})
 	awscdk.Tags_Of(rdsAuroraCluster).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
