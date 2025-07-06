@@ -25,16 +25,6 @@ func NewAWSBedrockFMAgent(cfg aws.Config, modelID string) Agent {
 	}
 }
 
-// Create implements Agent.
-func (a *AWSBedrockAgent) Create(_ context.Context) (string, error) {
-	return "", fmt.Errorf("no infra needed for foundation model invoke")
-}
-
-// Delete implements Agent.
-func (a *AWSBedrockAgent) Delete(_ context.Context, _ string) error {
-	return fmt.Errorf("no infra needed for foundation model invoke")
-}
-
 // Ask sends a prompt to the agent and returns the response.
 func (a *AWSBedrockAgent) Ask(ctx context.Context, prompt string) (string, error) {
 	payload := map[string]interface{}{

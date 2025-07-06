@@ -53,7 +53,7 @@ func (b *BedrockRAG) Create(ctx context.Context, tableName string) (string, erro
 		KnowledgeBaseConfiguration: &types.KnowledgeBaseConfiguration{
 			Type: types.KnowledgeBaseTypeVector,
 			VectorKnowledgeBaseConfiguration: &types.VectorKnowledgeBaseConfiguration{
-				EmbeddingModelArn: aws.String("arn:aws:bedrock:us-west-2::embedding-model"), // TODO: make this configurable
+				EmbeddingModelArn: aws.String(fmt.Sprintf("arn:aws:bedrock:%s::%s", config.AWSRegion, config.AWSBedrockRAGEmbeddingModel)), // TODO: make this configurable
 				EmbeddingModelConfiguration: &types.EmbeddingModelConfiguration{
 					BedrockEmbeddingModelConfiguration: &types.BedrockEmbeddingModelConfiguration{
 						Dimensions:        aws.Int32(1536),                // TODO: Example dimension size, adjust as needed

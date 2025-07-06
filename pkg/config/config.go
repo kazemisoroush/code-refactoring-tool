@@ -23,6 +23,18 @@ const (
 
 	// DefaultRepositoryTagKey get repository tag key per code base.
 	DefaultRepositoryTagKey = "repository"
+
+	// AWSBedrockRAGEmbeddingModel model used for Bedrock Knowledge Base embedding.
+	AWSBedrockRAGEmbeddingModel = "amazon.titan-embed-text-v1"
+
+	// AWSBedrockDataStoreEnrichmentModelARN is the ARN of the model used for context enrichment in the RAG pipeline.
+	AWSBedrockDataStoreEnrichmentModelARN = "amazon.titan-text-express-v1:0"
+
+	// AWSBedrockDataStoreParsingModelARN is the ARN of the model used for parsing in the RAG pipeline.
+	AWSBedrockDataStoreParsingModelARN = "amazon.titan-text-express-v1:0"
+
+	// AWSRegion used for aws.
+	AWSRegion = "us-east-1"
 )
 
 var (

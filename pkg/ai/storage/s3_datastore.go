@@ -13,6 +13,7 @@ import (
 	bedrocktypes "github.com/aws/aws-sdk-go-v2/service/bedrockagent/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 )
 
 const (
@@ -21,12 +22,6 @@ const (
 
 	// DataSourceDescription is the description of the data source used for the code refactoring tool.
 	DataSourceDescription = "Data source for the code refactoring tool knowledge base. This data source is used to store the codebase and other relevant files for the RAG pipeline."
-
-	// EnrichmentModelARN is the ARN of the model used for context enrichment in the RAG pipeline.
-	EnrichmentModelARN = "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-text-express-v1:0" // TODO: Use a more suitable model
-
-	// ParsingModelARN is the ARN of the model used for parsing in the RAG pipeline.
-	ParsingModelARN = "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-text-express-v1:0" // TODO: Use a more suitable model
 )
 
 // S3Storage implements the Storage interface for AWS S3.
@@ -94,7 +89,13 @@ func (s S3Storage) Create(ctx context.Context, ragID string) (string, error) {
 					EnrichmentStrategyConfiguration: &bedrocktypes.EnrichmentStrategyConfiguration{
 						Method: bedrocktypes.EnrichmentStrategyMethodChunkEntityExtraction,
 					},
-					ModelArn: aws.String(EnrichmentModelARN),
+					ModelArn: aws.String(
+						fmt.Sprintf(
+							"arn:aws:bedrock:%s::foundation-model/%s",
+							config.AWSRegion,
+							config.AWSBedrockDataStoreEnrichmentModelARN,
+						),
+					),
 				},
 			},
 
@@ -121,7 +122,13 @@ func (s S3Storage) Create(ctx context.Context, ragID string) (string, error) {
 			ParsingConfiguration: &bedrocktypes.ParsingConfiguration{
 				ParsingStrategy: bedrocktypes.ParsingStrategyBedrockFoundationModel,
 				BedrockFoundationModelConfiguration: &bedrocktypes.BedrockFoundationModelConfiguration{
-					ModelArn: aws.String(ParsingModelARN),
+					ModelArn: aws.String(
+						fmt.Sprintf(
+							"arn:aws:bedrock:%s::foundation-model/%s",
+							config.AWSRegion,
+							config.AWSBedrockDataStoreParsingModelARN,
+						),
+					),
 					// Code base could have images, so we use multimodal parsing
 					ParsingModality: bedrocktypes.ParsingModalityMultimodal,
 					ParsingPrompt: &bedrocktypes.ParsingPrompt{

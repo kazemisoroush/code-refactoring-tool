@@ -31,16 +31,6 @@ func NewBedrockAgent(awsConfig aws.Config, agentID string, agentAliasID string) 
 	}
 }
 
-// Create implements Agent.
-func (a *BedrockAgent) Create(_ context.Context) (string, error) {
-	panic("unimplemented")
-}
-
-// Delete implements Agent.
-func (a *BedrockAgent) Delete(_ context.Context, _ string) error {
-	panic("unimplemented")
-}
-
 // Ask sends a prompt to the Bedrock agent and returns the response.
 func (a *BedrockAgent) Ask(ctx context.Context, prompt string) (string, error) {
 	input := &bedrockagentruntime.InvokeAgentInput{
