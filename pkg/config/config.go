@@ -77,16 +77,17 @@ type Config struct {
 	TimeoutSeconds int        `envconfig:"TIMEOUT_SECONDS" default:"180"`
 	AWSConfig      aws.Config // Loaded using AWS SDK, not from env
 
-	S3BucketName                string    `envconfig:"S3_BUCKET_NAME" required:"true"`
-	KnowledgeBaseServiceRoleARN string    `envconfig:"KNOWLEDGE_BASE_SERVICE_ROLE_ARN" required:"true"`
-	AgentServiceRoleARN         string    `envconfig:"AGENT_SERVICE_ROLE_ARN" required:"true"`
-	RDSAurora                   RDSAurora `envconfig:"RDS_AURORA" required:"true"`
+	S3BucketName                string    `envconfig:"S3_BUCKET_NAME"`
+	Account                     string    `envconfig:"ACCOUNT"`
+	KnowledgeBaseServiceRoleARN string    `envconfig:"KNOWLEDGE_BASE_SERVICE_ROLE_ARN"`
+	AgentServiceRoleARN         string    `envconfig:"AGENT_SERVICE_ROLE_ARN"`
+	RDSAurora                   RDSAurora `envconfig:"RDS_AURORA"`
 }
 
 // RDSAurora represents the configuration for AWS RDS Aurora
 type RDSAurora struct {
-	CredentialsSecretARN string `envconfig:"RDS_CREDENTIALS_SECRET_ARN" required:"true"`
-	ClusterARN           string `envconfig:"RDS_AURORA_CLUSTER_ARN" required:"true"`
+	CredentialsSecretARN string `envconfig:"RDS_CREDENTIALS_SECRET_ARN"`
+	ClusterARN           string `envconfig:"RDS_AURORA_CLUSTER_ARN"`
 	DatabaseName         string `envconfig:"RDS_AURORA_DATABASE_NAME" default:"RefactorVectorDb"`
 }
 
@@ -137,8 +138,10 @@ func LoadConfig() (Config, error) {
 	cfg.AWSConfig = awsCfg
 
 	// Populate BedrockKnowledgeBaseRoleARN and AgentServiceRoleARN from CloudFormation outputs if not set
-	if cfg.KnowledgeBaseServiceRoleARN == "" || cfg.AgentServiceRoleARN == "" {
-		stackName := "CodeRefactorInfra" // Change if your stack name is different
+	if cfg.KnowledgeBaseServiceRoleARN == "" || cfg.AgentServiceRoleARN == "" ||
+		cfg.S3BucketName == "" || cfg.Account == "" || cfg.RDSAurora.ClusterARN == "" ||
+		cfg.RDSAurora.CredentialsSecretARN == "" {
+		stackName := "CodeRefactorInfra"
 		cfnClient := cfn.NewFromConfig(awsCfg)
 		resp, err := cfnClient.DescribeStacks(ctx, &cfn.DescribeStacksInput{
 			StackName: &stackName,
@@ -152,6 +155,14 @@ func LoadConfig() (Config, error) {
 				cfg.KnowledgeBaseServiceRoleARN = *output.OutputValue
 			case "BedrockAgentRoleArn":
 				cfg.AgentServiceRoleARN = *output.OutputValue
+			case "BucketName":
+				cfg.S3BucketName = *output.OutputValue
+			case "Account":
+				cfg.Account = *output.OutputValue
+			case "RDSAuroraClusterARN":
+				cfg.RDSAurora.ClusterARN = *output.OutputValue
+			case "RDSAuroraCredentialsSecretARN":
+				cfg.RDSAurora.CredentialsSecretARN = *output.OutputValue
 			}
 		}
 	}

@@ -20,12 +20,37 @@ func main() {
 
 	// Output BedrockKnowledgeBaseRoleArn
 	awscdk.NewCfnOutput(infrastructureStack.Stack, jsii.String("BedrockKnowledgeBaseRoleArn"), &awscdk.CfnOutputProps{
-		Value: infrastructureStack.BedrockKnowledgeBaseRole.RoleArn(),
+		Value: infrastructureStack.BedrockKnowledgeBaseRole,
 	})
 
 	// Output BedrockAgentRoleArn
 	awscdk.NewCfnOutput(infrastructureStack.Stack, jsii.String("BedrockAgentRoleArn"), &awscdk.CfnOutputProps{
-		Value: infrastructureStack.BedrockAgentRole.RoleArn(),
+		Value: infrastructureStack.BedrockAgentRole,
+	})
+
+	// Output BucketName
+	awscdk.NewCfnOutput(infrastructureStack.Stack, jsii.String("BucketName"), &awscdk.CfnOutputProps{
+		Value: &infrastructureStack.BucketName,
+	})
+
+	// Output Account
+	awscdk.NewCfnOutput(infrastructureStack.Stack, jsii.String("Account"), &awscdk.CfnOutputProps{
+		Value: &infrastructureStack.Account,
+	})
+
+	// Output Region
+	awscdk.NewCfnOutput(infrastructureStack.Stack, jsii.String("Region"), &awscdk.CfnOutputProps{
+		Value: &infrastructureStack.Region,
+	})
+
+	// Output RDSAuroraClusterARN
+	awscdk.NewCfnOutput(infrastructureStack.Stack, jsii.String("RDSAuroraClusterARN"), &awscdk.CfnOutputProps{
+		Value: &infrastructureStack.RDSAuroraClusterARN,
+	})
+
+	// Output RDSAuroraCredentialsSecretARN
+	awscdk.NewCfnOutput(infrastructureStack.Stack, jsii.String("RDSAuroraCredentialsSecretARN"), &awscdk.CfnOutputProps{
+		Value: &infrastructureStack.RDSAuroraCredentialsSecretARN,
 	})
 
 	app.Synth(nil)
