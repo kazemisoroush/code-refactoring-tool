@@ -24,6 +24,9 @@ const (
 	// DefaultRepositoryTagKey get repository tag key per code base.
 	DefaultRepositoryTagKey = "repository"
 
+	// AWSBedrockAgentModel model used for Bedrock Agent.
+	AWSBedrockAgentModel = "amazon.titan-tg1-large"
+
 	// AWSBedrockRAGEmbeddingModel model used for Bedrock Knowledge Base embedding.
 	AWSBedrockRAGEmbeddingModel = "amazon.titan-embed-text-v1"
 
@@ -78,7 +81,6 @@ type Config struct {
 	AWSConfig      aws.Config // Loaded using AWS SDK, not from env
 
 	S3BucketName                string      `envconfig:"S3_BUCKET_NAME"`
-	Account                     string      `envconfig:"ACCOUNT"`
 	KnowledgeBaseServiceRoleARN string      `envconfig:"KNOWLEDGE_BASE_SERVICE_ROLE_ARN"`
 	AgentServiceRoleARN         string      `envconfig:"AGENT_SERVICE_ROLE_ARN"`
 	RDSPostgres                 RDSPostgres `envconfig:"RDS_POSTGRES"`
@@ -86,10 +88,6 @@ type Config struct {
 
 // RDSPostgres represents the configuration for AWS RDS Postgres
 type RDSPostgres struct {
-	Username             string `envconfig:"USERNAME"`
-	Password             string `envconfig:"PASSWORD"`
-	Host                 string `envconfig:"HOST"`
-	Port                 int    `envconfig:"PORT"`
 	CredentialsSecretARN string `envconfig:"CREDENTIALS_SECRET_ARN"`
 	InstanceARN          string `envconfig:"INSTANCE_ARN"`
 	DatabaseName         string `envconfig:"DATABASE_NAME" default:"RefactorVectorDb"`
@@ -143,7 +141,7 @@ func LoadConfig() (Config, error) {
 
 	// Populate BedrockKnowledgeBaseRoleARN and AgentServiceRoleARN from CloudFormation outputs if not set
 	if cfg.KnowledgeBaseServiceRoleARN == "" || cfg.AgentServiceRoleARN == "" ||
-		cfg.S3BucketName == "" || cfg.Account == "" || cfg.RDSPostgres.InstanceARN == "" ||
+		cfg.S3BucketName == "" || cfg.RDSPostgres.InstanceARN == "" ||
 		cfg.RDSPostgres.CredentialsSecretARN == "" {
 		stackName := "CodeRefactorInfra"
 		cfnClient := cfn.NewFromConfig(awsCfg)
@@ -161,8 +159,6 @@ func LoadConfig() (Config, error) {
 				cfg.AgentServiceRoleARN = *output.OutputValue
 			case "BucketName":
 				cfg.S3BucketName = *output.OutputValue
-			case "Account":
-				cfg.Account = *output.OutputValue
 			case "RDSPostgresInstanceARN":
 				cfg.RDSPostgres.InstanceARN = *output.OutputValue
 			case "RDSPostgresCredentialsSecretARN":

@@ -2,7 +2,7 @@
 test:
 	@echo "Running tests..."
 	@go test ./...
-	@cd infra/stack && CDK_DOCKER_ASSET_PATH=../../ go test ./...
+	@cd infra && go test ./...
 	@echo "Tests passed."
 
 lint:
@@ -17,3 +17,7 @@ mock:
 	@echo "Mocks generated."
 
 ci: mock test lint
+
+bootstrap:
+	@echo "Running CDK bootstrap..."
+	@cd infra && cdk bootstrap

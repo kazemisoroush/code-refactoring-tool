@@ -58,7 +58,7 @@ func (b BedrockAgentBuilder) Build(ctx context.Context, kbID string) (string, st
 		// CustomOrchestration *types.CustomOrchestration
 		// CustomerEncryptionKeyArn *string
 		Description:     aws.String(fmt.Sprintf("%s - %s", CodeRefactoringAgentDescription, b.repoPath)),
-		FoundationModel: aws.String(CodeRefactoringAgentFoundationModel), // TODO: Replace with actual foundation model ARN
+		FoundationModel: aws.String(b.getModelARN()), // TODO: Replace with actual foundation model ARN
 		// GuardrailConfiguration *types.GuardrailConfiguration
 		// IdleSessionTTLInSeconds *int32
 		Instruction: aws.String(CodeRefactoringAgentPrompt),
@@ -109,15 +109,12 @@ func (b BedrockAgentBuilder) Build(ctx context.Context, kbID string) (string, st
 	// Create inference profile for the agent
 	_, err = b.bedrockClient.CreateInferenceProfile(ctx, &bedrock.CreateInferenceProfileInput{
 		InferenceProfileName: aws.String(b.getName()),
-
-		// TODO: What is this?
-		// ModelSource: bedrocktypes.InferenceProfileModel,
-
+		ModelSource: &bedrocktypes.InferenceProfileModelSourceMemberCopyFrom{
+			Value: b.getModelARN(),
+		},
 		// TODO: Do we need this?
 		// ClientRequestToken *string
-
 		Description: aws.String(b.getName()),
-
 		Tags: []bedrocktypes.Tag{
 			{
 				Key:   aws.String(config.DefaultResourceTagKey),
@@ -166,4 +163,9 @@ func (b BedrockAgentBuilder) getName() string {
 // getRepositoryTag gets repository tag name.
 func (b BedrockAgentBuilder) getRepositoryTag() string {
 	return b.repoPath
+}
+
+// getModelARN get the foundational model that is used by agent.
+func (b BedrockAgentBuilder) getModelARN() string {
+	return fmt.Sprintf("arn:aws:bedrock:%s::%s", config.AWSRegion, config.AWSBedrockAgentModel)
 }

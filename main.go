@@ -31,12 +31,6 @@ func main() {
 	// Initialize S3 dataStore
 	dataStore := storage.NewS3Storage(cfg.AWSConfig, cfg.S3BucketName, repo.GetPath())
 
-	// Initialize vector data store
-	vectorStorage, err := storage.NewRDSVector(ctx, cfg.RDSPostgres)
-	if err != nil {
-		log.Fatalf("❌ failed to create workflow: %v", err)
-	}
-
 	// Initialize RAG pipeline
 	rag := rag.NewBedrockRAG(cfg.AWSConfig, repo.GetPath(), cfg.KnowledgeBaseServiceRoleARN, cfg.RDSPostgres)
 
@@ -44,7 +38,6 @@ func main() {
 	ragBuilder := ai.NewBedrockRAGBuilder(
 		repo.GetPath(),
 		dataStore,
-		vectorStorage,
 		rag,
 	)
 

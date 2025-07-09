@@ -16,35 +16,26 @@ const (
 
 // BedrockRAGBuilder is an implementation of RAGBuilder that uses AWS Bedrock for building the RAG pipeline.
 type BedrockRAGBuilder struct {
-	repoPath      string
-	dataStore     storage.DataStore
-	rag           rag.RAG
-	vectorStorage storage.Vector
+	repoPath  string
+	dataStore storage.DataStore
+	rag       rag.RAG
 }
 
 // NewBedrockRAGBuilder creates a new instance of BedrockRAGBuilder.
 func NewBedrockRAGBuilder(
 	repoPath string,
 	storage storage.DataStore,
-	vectorDataStore storage.Vector,
 	rag rag.RAG,
 ) RAGBuilder {
 	return &BedrockRAGBuilder{
-		repoPath:      repoPath,
-		vectorStorage: vectorDataStore,
-		dataStore:     storage,
-		rag:           rag,
+		repoPath:  repoPath,
+		dataStore: storage,
+		rag:       rag,
 	}
 }
 
 // Build implements RAGBuilder.
 func (b BedrockRAGBuilder) Build(ctx context.Context) (string, error) {
-	// Create RDS table if it doesn't exist
-	err := b.vectorStorage.EnsureSchema(ctx, b.getRDSTableName())
-	if err != nil {
-		return "", fmt.Errorf("failed to ensure RDS table schema: %w", err)
-	}
-
 	// Create the RAG object
 	kbID, err := b.rag.Create(ctx, b.getRDSTableName())
 	if err != nil {
@@ -84,12 +75,6 @@ func (b BedrockRAGBuilder) TearDown(ctx context.Context, vectorStoreID string, r
 	err = b.rag.Delete(ctx, vectorStoreID)
 	if err != nil {
 		return fmt.Errorf("failed to delete RAG pipeline: %w", err)
-	}
-
-	// Drop the RDS table used for vector storage
-	err = b.vectorStorage.DropSchema(ctx, b.getRDSTableName())
-	if err != nil {
-		return fmt.Errorf("failed to drop RDS table: %w", err)
 	}
 
 	return nil

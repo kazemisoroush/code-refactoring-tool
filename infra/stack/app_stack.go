@@ -3,6 +3,8 @@ package stack
 
 import (
 	"fmt"
+	"path/filepath"
+	"runtime"
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
@@ -15,17 +17,28 @@ import (
 	"github.com/aws/aws-cdk-go/awscdk/v2/awssecretsmanager"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
+
+	// NEW IMPORT for Lambda
+	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
+	// NEW IMPORT for Custom Resources
 )
 
 const (
 	// RDSPostgresDatabaseName is the name of the RDS Postgres database.
 	RDSPostgresDatabaseName = "RefactorVectorDb"
 
+	// RDSPostgresTableName table name.
+	RDSPostgresTableName = "vector_store" // Define your table name here
+
 	// DefaultResourceTagKey and DefaultResourceTagValue are used for tagging AWS resources
 	DefaultResourceTagKey = "project"
 
 	// DefaultResourceTagValue is the default value for the resource tag
 	DefaultResourceTagValue = "CodeRefactoring"
+
+	// SchemaVersion is a version string for the database schema.
+	// Increment this string to trigger new migrations.
+	SchemaVersion = "v1" // Change to "v2", "v3", etc., for future schema updates
 )
 
 var (
@@ -142,6 +155,98 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 		},
 	})
 	awscdk.Tags_Of(rdsPostgresInstance).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	// ====================================================================
+	// NEW: Database Schema Migration with Lambda Custom Resource
+	// ====================================================================
+
+	// 1. Security Group for the Migration Lambda
+	// This SG will allow the Lambda to connect to the RDS instance.
+	migrationLambdaSG := awsec2.NewSecurityGroup(stack, jsii.String("DbMigrationLambdaSG"), &awsec2.SecurityGroupProps{
+		Vpc:              vpc,
+		Description:      jsii.String("Allow outbound connection to RDS Postgres for DB migrations"),
+		AllowAllOutbound: jsii.Bool(true), // Allows outbound to RDS
+	})
+	awscdk.Tags_Of(migrationLambdaSG).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	// Add inbound rule to RDS Security Group to allow connections from the Lambda SG
+	rdsPostgresInstance.Connections().AllowFrom(migrationLambdaSG, awsec2.Port_Tcp(jsii.Number(5432)), jsii.String("Allow DB migration lambda"))
+
+	// 2. IAM Role for the Migration Lambda
+	migrationLambdaRole := awsiam.NewRole(stack, jsii.String("DbMigrationLambdaRole"), &awsiam.RoleProps{
+		AssumedBy: awsiam.NewServicePrincipal(jsii.String("lambda.amazonaws.com"), nil),
+	})
+	awscdk.Tags_Of(migrationLambdaRole).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	// Grant the Lambda role permissions to write logs to CloudWatch
+	migrationLambdaRole.AddManagedPolicy(awsiam.ManagedPolicy_FromAwsManagedPolicyName(jsii.String("service-role/AWSLambdaBasicExecutionRole")))
+
+	// For VPC access
+	migrationLambdaRole.AddManagedPolicy(awsiam.ManagedPolicy_FromAwsManagedPolicyName(jsii.String("service-role/AWSLambdaVPCAccessExecutionRole")))
+
+	// Grant the Lambda role permissions to read the database secret
+	rdsPostgresCredentialsSecret.GrantRead(migrationLambdaRole, nil)
+
+	// Grant the Lambda role permissions to connect to the RDS instance via Data API or direct
+	// For direct pgx.Connect, the basic execution role might be enough for network access,
+	// but explicit permissions are good practice.
+	// If using RDS Data API (which pgx does not by default, but KnowledgeBase does), uncomment below:
+	migrationLambdaRole.AddToPolicy(awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
+		Actions: &[]*string{
+			jsii.String("rds-data:ExecuteStatement"),
+			jsii.String("rds-data:BatchExecuteStatement"),
+			jsii.String("rds-data:BeginTransaction"),
+			jsii.String("rds-data:CommitTransaction"),
+			jsii.String("rds-data:RollbackTransaction"),
+			jsii.String("rds-data:ExecuteSql"),
+			jsii.String("rds-data:DescribeTable"),
+		},
+		Resources: &[]*string{
+			rdsPostgresInstance.InstanceArn(),
+		},
+	}))
+
+	lambdaPath := filepath.Join(getThisFileDir(), "../lambda")
+
+	// 3. Lambda Function for Schema Migration
+	// Ensure you have compiled your Go Lambda binary at ./lambda/migrator/main
+	dbMigrationLambda := awslambda.NewFunction(stack, jsii.String("DbMigrationLambda"), &awslambda.FunctionProps{
+		Runtime: awslambda.Runtime_PROVIDED_AL2(),
+		Handler: jsii.String("main"),                                         // The compiled executable name in your zip/asset
+		Code:    awslambda.AssetCode_FromAsset(jsii.String(lambdaPath), nil), // Path to your compiled Go Lambda
+		Vpc:     vpc,                                                         // Lambda must be in the same VPC as RDS
+		VpcSubnets: &awsec2.SubnetSelection{
+			SubnetType: awsec2.SubnetType_PUBLIC, // If your VPC only has public subnets
+			// SubnetType: awsec2.SubnetType_PRIVATE_WITH_EGRESS, // If you have private subnets with NAT Gateway
+		},
+		SecurityGroups: &[]awsec2.ISecurityGroup{
+			migrationLambdaSG, // Attach the security group created above
+		},
+		Environment: &map[string]*string{
+			"DB_SECRET_ARN": rdsPostgresCredentialsSecret.SecretArn(),
+			"DB_HOST":       rdsPostgresInstance.DbInstanceEndpointAddress(),
+			"DB_PORT":       rdsPostgresInstance.DbInstanceEndpointPort(),
+			"DB_NAME":       jsii.String(RDSPostgresDatabaseName),
+		},
+		Timeout:           awscdk.Duration_Minutes(jsii.Number(2)), // Give it enough time
+		Role:              migrationLambdaRole,
+		AllowPublicSubnet: jsii.Bool(true), // Acknowledge that this Lambda is in a public subnet and won't have internet access
+	})
+	awscdk.Tags_Of(dbMigrationLambda).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	// 4. Custom Resource to Trigger Schema Migration
+	// This will invoke the Lambda function during stack deployments/updates.
+	awscdk.NewCustomResource(stack, jsii.String("DbSchemaMigration"), &awscdk.CustomResourceProps{
+		ServiceToken: dbMigrationLambda.FunctionArn(),
+		Properties: &map[string]interface{}{
+			"TableName":     jsii.String(RDSPostgresTableName),
+			"SchemaVersion": jsii.String(SchemaVersion), // Change this value to trigger a new migration
+		},
+	})
+
+	// ====================================================================
+	// END NEW: Database Schema Migration
+	// ====================================================================
 
 	// IAM Role for Bedrock KnowledgeBase
 	knowledgeBaseRole := awsiam.NewRole(stack, jsii.String("BedrockKnowledgeBaseRole"), &awsiam.RoleProps{
@@ -291,4 +396,12 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 		RDSPostgresInstanceARN:          *rdsPostgresInstance.InstanceArn(),
 		RDSPostgresCredentialsSecretARN: *rdsPostgresCredentialsSecret.SecretArn(),
 	}
+}
+
+func getThisFileDir() string {
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("unable to get current file path")
+	}
+	return filepath.Dir(filename)
 }
