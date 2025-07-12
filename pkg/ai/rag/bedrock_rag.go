@@ -53,21 +53,13 @@ func (b *BedrockRAG) Create(ctx context.Context, tableName string) (string, erro
 		KnowledgeBaseConfiguration: &types.KnowledgeBaseConfiguration{
 			Type: types.KnowledgeBaseTypeVector,
 			VectorKnowledgeBaseConfiguration: &types.VectorKnowledgeBaseConfiguration{
-				EmbeddingModelArn: aws.String(fmt.Sprintf("arn:aws:bedrock:%s::%s", config.AWSRegion, config.AWSBedrockRAGEmbeddingModel)), // TODO: make this configurable
+				EmbeddingModelArn: aws.String(fmt.Sprintf("arn:aws:bedrock:%s::%s", config.AWSRegion, config.AWSBedrockRAGEmbeddingModel)),
 				EmbeddingModelConfiguration: &types.EmbeddingModelConfiguration{
 					BedrockEmbeddingModelConfiguration: &types.BedrockEmbeddingModelConfiguration{
-						Dimensions:        aws.Int32(1536),                // TODO: Example dimension size, adjust as needed
-						EmbeddingDataType: types.EmbeddingDataTypeFloat32, // TODO: Adjust based on your model
-					},
-				},
-				SupplementalDataStorageConfiguration: &types.SupplementalDataStorageConfiguration{ // TODO: Do we need this?
-					StorageLocations: []types.SupplementalDataStorageLocation{
-						{
-							Type: types.SupplementalDataStorageLocationTypeS3,
-							S3Location: &types.S3Location{
-								Uri: aws.String("s3://some-bucket/table"), // TODO: make this configurable
-							},
-						},
+						// High accuracy needed
+						// Used by models like text-embedding-3-large from OpenAI or CodeT5+
+						Dimensions:        aws.Int32(1536),
+						EmbeddingDataType: types.EmbeddingDataTypeFloat32,
 					},
 				},
 			},
