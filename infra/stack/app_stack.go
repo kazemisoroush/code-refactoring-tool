@@ -213,15 +213,15 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 	// Ensure you have compiled your Go Lambda binary at ./lambda/migrator/main
 	dbMigrationLambda := awslambda.NewFunction(stack, jsii.String("DbMigrationLambda"), &awslambda.FunctionProps{
 		Handler: jsii.String("handler.lambda_handler"),
-		Runtime: awslambda.Runtime_PYTHON_3_12(), // or 3.11
+		Runtime: awslambda.Runtime_PYTHON_3_12(),
 		Code: awslambda.AssetCode_FromAsset(jsii.String(lambdaPath), &awss3assets.AssetOptions{
 			Bundling: &awscdk.BundlingOptions{
 				Image: awslambda.Runtime_PYTHON_3_12().BundlingImage(),
-				Command: &[]*string{
-					jsii.String("bash"),
-					jsii.String("-c"),
-					jsii.String("pip install -r requirements.txt"),
-				},
+				Command: jsii.Strings(
+					"bash", "-c",
+					"pip install -r requirements.txt -t /asset-output && cp -au . /asset-output",
+				),
+				User: jsii.String("root"), // Optional: can be left unset if permissions allow
 			},
 		}), // Path to your compiled Go Lambda
 		Vpc: vpc, // Lambda must be in the same VPC as RDS
