@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/builder"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/rag"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/storage"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
@@ -35,14 +35,14 @@ func main() {
 	rag := rag.NewBedrockRAG(cfg.AWSConfig, repo.GetPath(), cfg.KnowledgeBaseServiceRoleARN, cfg.RDSPostgres)
 
 	// Initialize RAG builder with AWS configuration
-	ragBuilder := ai.NewBedrockRAGBuilder(
+	ragBuilder := builder.NewBedrockRAGBuilder(
 		repo.GetPath(),
 		dataStore,
 		rag,
 	)
 
 	// Initialize agent builder with AWS configuration
-	agentBuilder := ai.NewBedrockAgentBuilder(
+	agentBuilder := builder.NewBedrockAgentBuilder(
 		cfg.AWSConfig,
 		repo.GetPath(),
 		cfg.AgentServiceRoleARN,

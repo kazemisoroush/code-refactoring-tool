@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/builder"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
 )
@@ -15,16 +15,16 @@ import (
 type FixWorkflow struct {
 	Config       config.Config
 	Repository   repository.Repository
-	RAGBuilder   ai.RAGBuilder
-	AgentBuilder ai.AgentBuilder
+	RAGBuilder   builder.RAGBuilder
+	AgentBuilder builder.AgentBuilder
 }
 
 // NewFixWorkflow creates a new Workflow instance
 func NewFixWorkflow(
 	cfg config.Config,
 	repo repository.Repository,
-	ragBuilder ai.RAGBuilder,
-	agentBuilder ai.AgentBuilder,
+	ragBuilder builder.RAGBuilder,
+	agentBuilder builder.AgentBuilder,
 ) (Workflow, error) {
 	return &FixWorkflow{
 		Config:       cfg,

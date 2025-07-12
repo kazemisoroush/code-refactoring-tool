@@ -1,5 +1,5 @@
-// Package ai contains interfaces and types for building AI agents based on RAG (Retrieval-Augmented Generation) metadata.
-package ai
+// Package builder contains interfaces and types for building AI agents based on RAG (Retrieval-Augmented Generation) metadata.
+package builder
 
 import (
 	"context"

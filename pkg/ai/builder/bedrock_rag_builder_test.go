@@ -1,11 +1,11 @@
-package ai_test
+package builder_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/builder"
 	mocks_rag "github.com/kazemisoroush/code-refactoring-tool/pkg/ai/rag/mocks"
 	mocks_storage "github.com/kazemisoroush/code-refactoring-tool/pkg/ai/storage/mocks"
 	"github.com/stretchr/testify/require"
@@ -28,7 +28,7 @@ func TestBedrockRAGBuilder_Build(t *testing.T) {
 	rag := mocks_rag.NewMockRAG(ctrl)
 	rag.EXPECT().Create(ctx, gomock.Any()).Return("test-kb-id", nil).Times(1)
 
-	builder := ai.NewBedrockRAGBuilder(
+	builder := builder.NewBedrockRAGBuilder(
 		repoPath,
 		dataStore,
 		rag,
