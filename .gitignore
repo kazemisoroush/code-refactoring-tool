@@ -3,3 +3,6 @@ main_test.go
 code-refactoring-test/
 coverage.out
 .DS_Store
+infra/lambda/__pycache__
+infra/lambda/.pytest_cache
+.pytest_cache

@@ -1,6 +1,7 @@
 # also run tests under ./infra/stack
 test:
 	@echo "Running tests..."
+	@cd infra/lambda && pytest .
 	@go test ./...
 	@cd infra && go test ./...
 	@echo "Tests passed."
@@ -18,6 +19,13 @@ mock:
 
 ci: mock test lint
 
-bootstrap:
-	@echo "Running CDK bootstrap..."
+deploy:
+	@echo "Deploying infra..."
 	@cd infra && cdk bootstrap
+	@cd infra && cdk deploy --require-approval never
+	@echo "Infra deploy done."
+
+destroy:
+	@echo "Destroying infra..."
+	@cd infra && cdk destroy --all --force
+	@echo "Infra destroy done."

@@ -5,10 +5,12 @@
     "ghcr.io/devcontainers/features/aws-cli:1": {},
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/node:1": {},
-    "ghcr.io/devcontainers/features/python:1": {},
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    },
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers-extra/features/aws-cdk:2.0.16": {}
   },
   "onCreateCommand": "sudo usermod -aG docker ${USER}",
-  "postCreateCommand": "go install github.com/golang/mock/mockgen@v1.6.0 && go mod tidy"
+  "postCreateCommand": "go install github.com/golang/mock/mockgen@v1.6.0 && go mod tidy && pip install -r ./infra/lambda/requirements.txt"
 }

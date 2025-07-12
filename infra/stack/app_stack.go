@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslogs"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsrds"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awss3"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awss3assets"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awssecretsmanager"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
@@ -211,10 +212,19 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 	// 3. Lambda Function for Schema Migration
 	// Ensure you have compiled your Go Lambda binary at ./lambda/migrator/main
 	dbMigrationLambda := awslambda.NewFunction(stack, jsii.String("DbMigrationLambda"), &awslambda.FunctionProps{
-		Runtime: awslambda.Runtime_PROVIDED_AL2(),
-		Handler: jsii.String("main"),                                         // The compiled executable name in your zip/asset
-		Code:    awslambda.AssetCode_FromAsset(jsii.String(lambdaPath), nil), // Path to your compiled Go Lambda
-		Vpc:     vpc,                                                         // Lambda must be in the same VPC as RDS
+		Handler: jsii.String("handler.lambda_handler"),
+		Runtime: awslambda.Runtime_PYTHON_3_12(), // or 3.11
+		Code: awslambda.AssetCode_FromAsset(jsii.String(lambdaPath), &awss3assets.AssetOptions{
+			Bundling: &awscdk.BundlingOptions{
+				Image: awslambda.Runtime_PYTHON_3_12().BundlingImage(),
+				Command: &[]*string{
+					jsii.String("bash"),
+					jsii.String("-c"),
+					jsii.String("pip install -r requirements.txt"),
+				},
+			},
+		}), // Path to your compiled Go Lambda
+		Vpc: vpc, // Lambda must be in the same VPC as RDS
 		VpcSubnets: &awsec2.SubnetSelection{
 			SubnetType: awsec2.SubnetType_PUBLIC, // If your VPC only has public subnets
 			// SubnetType: awsec2.SubnetType_PRIVATE_WITH_EGRESS, // If you have private subnets with NAT Gateway
