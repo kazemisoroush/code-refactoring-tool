@@ -12,6 +12,9 @@ import traceback
 
 
 def send_response(event, status, reason):
+    """
+    Send response to CloudFormation
+    """
     response_body = {
         "Status": status,
         "Reason": reason,
@@ -42,6 +45,9 @@ def send_response(event, status, reason):
 
 
 def get_secret_value(secret_arn):
+    """
+    Get secret value from ARN.
+    """
     print(f"Fetching secret from Secrets Manager: {secret_arn}")
     try:
         client = boto3.client("secretsmanager")
@@ -64,7 +70,7 @@ def ensure_schema(conn, table_name):
                 CREATE TABLE IF NOT EXISTS {table_name} (
                     id VARCHAR(255) PRIMARY KEY,
                     text TEXT,
-                    embedding VECTOR,
+                    embedding FLOAT8[],
                     metadata JSON
                 )
             """
@@ -77,7 +83,10 @@ def ensure_schema(conn, table_name):
         raise
 
 
-def lambda_handler(event, context):
+def lambda_handler(event, _):
+    """
+    Lambda handler function.
+    """
     try:
         print("===== Lambda Invocation Start =====")
         print("Received event:", json.dumps(event, indent=2))
@@ -105,7 +114,9 @@ def lambda_handler(event, context):
             print(f"Missing environment variable: {e}")
             raise
 
+        print("Fetching DB secret...")
         secret_data = get_secret_value(secret_arn)
+        print("Secret fetched.")
         username = secret_data["username"]
         password = secret_data["password"]
 
@@ -113,21 +124,20 @@ def lambda_handler(event, context):
         print(f"Connecting to Postgres with: {conn_str}")
 
         conn = None
-        for attempt in range(5):
-            try:
-                conn = psycopg2.connect(
-                    dbname=db_name,
-                    user=username,
-                    password=password,
-                    host=db_host,
-                    port=db_port
-                )
-                print("Postgres connection successful.")
-                break
-            except Exception as e:
-                print(f"Postgres connection attempt {attempt + 1} failed: {e}")
-                traceback.print_exc()
-                time.sleep(5)
+        try:
+            conn = psycopg2.connect(
+                dbname=db_name,
+                user=username,
+                password=password,
+                host=db_host,
+                port=db_port,
+                connect_timeout=10
+            )
+            print("Postgres connection successful.")
+        except Exception as e:
+            print(f"Postgres connection failed: {e}")
+            traceback.print_exc()
+            time.sleep(5)
 
         if conn is None:
             raise ConnectionError("Failed to connect to Postgres after retries.")

@@ -30,7 +30,7 @@ func TestAppStack_ResourcesCreated(t *testing.T) {
 	})
 
 	t.Run("Security Groups are created", func(_ *testing.T) {
-		template.ResourceCountIs(jsii.String("AWS::EC2::SecurityGroup"), jsii.Number(2))
+		template.ResourceCountIs(jsii.String("AWS::EC2::SecurityGroup"), jsii.Number(3))
 	})
 
 	t.Run("S3 bucket is versioned", func(_ *testing.T) {

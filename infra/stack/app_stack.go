@@ -114,6 +114,23 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 	})
 	awscdk.Tags_Of(vpc).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
+	// Add VPC Endpoint for AWS Secrets Manager to allow private access from Lambda
+	secretsManagerEndpoint := awsec2.NewInterfaceVpcEndpoint(stack, jsii.String("SecretsManagerVpcEndpoint"), &awsec2.InterfaceVpcEndpointProps{
+		Vpc:     vpc,
+		Service: awsec2.InterfaceVpcEndpointAwsService_SECRETS_MANAGER(),
+		Subnets: &awsec2.SubnetSelection{
+			SubnetType: awsec2.SubnetType_PUBLIC,
+		},
+		PrivateDnsEnabled: jsii.Bool(true),
+	})
+
+	// Tag the VPC endpoint for visibility and management
+	awscdk.Tags_Of(secretsManagerEndpoint).Add(
+		jsii.String(DefaultResourceTagKey),
+		jsii.String(DefaultResourceTagValue),
+		nil,
+	)
+
 	// S3 Bucket
 	bucketName := fmt.Sprintf("code-refactor-bucket-%s-%s", account, region)
 	bucket := awss3.NewBucket(stack, jsii.String("CodeRefactorBucket"), &awss3.BucketProps{

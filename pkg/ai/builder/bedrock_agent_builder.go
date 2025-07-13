@@ -55,21 +55,21 @@ func (b BedrockAgentBuilder) Build(ctx context.Context, kbID string) (string, st
 		AgentCollaboration:   types.AgentCollaborationDisabled,
 		AgentResourceRoleArn: aws.String(b.agentRoleARN),
 		// ClientToken *string
-		// CustomOrchestration *types.CustomOrchestration
+		// CustomOrchestration -> OrchestrationExecutorMemberLambda
 		// CustomerEncryptionKeyArn *string
 		Description:     aws.String(fmt.Sprintf("%s - %s", CodeRefactoringAgentDescription, b.repoPath)),
-		FoundationModel: aws.String(b.getModelARN()), // TODO: Replace with actual foundation model ARN
+		FoundationModel: aws.String(b.getModelARN()),
 		// GuardrailConfiguration *types.GuardrailConfiguration
 		// IdleSessionTTLInSeconds *int32
 		Instruction: aws.String(CodeRefactoringAgentPrompt),
-		MemoryConfiguration: &types.MemoryConfiguration{ // TODO: Do we need this?
+		MemoryConfiguration: &types.MemoryConfiguration{
 			EnabledMemoryTypes: []types.MemoryType{
 				types.MemoryTypeSessionSummary,
 			},
 			SessionSummaryConfiguration: &types.SessionSummaryConfiguration{
-				MaxRecentSessions: aws.Int32(5), // TODO: Adjust based on requirements
+				MaxRecentSessions: aws.Int32(5),
 			},
-			StorageDays: aws.Int32(30), // TODO: Adjust based on requirements
+			StorageDays: aws.Int32(1),
 		},
 		OrchestrationType: types.OrchestrationTypeDefault, // TODO: Should we use this? OrchestrationTypeCustomOrchestration,
 		// PromptOverrideConfiguration *types.PromptOverrideConfiguration
