@@ -36,6 +36,8 @@ func NewBedrockRAGBuilder(
 
 // Build implements RAGBuilder.
 func (b BedrockRAGBuilder) Build(ctx context.Context) (string, error) {
+	// TODO: Invoke Ensure RDS Postgres Schema Lambda
+
 	// Create the RAG object
 	kbID, err := b.rag.Create(ctx, b.getRDSTableName())
 	if err != nil {

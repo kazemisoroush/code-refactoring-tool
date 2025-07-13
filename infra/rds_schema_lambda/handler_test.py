@@ -1,6 +1,7 @@
 """
-Handler test package.
+Test suite for Lambda handler functions that ensure Postgres schema creation.
 """
+
 import unittest
 from unittest.mock import patch, MagicMock
 import json
@@ -10,41 +11,14 @@ from botocore.exceptions import ClientError
 import handler
 
 
-class TestSendResponse(unittest.TestCase):
-    """
-    Test send response.
-    """
-
-    @patch("urllib.request.urlopen")
-    def test_send_response_success(self, mock_urlopen):
-        """
-        Test send response success
-        """
-        mock_response = MagicMock()
-        mock_response.status = 200
-        mock_urlopen.return_value.__enter__.return_value = mock_response
-
-        event = {
-            "ResponseURL": "http://example.com",
-            "StackId": "stack-id",
-            "RequestId": "request-id",
-            "LogicalResourceId": "logical-id"
-        }
-
-        handler.send_response(event, "SUCCESS", "Reason goes here")
-        mock_urlopen.assert_called_once()
-
-
 class TestGetSecretValue(unittest.TestCase):
     """
-    Test get secret value.
+    Test get_secret_value function.
     """
 
     @patch("boto3.client")
     def test_get_secret_value_success(self, mock_boto_client):
-        """
-        Test get secret value success.
-        """
+        """Should return secret data when SecretString is present."""
         mock_secrets = MagicMock()
         mock_boto_client.return_value = mock_secrets
 
@@ -59,9 +33,7 @@ class TestGetSecretValue(unittest.TestCase):
 
     @patch("boto3.client")
     def test_get_secret_value_missing(self, mock_boto_client):
-        """
-        Test get secret value missing.
-        """
+        """Should raise RuntimeError when SecretString is None."""
         mock_secrets = MagicMock()
         mock_boto_client.return_value = mock_secrets
         mock_secrets.get_secret_value.return_value = {"SecretString": None}
@@ -73,9 +45,7 @@ class TestGetSecretValue(unittest.TestCase):
 
     @patch("boto3.client")
     def test_get_secret_value_error(self, mock_boto_client):
-        """
-        Test get secret value error.
-        """
+        """Should raise RuntimeError when Secrets Manager call fails."""
         mock_secrets = MagicMock()
         mock_boto_client.return_value = mock_secrets
         mock_secrets.get_secret_value.side_effect = ClientError(
@@ -91,13 +61,11 @@ class TestGetSecretValue(unittest.TestCase):
 
 class TestEnsureSchema(unittest.TestCase):
     """
-    Test ensure schema.
+    Test ensure_schema function.
     """
 
     def test_ensure_schema_success(self):
-        """
-        Test ensure schema success.
-        """
+        """Should call execute and commit when schema creation is successful."""
         conn = MagicMock()
         cursor = MagicMock()
         conn.cursor.return_value.__enter__.return_value = cursor
@@ -110,53 +78,52 @@ class TestEnsureSchema(unittest.TestCase):
 
 class TestLambdaHandler(unittest.TestCase):
     """
-    Test Lambda handler.
+    Test lambda_handler function.
     """
-
-    @patch("handler.send_response")
-    def test_lambda_handler_delete(self, mock_send_response):
-        """
-        Test Lambda handler.
-        """
-        event = {
-            "RequestType": "Delete",
-            "ResourceProperties": {"TableName": "my_table"},
-            "ResponseURL": "http://example.com",
-            "StackId": "stack-id",
-            "RequestId": "req-id",
-            "LogicalResourceId": "logical-id"
-        }
-
-        handler.lambda_handler(event, {})
-        mock_send_response.assert_called_once_with(event, "SUCCESS", "Delete request handled.")
 
     @patch("handler.get_secret_value")
     @patch("handler.psycopg2.connect")
-    @patch("handler.send_response")
-    def test_lambda_handler_create_success(self, mock_send_response, mock_connect, mock_get_secret):
-        """
-        Test Lambda handler create success.
-        """
-        os.environ["DB_SECRET_ARN"] = "arn:secret"
-        os.environ["DB_HOST"] = "localhost"
-        os.environ["DB_PORT"] = "5432"
-        os.environ["DB_NAME"] = "testdb"
-
-        event = {
-            "RequestType": "Create",
-            "ResourceProperties": {"TableName": "test_table"},
-            "ResponseURL": "http://example.com",
-            "StackId": "stack-id",
-            "RequestId": "req-id",
-            "LogicalResourceId": "logical-id"
-        }
-
+    @patch.dict(os.environ, {
+        "DB_SECRET_ARN": "arn:secret",
+        "DB_HOST": "localhost",
+        "DB_PORT": "5432",
+        "DB_NAME": "testdb"
+    })
+    def test_lambda_handler_success(self, mock_connect, mock_get_secret):
+        """Should return success when table creation is successful."""
         mock_get_secret.return_value = {"username": "user", "password": "pass"}
         conn = MagicMock()
         mock_connect.return_value = conn
 
-        handler.lambda_handler(event, {})
+        event = {"table": "my_table"}
 
+        result = handler.lambda_handler(event, {})
+        self.assertEqual(result["status"], "success")
+        self.assertIn("Schema ensured", result["message"])
         mock_connect.assert_called_once()
         conn.close.assert_called_once()
-        mock_send_response.assert_called_with(event, "SUCCESS", "Schema migration successful.")
+
+    @patch("handler.get_secret_value")
+    @patch("handler.psycopg2.connect", side_effect=Exception("Connection failed"))
+    @patch.dict(os.environ, {
+        "DB_SECRET_ARN": "arn:secret",
+        "DB_HOST": "localhost",
+        "DB_PORT": "5432",
+        "DB_NAME": "testdb"
+    })
+    def test_lambda_handler_connection_failure(self, mock_connect, mock_get_secret):
+        """Should return error when Postgres connection fails."""
+        mock_get_secret.return_value = {"username": "user", "password": "pass"}
+
+        event = {"table": "fail_table"}
+
+        result = handler.lambda_handler(event, {})
+        self.assertEqual(result["status"], "error")
+        self.assertIn("Connection failed", result["message"])
+
+    def test_lambda_handler_missing_table(self):
+        """Should return error when 'table' is missing in event."""
+        event = {}  # No "table" key
+        result = handler.lambda_handler(event, {})
+        self.assertEqual(result["status"], "error")
+        self.assertIn("Missing 'table'", result["message"])

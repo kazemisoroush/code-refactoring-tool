@@ -24,10 +24,10 @@ const (
 	CodeRefactoringAgentPrompt = "You are an agent that helps with code refactoring tasks."
 
 	// DefaultAgentAliasName is the default alias name for the agent.
-	DefaultAgentAliasName = "default" // TODO: Do we need to make this unique per project?
+	DefaultAgentAliasName = "default"
 
 	// DefaultAgentAliasDescription is the default description for the agent alias.
-	DefaultAgentAliasDescription = "Default alias for the code refactoring agent" // TODO: Do we need to make this unique per project?
+	DefaultAgentAliasDescription = "Default alias for the code refactoring agent"
 )
 
 // BedrockAgentBuilder is an implementation of AgentBuilder that uses AWS Bedrock for building agents.
@@ -55,7 +55,6 @@ func (b BedrockAgentBuilder) Build(ctx context.Context, kbID string) (string, st
 		AgentCollaboration:   types.AgentCollaborationDisabled,
 		AgentResourceRoleArn: aws.String(b.agentRoleARN),
 		// ClientToken *string
-		// CustomOrchestration -> OrchestrationExecutorMemberLambda
 		// CustomerEncryptionKeyArn *string
 		Description:     aws.String(fmt.Sprintf("%s - %s", CodeRefactoringAgentDescription, b.repoPath)),
 		FoundationModel: aws.String(b.getModelARN()),
@@ -71,8 +70,11 @@ func (b BedrockAgentBuilder) Build(ctx context.Context, kbID string) (string, st
 			},
 			StorageDays: aws.Int32(1),
 		},
-		OrchestrationType: types.OrchestrationTypeDefault, // TODO: Should we use this? OrchestrationTypeCustomOrchestration,
+		// Custom orchestration should be fine for now but will implement custom if not fit.
+		// Custom implementation is `ReAct` method while `ReWoo` is one possible orchestration.
+		OrchestrationType: types.OrchestrationTypeDefault,
 		// PromptOverrideConfiguration *types.PromptOverrideConfiguration
+		// CustomOrchestration *types.OrchestrationExecutorMemberLambda
 		Tags: map[string]string{
 			config.DefaultResourceTagKey: config.DefaultResourceTagValue,
 		},

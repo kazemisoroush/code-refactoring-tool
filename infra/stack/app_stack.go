@@ -84,13 +84,14 @@ type AppStackProps struct {
 // AppStack is the main CDK stack for the application, containing all resources.
 type AppStack struct {
 	awscdk.Stack
-	BedrockKnowledgeBaseRole        *string
-	BedrockAgentRole                *string
-	BucketName                      string
-	Region                          string
-	Account                         string
-	RDSPostgresInstanceARN          string
-	RDSPostgresCredentialsSecretARN string
+	BedrockKnowledgeBaseRole         *string
+	BedrockAgentRole                 *string
+	BucketName                       string
+	Region                           string
+	Account                          string
+	RDSPostgresInstanceARN           string
+	RDSPostgresCredentialsSecretARN  string
+	RDSPostgresSchemaEnsureLambdaARN string
 }
 
 // NewAppStack creates a new CDK stack for the application.
@@ -224,10 +225,9 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 		},
 	}))
 
-	lambdaPath := filepath.Join(getThisFileDir(), "../lambda")
+	lambdaPath := filepath.Join(getThisFileDir(), "../rds_schema_lambda")
 
 	// 3. Lambda Function for Schema Migration
-	// Ensure you have compiled your Go Lambda binary at ./lambda/migrator/main
 	dbMigrationLambda := awslambda.NewFunction(stack, jsii.String("DbMigrationLambda"), &awslambda.FunctionProps{
 		Handler: jsii.String("handler.lambda_handler"),
 		Runtime: awslambda.Runtime_PYTHON_3_12(),
@@ -260,16 +260,6 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 		AllowPublicSubnet: jsii.Bool(true), // Acknowledge that this Lambda is in a public subnet and won't have internet access
 	})
 	awscdk.Tags_Of(dbMigrationLambda).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
-
-	// 4. Custom Resource to Trigger Schema Migration
-	// This will invoke the Lambda function during stack deployments/updates.
-	awscdk.NewCustomResource(stack, jsii.String("DbSchemaMigration"), &awscdk.CustomResourceProps{
-		ServiceToken: dbMigrationLambda.FunctionArn(),
-		Properties: &map[string]interface{}{
-			"TableName":     jsii.String(RDSPostgresTableName),
-			"SchemaVersion": jsii.String(SchemaVersion), // Change this value to trigger a new migration
-		},
-	})
 
 	// ====================================================================
 	// END NEW: Database Schema Migration
@@ -414,14 +404,15 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 	awscdk.Tags_Of(taskDef).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	return &AppStack{
-		Stack:                           stack,
-		BedrockKnowledgeBaseRole:        knowledgeBaseRole.RoleArn(),
-		BedrockAgentRole:                agentRole.RoleArn(),
-		BucketName:                      bucketName,
-		Account:                         account,
-		Region:                          region,
-		RDSPostgresInstanceARN:          *rdsPostgresInstance.InstanceArn(),
-		RDSPostgresCredentialsSecretARN: *rdsPostgresCredentialsSecret.SecretArn(),
+		Stack:                            stack,
+		BedrockKnowledgeBaseRole:         knowledgeBaseRole.RoleArn(),
+		BedrockAgentRole:                 agentRole.RoleArn(),
+		BucketName:                       bucketName,
+		Account:                          account,
+		Region:                           region,
+		RDSPostgresInstanceARN:           *rdsPostgresInstance.InstanceArn(),
+		RDSPostgresCredentialsSecretARN:  *rdsPostgresCredentialsSecret.SecretArn(),
+		RDSPostgresSchemaEnsureLambdaARN: *dbMigrationLambda.FunctionArn(),
 	}
 }
 

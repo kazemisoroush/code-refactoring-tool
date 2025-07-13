@@ -10,6 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.44.2
 	github.com/aws/aws-sdk-go-v2/service/bedrockagentruntime v1.45.2
 	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.26.1
+	github.com/aws/aws-sdk-go-v2/service/lambda v1.72.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.82.0
 	github.com/go-git/go-git/v5 v5.14.0
 	github.com/golang/mock v1.6.0

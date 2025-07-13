@@ -53,5 +53,10 @@ func main() {
 		Value: &infrastructureStack.RDSPostgresCredentialsSecretARN,
 	})
 
+	// Output RDS Postgres Schema Ensure Lambda ARN
+	awscdk.NewCfnOutput(infrastructureStack.Stack, jsii.String("RDSPostgresSchemaEnsureLambdaARN"), &awscdk.CfnOutputProps{
+		Value: &infrastructureStack.RDSPostgresSchemaEnsureLambdaARN,
+	})
+
 	app.Synth(nil)
 }
