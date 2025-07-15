@@ -51,9 +51,8 @@ func (b *BedrockRAG) Create(ctx context.Context, tableName string) (string, erro
 	// Create Bedrock Knowledge Base
 	kbOutput, err := b.kbClient.CreateKnowledgeBase(ctx, &bedrockagent.CreateKnowledgeBaseInput{
 		KnowledgeBaseConfiguration: &types.KnowledgeBaseConfiguration{
-			Type: types.KnowledgeBaseTypeVector,
-			VectorKnowledgeBaseConfiguration: &types.VectorKnowledgeBaseConfiguration{
-				EmbeddingModelArn: aws.String(fmt.Sprintf("arn:aws:bedrock:%s::%s", config.AWSRegion, config.AWSBedrockRAGEmbeddingModel)),
+			Type: types.KnowledgeBaseTypeVector, VectorKnowledgeBaseConfiguration: &types.VectorKnowledgeBaseConfiguration{
+				EmbeddingModelArn: aws.String(fmt.Sprintf("arn:aws:bedrock:%s::foundation-model/%s", config.AWSRegion, config.AWSBedrockRAGEmbeddingModel)),
 				EmbeddingModelConfiguration: &types.EmbeddingModelConfiguration{
 					BedrockEmbeddingModelConfiguration: &types.BedrockEmbeddingModelConfiguration{
 						// High accuracy needed

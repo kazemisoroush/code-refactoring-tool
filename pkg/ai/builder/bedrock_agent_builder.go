@@ -169,5 +169,5 @@ func (b BedrockAgentBuilder) getRepositoryTag() string {
 
 // getModelARN get the foundational model that is used by agent.
 func (b BedrockAgentBuilder) getModelARN() string {
-	return fmt.Sprintf("arn:aws:bedrock:%s::%s", config.AWSRegion, config.AWSBedrockAgentModel)
+	return fmt.Sprintf("arn:aws:bedrock:%s::foundation-model/%s", config.AWSRegion, config.AWSBedrockAgentModel)
 }
