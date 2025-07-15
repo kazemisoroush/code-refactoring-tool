@@ -58,4 +58,4 @@ jobs:
 
       - name: Run Lambda Tests
         run: |
-          cd infra/lambda && pytest .
+          cd infra/rds_schema_lambda && pytest .
