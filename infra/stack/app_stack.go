@@ -430,6 +430,15 @@ func createBedrockKnowledgeBaseRole(resources *Resources, storage *StorageResour
 							database.Cluster.ClusterArn(),
 						},
 					}),
+					awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
+						Actions: &[]*string{
+							jsii.String("rds:DescribeDBClusters"),
+							jsii.String("rds:DescribeDBInstances"),
+						},
+						Resources: &[]*string{
+							jsii.String("*"), // RDS describe operations typically require * for resource
+						},
+					}),
 				},
 			}),
 		},

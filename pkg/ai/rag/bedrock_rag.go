@@ -53,14 +53,6 @@ func (b *BedrockRAG) Create(ctx context.Context, tableName string) (string, erro
 		KnowledgeBaseConfiguration: &types.KnowledgeBaseConfiguration{
 			Type: types.KnowledgeBaseTypeVector, VectorKnowledgeBaseConfiguration: &types.VectorKnowledgeBaseConfiguration{
 				EmbeddingModelArn: aws.String(fmt.Sprintf("arn:aws:bedrock:%s::foundation-model/%s", config.AWSRegion, config.AWSBedrockRAGEmbeddingModel)),
-				EmbeddingModelConfiguration: &types.EmbeddingModelConfiguration{
-					BedrockEmbeddingModelConfiguration: &types.BedrockEmbeddingModelConfiguration{
-						// High accuracy needed
-						// Used by models like text-embedding-3-large from OpenAI or CodeT5+
-						Dimensions:        aws.Int32(1536),
-						EmbeddingDataType: types.EmbeddingDataTypeFloat32,
-					},
-				},
 			},
 		},
 		Name:        aws.String(b.getName()),
@@ -77,8 +69,6 @@ func (b *BedrockRAG) Create(ctx context.Context, tableName string) (string, erro
 					VectorField:     aws.String("embedding"),
 					MetadataField:   aws.String("metadata"),
 				},
-				// arn:aws:rds:us-east-1:698315877107:db:coderefactorinfra-refactorvectordb152eceac-pnzbicpefp4r
-				// arn:aws(-cn|-us-gov|-eusc|-iso(-[b-f])?)?:rds:[a-zA-Z0-9-]*:[0-9]{12}:cluster:[a-zA-Z0-9-]{1,63}
 				ResourceArn: aws.String(b.RDSPostgresInstanceARN),
 				TableName:   aws.String(tableName),
 			},
