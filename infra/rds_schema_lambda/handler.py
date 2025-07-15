@@ -26,6 +26,44 @@ def get_secret_value(secret_arn):
         raise RuntimeError(f"Error getting secret: {e}")
 
 
+def ensure_database_exists(host, port, username, password, db_name):
+    """
+    Ensure the target database exists, create it if it doesn't.
+    Connect to the default 'postgres' database first.
+    """
+    print(f"Ensuring database '{db_name}' exists...")
+    try:
+        # Connect to the default 'postgres' database first
+        conn = psycopg2.connect(
+            dbname="postgres",
+            user=username,
+            password=password,
+            host=host,
+            port=port,
+            connect_timeout=10
+        )
+        conn.autocommit = True  # Required for CREATE DATABASE
+        
+        with conn.cursor() as cursor:
+            # Check if database exists
+            cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", (db_name,))
+            exists = cursor.fetchone()
+            
+            if not exists:
+                print(f"Database '{db_name}' does not exist. Creating it...")
+                cursor.execute(f'CREATE DATABASE "{db_name}"')
+                print(f"Database '{db_name}' created successfully.")
+            else:
+                print(f"Database '{db_name}' already exists.")
+        
+        conn.close()
+        
+    except Exception as e:
+        print(f"Error ensuring database exists: {e}")
+        traceback.print_exc()
+        raise
+
+
 def ensure_schema(conn, table_name):
     """
     Ensure the schema/table exists in the database.
@@ -76,7 +114,10 @@ def lambda_handler(event, _):
         username = secret_data["username"]
         password = secret_data["password"]
 
-        print("Connecting to Postgres...")
+        print("Ensuring target database exists...")
+        ensure_database_exists(db_host, db_port, username, password, db_name)
+
+        print("Connecting to target Postgres database...")
         conn = psycopg2.connect(
             dbname=db_name,
             user=username,

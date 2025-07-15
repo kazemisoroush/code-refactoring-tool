@@ -92,16 +92,38 @@ class TestLambdaHandler(unittest.TestCase):
     def test_lambda_handler_success(self, mock_connect, mock_get_secret):
         """Should return success when table creation is successful."""
         mock_get_secret.return_value = {"username": "user", "password": "pass"}
-        conn = MagicMock()
-        mock_connect.return_value = conn
+        
+        # Create mock connections for both database existence check and schema creation
+        postgres_conn = MagicMock()
+        target_conn = MagicMock()
+        
+        # Mock the cursor for database existence check to return that database exists
+        cursor_mock = MagicMock()
+        cursor_mock.fetchone.return_value = True  # Database exists
+        postgres_conn.cursor.return_value.__enter__.return_value = cursor_mock
+        
+        # Set up mock_connect to return different connections for different calls
+        mock_connect.side_effect = [postgres_conn, target_conn]
 
         event = {"table": "my_table"}
 
         result = handler.lambda_handler(event, {})
         self.assertEqual(result["status"], "success")
         self.assertIn("Schema ensured", result["message"])
-        mock_connect.assert_called_once()
-        conn.close.assert_called_once()
+        
+        # Verify connect was called twice: once for postgres db, once for target db
+        self.assertEqual(mock_connect.call_count, 2)
+        
+        # Verify the calls were made with correct parameters
+        calls = mock_connect.call_args_list
+        # First call should be to 'postgres' database
+        self.assertEqual(calls[0][1]['dbname'], 'postgres')
+        # Second call should be to target database
+        self.assertEqual(calls[1][1]['dbname'], 'testdb')
+        
+        # Verify both connections were closed
+        postgres_conn.close.assert_called_once()
+        target_conn.close.assert_called_once()
 
     @patch("handler.get_secret_value")
     @patch("handler.psycopg2.connect", side_effect=Exception("Connection failed"))
@@ -127,3 +149,39 @@ class TestLambdaHandler(unittest.TestCase):
         result = handler.lambda_handler(event, {})
         self.assertEqual(result["status"], "error")
         self.assertIn("Missing 'table'", result["message"])
+
+    @patch("handler.get_secret_value")
+    @patch("handler.psycopg2.connect")
+    @patch.dict(os.environ, {
+        "DB_SECRET_ARN": "arn:secret",
+        "DB_HOST": "localhost",
+        "DB_PORT": "5432",
+        "DB_NAME": "newdb"
+    })
+    def test_lambda_handler_creates_database(self, mock_connect, mock_get_secret):
+        """Should create database when it doesn't exist."""
+        mock_get_secret.return_value = {"username": "user", "password": "pass"}
+        
+        # Create mock connections
+        postgres_conn = MagicMock()
+        target_conn = MagicMock()
+        
+        # Mock the cursor for database existence check to return that database doesn't exist
+        cursor_mock = MagicMock()
+        cursor_mock.fetchone.return_value = None  # Database doesn't exist
+        postgres_conn.cursor.return_value.__enter__.return_value = cursor_mock
+        
+        # Set up mock_connect to return different connections for different calls
+        mock_connect.side_effect = [postgres_conn, target_conn]
+
+        event = {"table": "my_table"}
+
+        result = handler.lambda_handler(event, {})
+        self.assertEqual(result["status"], "success")
+        self.assertIn("Schema ensured", result["message"])
+        
+        # Verify connect was called twice
+        self.assertEqual(mock_connect.call_count, 2)
+        
+        # Verify CREATE DATABASE was called
+        cursor_mock.execute.assert_any_call('CREATE DATABASE "newdb"')

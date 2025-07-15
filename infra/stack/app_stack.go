@@ -256,10 +256,11 @@ func createDatabaseResources(resources *Resources, networking *NetworkingResourc
 			},
 			PubliclyAccessible: jsii.Bool(false),
 		},
-		Port:              jsii.Number(5432),
-		Credentials:       awsrds.Credentials_FromSecret(credentialsSecret, jsii.String("postgres")),
-		RemovalPolicy:     awscdk.RemovalPolicy_DESTROY,
-		ClusterIdentifier: jsii.String("code-refactor-cluster"),
+		DefaultDatabaseName: jsii.String(RDSPostgresDatabaseName),
+		Port:                jsii.Number(5432),
+		Credentials:         awsrds.Credentials_FromSecret(credentialsSecret, jsii.String("postgres")),
+		RemovalPolicy:       awscdk.RemovalPolicy_DESTROY,
+		ClusterIdentifier:   jsii.String("code-refactor-cluster"),
 	})
 	awscdk.Tags_Of(cluster).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
