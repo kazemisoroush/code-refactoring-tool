@@ -25,12 +25,16 @@ func TestBedrockRAGBuilder_Build(t *testing.T) {
 	dataStore.EXPECT().UploadDirectory(ctx, "test-repo-path", "test-repo-path").Return(nil).Times(1)
 	dataStore.EXPECT().Create(ctx, gomock.Any()).Return("test-data-source-id", nil).Times(1)
 
+	storage := mocks_storage.NewMockStorage(ctrl)
+	storage.EXPECT().EnsureSchema(ctx, "test-repo-path").Return(nil).Times(1)
+
 	rag := mocks_rag.NewMockRAG(ctrl)
 	rag.EXPECT().Create(ctx, gomock.Any()).Return("test-kb-id", nil).Times(1)
 
 	builder := builder.NewBedrockRAGBuilder(
 		repoPath,
 		dataStore,
+		storage,
 		rag,
 	)
 

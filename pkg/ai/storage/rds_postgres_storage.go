@@ -13,10 +13,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
-// RDSPostgresClient is a client that ensures a Postgres schema exists
+// RDSPostgresStorage is a client that ensures a Postgres schema exists
 // by invoking a Lambda function which connects to the RDS instance and
 // creates the schema if it does not already exist.
-type RDSPostgresClient struct {
+type RDSPostgresStorage struct {
 	client    *lambda.Client
 	lambdaARN string
 }
@@ -26,11 +26,11 @@ var response struct {
 	Message string `json:"message"`
 }
 
-// NewRDSPostgresClient initializes an RDSPostgresClient using the given AWS config and Lambda ARN.
+// NewRDSPostgresStorage initializes an RDSPostgresStorage using the given AWS config and Lambda ARN.
 // The Lambda must accept a JSON payload of the form { "table": "<table_name>" }
 // and ensure the schema is created in a Postgres database.
-func NewRDSPostgresClient(awsConfig aws.Config, lambdaARN string) Storage {
-	return &RDSPostgresClient{
+func NewRDSPostgresStorage(awsConfig aws.Config, lambdaARN string) Storage {
+	return &RDSPostgresStorage{
 		client:    lambda.NewFromConfig(awsConfig),
 		lambdaARN: lambdaARN,
 	}
@@ -38,7 +38,7 @@ func NewRDSPostgresClient(awsConfig aws.Config, lambdaARN string) Storage {
 
 // EnsureSchema triggers the Lambda function to create the schema/table in the RDS Postgres database.
 // It sends the table name in the request payload and parses the response to confirm success or capture errors.
-func (c *RDSPostgresClient) EnsureSchema(ctx context.Context, tableName string) error {
+func (c *RDSPostgresStorage) EnsureSchema(ctx context.Context, tableName string) error {
 	payload := map[string]string{"table": tableName}
 	data, err := json.Marshal(payload)
 	if err != nil {

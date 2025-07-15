@@ -10,7 +10,7 @@ import "context"
 // It currently includes a method for ensuring that a schema (e.g., table)
 // exists in the backing data store.
 //
-//go:generate mockgen -destination=./mocks/mock_datastore.go -mock_names=Storage=MockStorage -package=mocks . DataStore
+//go:generate mockgen -destination=./mocks/mock_storage.go -mock_names=Storage=MockStorage -package=mocks . Storage
 type Storage interface {
 	// EnsureSchema ensures that the schema (e.g., a table) exists in the storage layer.
 	// This method should be idempotent — i.e., safe to call multiple times without side effects.

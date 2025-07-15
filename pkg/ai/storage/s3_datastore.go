@@ -24,17 +24,17 @@ const (
 	DataSourceDescription = "Data source for the code refactoring tool knowledge base. This data source is used to store the codebase and other relevant files for the RAG pipeline."
 )
 
-// S3Storage implements the Storage interface for AWS S3.
-type S3Storage struct {
+// S3DataStore implements the Storage interface for AWS S3.
+type S3DataStore struct {
 	s3Client   *s3.Client
 	repoName   string
 	bucketName string
 	client     *bedrockagent.Client
 }
 
-// NewS3Storage creates a new S3Storage instance with the provided bucket name.
-func NewS3Storage(awsConfig aws.Config, bucketName string, repoName string) DataStore {
-	return &S3Storage{
+// NewS3DataStore creates a new S3Storage instance with the provided bucket name.
+func NewS3DataStore(awsConfig aws.Config, bucketName string, repoName string) DataStore {
+	return &S3DataStore{
 		s3Client:   s3.NewFromConfig(awsConfig),
 		repoName:   repoName,
 		bucketName: bucketName,
@@ -43,7 +43,7 @@ func NewS3Storage(awsConfig aws.Config, bucketName string, repoName string) Data
 }
 
 // Create checks if the S3 bucket exists and is accessible.
-func (s S3Storage) Create(ctx context.Context, ragID string) (string, error) {
+func (s S3DataStore) Create(ctx context.Context, ragID string) (string, error) {
 	// S3 does not require explicit creation of a bucket, but we can check if it exists.
 	_, err := s.s3Client.HeadBucket(ctx, &s3.HeadBucketInput{
 		Bucket: aws.String(s.bucketName),
@@ -147,7 +147,7 @@ func (s S3Storage) Create(ctx context.Context, ragID string) (string, error) {
 }
 
 // Detele deletes the data source from the knowledge base.
-func (s S3Storage) Detele(ctx context.Context, dataSourceID string, ragID string) error {
+func (s S3DataStore) Detele(ctx context.Context, dataSourceID string, ragID string) error {
 	_, err := s.client.DeleteDataSource(ctx, &bedrockagent.DeleteDataSourceInput{
 		DataSourceId:    aws.String(dataSourceID),
 		KnowledgeBaseId: aws.String(ragID),
@@ -160,7 +160,7 @@ func (s S3Storage) Detele(ctx context.Context, dataSourceID string, ragID string
 }
 
 // UploadDirectory uploads all files in a directory to S3 under the given prefix.
-func (s S3Storage) UploadDirectory(ctx context.Context, localPath, remotePath string) error {
+func (s S3DataStore) UploadDirectory(ctx context.Context, localPath, remotePath string) error {
 	uploader := manager.NewUploader(s.s3Client)
 	return filepath.Walk(localPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -193,7 +193,7 @@ func (s S3Storage) UploadDirectory(ctx context.Context, localPath, remotePath st
 }
 
 // DeleteDirectory deletes all objects under a given prefix in the bucket.
-func (s S3Storage) DeleteDirectory(ctx context.Context, prefix string) error {
+func (s S3DataStore) DeleteDirectory(ctx context.Context, prefix string) error {
 	var toDelete []types.ObjectIdentifier
 	paginator := s3.NewListObjectsV2Paginator(s.s3Client, &s3.ListObjectsV2Input{
 		Bucket: aws.String(s.bucketName),

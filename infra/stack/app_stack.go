@@ -89,20 +89,92 @@ type AppStack struct {
 	BucketName                       string
 	Region                           string
 	Account                          string
-	RDSPostgresInstanceARN           string
+	RDSPostgresClusterARN            string
 	RDSPostgresCredentialsSecretARN  string
 	RDSPostgresSchemaEnsureLambdaARN string
+}
+
+// Resources holds the common resources that are shared across different components
+type Resources struct {
+	Stack   awscdk.Stack
+	Vpc     awsec2.IVpc
+	Account string
+	Region  string
+}
+
+// NetworkingResources holds VPC and related networking components
+type NetworkingResources struct {
+	Vpc                    awsec2.IVpc
+	SecretsManagerEndpoint awsec2.IInterfaceVpcEndpoint
+}
+
+// DatabaseResources holds RDS and related database components
+type DatabaseResources struct {
+	Cluster             awsrds.IDatabaseCluster
+	CredentialsSecret   awssecretsmanager.ISecret
+	MigrationLambda     awslambda.IFunction
+	MigrationLambdaRole awsiam.Role
+	MigrationLambdaSG   awsec2.ISecurityGroup
+}
+
+// BedrockResources holds Bedrock-related IAM roles and configurations
+type BedrockResources struct {
+	KnowledgeBaseRole awsiam.IRole
+	AgentRole         awsiam.IRole
+}
+
+// ComputeResources holds ECS and Fargate resources
+type ComputeResources struct {
+	Cluster  awsecs.ICluster
+	TaskDef  awsecs.IFargateTaskDefinition
+	EcrRepo  awsecr.IRepository
+	LogGroup awslogs.ILogGroup
+}
+
+// StorageResources holds S3 and other storage resources
+type StorageResources struct {
+	Bucket awss3.IBucket
+	Name   string
 }
 
 // NewAppStack creates a new CDK stack for the application.
 func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *AppStack {
 	stack := awscdk.NewStack(scope, &id, &props.StackProps)
 
-	region := *stack.Region()
-	account := *stack.Account()
+	resources := &Resources{
+		Stack:   stack,
+		Account: *stack.Account(),
+		Region:  *stack.Region(),
+	}
 
+	// Create resources in logical order
+	networking := createNetworkingResources(resources)
+	resources.Vpc = networking.Vpc
+
+	storage := createStorageResources(resources)
+	database := createDatabaseResources(resources, networking)
+	bedrock := createBedrockResources(resources, storage, database)
+
+	// Create compute resources (ECS, Fargate, ECR)
+	createComputeResources(resources, networking)
+
+	return &AppStack{
+		Stack:                            stack,
+		BedrockKnowledgeBaseRole:         bedrock.KnowledgeBaseRole.RoleArn(),
+		BedrockAgentRole:                 bedrock.AgentRole.RoleArn(),
+		BucketName:                       storage.Name,
+		Account:                          resources.Account,
+		Region:                           resources.Region,
+		RDSPostgresClusterARN:            *database.Cluster.ClusterArn(),
+		RDSPostgresCredentialsSecretARN:  *database.CredentialsSecret.SecretArn(),
+		RDSPostgresSchemaEnsureLambdaARN: *database.MigrationLambda.FunctionArn(),
+	}
+}
+
+// createNetworkingResources creates VPC and related networking components
+func createNetworkingResources(resources *Resources) *NetworkingResources {
 	// VPC for RDS and Fargate
-	vpc := awsec2.NewVpc(stack, jsii.String("RefactorVpc"), &awsec2.VpcProps{
+	vpc := awsec2.NewVpc(resources.Stack, jsii.String("RefactorVpc"), &awsec2.VpcProps{
 		MaxAzs:      jsii.Number(2),
 		NatGateways: jsii.Number(0),
 		SubnetConfiguration: &[]*awsec2.SubnetConfiguration{
@@ -116,7 +188,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 	awscdk.Tags_Of(vpc).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	// Add VPC Endpoint for AWS Secrets Manager to allow private access from Lambda
-	secretsManagerEndpoint := awsec2.NewInterfaceVpcEndpoint(stack, jsii.String("SecretsManagerVpcEndpoint"), &awsec2.InterfaceVpcEndpointProps{
+	secretsManagerEndpoint := awsec2.NewInterfaceVpcEndpoint(resources.Stack, jsii.String("SecretsManagerVpcEndpoint"), &awsec2.InterfaceVpcEndpointProps{
 		Vpc:     vpc,
 		Service: awsec2.InterfaceVpcEndpointAwsService_SECRETS_MANAGER(),
 		Subnets: &awsec2.SubnetSelection{
@@ -132,9 +204,16 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 		nil,
 	)
 
-	// S3 Bucket
-	bucketName := fmt.Sprintf("code-refactor-bucket-%s-%s", account, region)
-	bucket := awss3.NewBucket(stack, jsii.String("CodeRefactorBucket"), &awss3.BucketProps{
+	return &NetworkingResources{
+		Vpc:                    vpc,
+		SecretsManagerEndpoint: secretsManagerEndpoint,
+	}
+}
+
+// createStorageResources creates S3 bucket and related storage components
+func createStorageResources(resources *Resources) *StorageResources {
+	bucketName := fmt.Sprintf("code-refactor-bucket-%s-%s", resources.Account, resources.Region)
+	bucket := awss3.NewBucket(resources.Stack, jsii.String("CodeRefactorBucket"), &awss3.BucketProps{
 		BucketName:        jsii.String(bucketName),
 		RemovalPolicy:     awscdk.RemovalPolicy_DESTROY,
 		AutoDeleteObjects: jsii.Bool(true),
@@ -143,8 +222,16 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 	})
 	awscdk.Tags_Of(bucket).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
+	return &StorageResources{
+		Bucket: bucket,
+		Name:   bucketName,
+	}
+}
+
+// createDatabaseResources creates RDS cluster, secrets, and migration lambda
+func createDatabaseResources(resources *Resources, networking *NetworkingResources) *DatabaseResources {
 	// Secrets Manager Secret
-	rdsPostgresCredentialsSecret := awssecretsmanager.NewSecret(stack, jsii.String("CodeRefactorDbSecret"), &awssecretsmanager.SecretProps{
+	credentialsSecret := awssecretsmanager.NewSecret(resources.Stack, jsii.String("CodeRefactorDbSecret"), &awssecretsmanager.SecretProps{
 		SecretName: jsii.String("code-refactor-db-secret"),
 		GenerateSecretString: &awssecretsmanager.SecretStringGenerator{
 			SecretStringTemplate: jsii.String("{\"username\": \"postgres\"}"),
@@ -153,64 +240,130 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 		},
 		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
-	awscdk.Tags_Of(rdsPostgresCredentialsSecret).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+	awscdk.Tags_Of(credentialsSecret).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	// RDS Postgres Serverless v2
-	rdsPostgresInstance := awsrds.NewDatabaseInstance(stack, jsii.String(RDSPostgresDatabaseName), &awsrds.DatabaseInstanceProps{
-		Engine: awsrds.DatabaseInstanceEngine_Postgres(&awsrds.PostgresInstanceEngineProps{
-			Version: awsrds.PostgresEngineVersion_VER_17_5(),
+	cluster := awsrds.NewDatabaseCluster(resources.Stack, jsii.String(RDSPostgresDatabaseName), &awsrds.DatabaseClusterProps{
+		Engine: awsrds.DatabaseClusterEngine_AuroraPostgres(&awsrds.AuroraPostgresClusterEngineProps{
+			Version: awsrds.AuroraPostgresEngineVersion_VER_15_3(),
 		}),
-		InstanceType:           awsec2.InstanceType_Of(awsec2.InstanceClass_T3, awsec2.InstanceSize_MICRO),
-		Vpc:                    vpc,
-		MultiAz:                jsii.Bool(false),
-		AllocatedStorage:       jsii.Number(20),
-		Credentials:            awsrds.Credentials_FromSecret(rdsPostgresCredentialsSecret, jsii.String("postgres")),
-		DatabaseName:           jsii.String(RDSPostgresDatabaseName),
-		PubliclyAccessible:     jsii.Bool(false),
-		RemovalPolicy:          awscdk.RemovalPolicy_DESTROY,
-		DeleteAutomatedBackups: jsii.Bool(true),
-		VpcSubnets: &awsec2.SubnetSelection{
-			SubnetType: awsec2.SubnetType_PUBLIC,
+		Instances: jsii.Number(1),
+		InstanceProps: &awsrds.InstanceProps{
+			InstanceType: awsec2.InstanceType_Of(awsec2.InstanceClass_T4G, awsec2.InstanceSize_MEDIUM),
+			Vpc:          networking.Vpc,
+			VpcSubnets: &awsec2.SubnetSelection{
+				SubnetType: awsec2.SubnetType_PUBLIC,
+			},
+			PubliclyAccessible: jsii.Bool(false),
 		},
+		Port:              jsii.Number(5432),
+		Credentials:       awsrds.Credentials_FromSecret(credentialsSecret, jsii.String("postgres")),
+		RemovalPolicy:     awscdk.RemovalPolicy_DESTROY,
+		ClusterIdentifier: jsii.String("code-refactor-cluster"),
 	})
-	awscdk.Tags_Of(rdsPostgresInstance).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+	awscdk.Tags_Of(cluster).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
-	// ====================================================================
-	// NEW: Database Schema Migration with Lambda Custom Resource
-	// ====================================================================
+	// Create migration lambda and related resources
+	migrationResources := createMigrationLambda(resources, networking, cluster, credentialsSecret)
 
-	// 1. Security Group for the Migration Lambda
-	// This SG will allow the Lambda to connect to the RDS instance.
-	migrationLambdaSG := awsec2.NewSecurityGroup(stack, jsii.String("DbMigrationLambdaSG"), &awsec2.SecurityGroupProps{
-		Vpc:              vpc,
+	// print host and port
+	fmt.Printf("RDS Postgres Cluster Endpoint: %s:%.0f\n", *cluster.ClusterEndpoint().Hostname(), *cluster.ClusterEndpoint().Port())
+	fmt.Printf("RDS Postgres Credentials Secret ARN: %s\n", *credentialsSecret.SecretArn())
+	fmt.Printf("RDS Postgres Migration Lambda ARN: %s\n", *migrationResources.MigrationLambda.FunctionArn())
+
+	return &DatabaseResources{
+		Cluster:             cluster,
+		CredentialsSecret:   credentialsSecret,
+		MigrationLambda:     migrationResources.MigrationLambda,
+		MigrationLambdaRole: migrationResources.MigrationLambdaRole,
+		MigrationLambdaSG:   migrationResources.MigrationLambdaSG,
+	}
+}
+
+// MigrationLambdaResources holds resources specific to database migration
+type MigrationLambdaResources struct {
+	MigrationLambda     awslambda.IFunction
+	MigrationLambdaRole awsiam.Role
+	MigrationLambdaSG   awsec2.ISecurityGroup
+}
+
+// createMigrationLambda creates the database migration lambda and related resources
+func createMigrationLambda(resources *Resources, networking *NetworkingResources, cluster awsrds.IDatabaseCluster, credentialsSecret awssecretsmanager.ISecret) *MigrationLambdaResources {
+	// Security Group for the Migration Lambda
+	migrationLambdaSG := awsec2.NewSecurityGroup(resources.Stack, jsii.String("DbMigrationLambdaSG"), &awsec2.SecurityGroupProps{
+		Vpc:              networking.Vpc,
 		Description:      jsii.String("Allow outbound connection to RDS Postgres for DB migrations"),
-		AllowAllOutbound: jsii.Bool(true), // Allows outbound to RDS
+		AllowAllOutbound: jsii.Bool(true),
 	})
 	awscdk.Tags_Of(migrationLambdaSG).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	// Add inbound rule to RDS Security Group to allow connections from the Lambda SG
-	rdsPostgresInstance.Connections().AllowFrom(migrationLambdaSG, awsec2.Port_Tcp(jsii.Number(5432)), jsii.String("Allow DB migration lambda"))
+	cluster.Connections().AllowFrom(migrationLambdaSG, awsec2.Port_Tcp(jsii.Number(5432)), jsii.String("Allow DB migration lambda"))
 
-	// 2. IAM Role for the Migration Lambda
-	migrationLambdaRole := awsiam.NewRole(stack, jsii.String("DbMigrationLambdaRole"), &awsiam.RoleProps{
+	// IAM Role for the Migration Lambda
+	migrationLambdaRole := awsiam.NewRole(resources.Stack, jsii.String("DbMigrationLambdaRole"), &awsiam.RoleProps{
 		AssumedBy: awsiam.NewServicePrincipal(jsii.String("lambda.amazonaws.com"), nil),
 	})
 	awscdk.Tags_Of(migrationLambdaRole).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
+	// Grant permissions
+	setupMigrationLambdaPermissions(migrationLambdaRole, credentialsSecret, cluster)
+
+	lambdaPath := filepath.Join(getThisFileDir(), "../rds_schema_lambda")
+
+	// Lambda Function for Schema Migration
+	migrationLambda := awslambda.NewFunction(resources.Stack, jsii.String("DbMigrationLambda"), &awslambda.FunctionProps{
+		Handler: jsii.String("handler.lambda_handler"),
+		Runtime: awslambda.Runtime_PYTHON_3_12(),
+		Code: awslambda.AssetCode_FromAsset(jsii.String(lambdaPath), &awss3assets.AssetOptions{
+			Bundling: &awscdk.BundlingOptions{
+				Image: awslambda.Runtime_PYTHON_3_12().BundlingImage(),
+				Command: jsii.Strings(
+					"bash", "-c",
+					"pip install -r requirements.txt -t /asset-output && cp -au . /asset-output",
+				),
+				User: jsii.String("root"),
+			},
+		}),
+		Vpc: networking.Vpc,
+		VpcSubnets: &awsec2.SubnetSelection{
+			SubnetType: awsec2.SubnetType_PUBLIC,
+		},
+		SecurityGroups: &[]awsec2.ISecurityGroup{
+			migrationLambdaSG,
+		},
+		Environment: &map[string]*string{
+			"DB_SECRET_ARN": credentialsSecret.SecretArn(),
+			"DB_NAME":       jsii.String(RDSPostgresDatabaseName),
+			"DB_HOST":       cluster.ClusterEndpoint().Hostname(),
+			"DB_PORT":       jsii.String("5432"),
+		},
+		Timeout:           awscdk.Duration_Seconds(jsii.Number(10)),
+		Role:              migrationLambdaRole,
+		AllowPublicSubnet: jsii.Bool(true),
+	})
+	awscdk.Tags_Of(migrationLambda).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	return &MigrationLambdaResources{
+		MigrationLambda:     migrationLambda,
+		MigrationLambdaRole: migrationLambdaRole,
+		MigrationLambdaSG:   migrationLambdaSG,
+	}
+}
+
+// setupMigrationLambdaPermissions configures IAM permissions for the migration lambda
+func setupMigrationLambdaPermissions(role awsiam.Role, credentialsSecret awssecretsmanager.ISecret, cluster awsrds.IDatabaseCluster) {
 	// Grant the Lambda role permissions to write logs to CloudWatch
-	migrationLambdaRole.AddManagedPolicy(awsiam.ManagedPolicy_FromAwsManagedPolicyName(jsii.String("service-role/AWSLambdaBasicExecutionRole")))
+	role.AddManagedPolicy(awsiam.ManagedPolicy_FromAwsManagedPolicyName(jsii.String("service-role/AWSLambdaBasicExecutionRole")))
 
 	// For VPC access
-	migrationLambdaRole.AddManagedPolicy(awsiam.ManagedPolicy_FromAwsManagedPolicyName(jsii.String("service-role/AWSLambdaVPCAccessExecutionRole")))
+	role.AddManagedPolicy(awsiam.ManagedPolicy_FromAwsManagedPolicyName(jsii.String("service-role/AWSLambdaVPCAccessExecutionRole")))
 
 	// Grant the Lambda role permissions to read the database secret
-	rdsPostgresCredentialsSecret.GrantRead(migrationLambdaRole, nil)
+	credentialsSecret.GrantRead(role, nil)
 
-	// Grant the Lambda role permissions to connect to the RDS instance via Data API or direct
-	// For direct pgx.Connect, the basic execution role might be enough for network access,
-	// but explicit permissions are good practice.
-	// If using RDS Data API (which pgx does not by default, but KnowledgeBase does), uncomment below:
-	migrationLambdaRole.AddToPolicy(awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
+	// Grant RDS Data API permissions
+	role.AddToPolicy(awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
 		Actions: &[]*string{
 			jsii.String("rds-data:ExecuteStatement"),
 			jsii.String("rds-data:BatchExecuteStatement"),
@@ -221,52 +374,25 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 			jsii.String("rds-data:DescribeTable"),
 		},
 		Resources: &[]*string{
-			rdsPostgresInstance.InstanceArn(),
+			cluster.ClusterArn(),
 		},
 	}))
+}
 
-	lambdaPath := filepath.Join(getThisFileDir(), "../rds_schema_lambda")
+// createBedrockResources creates Bedrock-related IAM roles
+func createBedrockResources(resources *Resources, storage *StorageResources, database *DatabaseResources) *BedrockResources {
+	knowledgeBaseRole := createBedrockKnowledgeBaseRole(resources, storage, database)
+	agentRole := createBedrockAgentRole(resources)
 
-	// 3. Lambda Function for Schema Migration
-	dbMigrationLambda := awslambda.NewFunction(stack, jsii.String("DbMigrationLambda"), &awslambda.FunctionProps{
-		Handler: jsii.String("handler.lambda_handler"),
-		Runtime: awslambda.Runtime_PYTHON_3_12(),
-		Code: awslambda.AssetCode_FromAsset(jsii.String(lambdaPath), &awss3assets.AssetOptions{
-			Bundling: &awscdk.BundlingOptions{
-				Image: awslambda.Runtime_PYTHON_3_12().BundlingImage(),
-				Command: jsii.Strings(
-					"bash", "-c",
-					"pip install -r requirements.txt -t /asset-output && cp -au . /asset-output",
-				),
-				User: jsii.String("root"), // Optional: can be left unset if permissions allow
-			},
-		}), // Path to your compiled Go Lambda
-		Vpc: vpc, // Lambda must be in the same VPC as RDS
-		VpcSubnets: &awsec2.SubnetSelection{
-			SubnetType: awsec2.SubnetType_PUBLIC, // If your VPC only has public subnets
-			// SubnetType: awsec2.SubnetType_PRIVATE_WITH_EGRESS, // If you have private subnets with NAT Gateway
-		},
-		SecurityGroups: &[]awsec2.ISecurityGroup{
-			migrationLambdaSG, // Attach the security group created above
-		},
-		Environment: &map[string]*string{
-			"DB_SECRET_ARN": rdsPostgresCredentialsSecret.SecretArn(),
-			"DB_HOST":       rdsPostgresInstance.DbInstanceEndpointAddress(),
-			"DB_PORT":       rdsPostgresInstance.DbInstanceEndpointPort(),
-			"DB_NAME":       jsii.String(RDSPostgresDatabaseName),
-		},
-		Timeout:           awscdk.Duration_Minutes(jsii.Number(2)), // Give it enough time
-		Role:              migrationLambdaRole,
-		AllowPublicSubnet: jsii.Bool(true), // Acknowledge that this Lambda is in a public subnet and won't have internet access
-	})
-	awscdk.Tags_Of(dbMigrationLambda).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+	return &BedrockResources{
+		KnowledgeBaseRole: knowledgeBaseRole,
+		AgentRole:         agentRole,
+	}
+}
 
-	// ====================================================================
-	// END NEW: Database Schema Migration
-	// ====================================================================
-
-	// IAM Role for Bedrock KnowledgeBase
-	knowledgeBaseRole := awsiam.NewRole(stack, jsii.String("BedrockKnowledgeBaseRole"), &awsiam.RoleProps{
+// createBedrockKnowledgeBaseRole creates the IAM role for Bedrock Knowledge Base
+func createBedrockKnowledgeBaseRole(resources *Resources, storage *StorageResources, database *DatabaseResources) awsiam.IRole {
+	role := awsiam.NewRole(resources.Stack, jsii.String("BedrockKnowledgeBaseRole"), &awsiam.RoleProps{
 		AssumedBy: awsiam.NewServicePrincipal(jsii.String("bedrock.amazonaws.com"), nil),
 		InlinePolicies: &map[string]awsiam.PolicyDocument{
 			"BedrockKbPolicy": awsiam.NewPolicyDocument(&awsiam.PolicyDocumentProps{
@@ -277,8 +403,8 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 							jsii.String("s3:ListBucket"),
 						},
 						Resources: &[]*string{
-							bucket.BucketArn(),
-							jsii.String(fmt.Sprintf("%s/*", *bucket.BucketArn())),
+							storage.Bucket.BucketArn(),
+							jsii.String(fmt.Sprintf("%s/*", *storage.Bucket.BucketArn())),
 						},
 					}),
 					awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
@@ -286,7 +412,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 							jsii.String("secretsmanager:GetSecretValue"),
 						},
 						Resources: &[]*string{
-							rdsPostgresCredentialsSecret.SecretArn(),
+							database.CredentialsSecret.SecretArn(),
 						},
 					}),
 					awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
@@ -300,23 +426,26 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 							jsii.String("rds-data:DescribeTable"),
 						},
 						Resources: &[]*string{
-							rdsPostgresInstance.InstanceArn(),
+							database.Cluster.ClusterArn(),
 						},
 					}),
 				},
 			}),
 		},
 	})
-	awscdk.Tags_Of(knowledgeBaseRole).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+	awscdk.Tags_Of(role).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
-	// Store the role for later use
+	return role
+}
+
+// createBedrockAgentRole creates the IAM role for Bedrock Agent
+func createBedrockAgentRole(resources *Resources) awsiam.IRole {
 	foundationModelResources := make([]*string, len(FoundationModels))
 	for i, model := range FoundationModels {
-		foundationModelResources[i] = jsii.String(fmt.Sprintf("arn:aws:bedrock:%s::foundation-model/%s", region, model))
+		foundationModelResources[i] = jsii.String(fmt.Sprintf("arn:aws:bedrock:%s::foundation-model/%s", resources.Region, model))
 	}
 
-	// IAM Role for Bedrock Agent
-	agentRole := awsiam.NewRole(stack, jsii.String("BedrockAgentRole"), &awsiam.RoleProps{
+	role := awsiam.NewRole(resources.Stack, jsii.String("BedrockAgentRole"), &awsiam.RoleProps{
 		AssumedBy: awsiam.NewServicePrincipal(jsii.String("bedrock.amazonaws.com"), nil),
 		InlinePolicies: &map[string]awsiam.PolicyDocument{
 			"BedrockAgentPolicy": awsiam.NewPolicyDocument(&awsiam.PolicyDocumentProps{
@@ -339,7 +468,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 							jsii.String("bedrock:RetrieveAndGenerate"),
 						},
 						Resources: &[]*string{
-							jsii.String(fmt.Sprintf("arn:aws:bedrock:%s:%s:knowledge-base/*", region, account)),
+							jsii.String(fmt.Sprintf("arn:aws:bedrock:%s:%s:knowledge-base/*", resources.Region, resources.Account)),
 						},
 					}),
 					// Prompt management console access
@@ -350,44 +479,54 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 							jsii.String("bedrock:GetPrompt"),
 						},
 						Resources: &[]*string{
-							jsii.String(fmt.Sprintf("arn:aws:bedrock:%s:%s:prompt/*", region, account)),
+							jsii.String(fmt.Sprintf("arn:aws:bedrock:%s:%s:prompt/*", resources.Region, resources.Account)),
 						},
 					}),
 				},
 			}),
 		},
 	})
-	awscdk.Tags_Of(agentRole).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+	awscdk.Tags_Of(role).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
-	// ECS Cluster and Fargate Task
-	ecsCluster := awsecs.NewCluster(stack, jsii.String("RefactorCluster"), &awsecs.ClusterProps{
-		Vpc: vpc,
+	return role
+}
+
+// createComputeResources creates ECS, Fargate, and ECR resources
+func createComputeResources(resources *Resources, networking *NetworkingResources) *ComputeResources {
+	// ECS Cluster
+	cluster := awsecs.NewCluster(resources.Stack, jsii.String("RefactorCluster"), &awsecs.ClusterProps{
+		Vpc: networking.Vpc,
 	})
-	awscdk.Tags_Of(ecsCluster).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+	awscdk.Tags_Of(cluster).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
-	logGroup := awslogs.NewLogGroup(stack, jsii.String("FargateLogGroup"), &awslogs.LogGroupProps{
+	// CloudWatch Log Group
+	logGroup := awslogs.NewLogGroup(resources.Stack, jsii.String("FargateLogGroup"), &awslogs.LogGroupProps{
 		LogGroupName:  jsii.String("/ecs/code-refactor"),
 		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
+	awscdk.Tags_Of(logGroup).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
-	taskRole := awsiam.NewRole(stack, jsii.String("RefactorTaskRole"), &awsiam.RoleProps{
+	// Task Role and Definition
+	taskRole := awsiam.NewRole(resources.Stack, jsii.String("RefactorTaskRole"), &awsiam.RoleProps{
 		AssumedBy: awsiam.NewServicePrincipal(jsii.String("ecs-tasks.amazonaws.com"), nil),
 	})
-	taskDef := awsecs.NewFargateTaskDefinition(stack, jsii.String("RefactorTaskDef"), &awsecs.FargateTaskDefinitionProps{
+	awscdk.Tags_Of(taskRole).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	taskDef := awsecs.NewFargateTaskDefinition(resources.Stack, jsii.String("RefactorTaskDef"), &awsecs.FargateTaskDefinitionProps{
 		Cpu:            jsii.Number(512),
 		MemoryLimitMiB: jsii.Number(1024),
 		TaskRole:       taskRole,
 	})
-	awscdk.Tags_Of(taskRole).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+	awscdk.Tags_Of(taskDef).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
-	// Define a dedicated ECR repo for the app
-	ecrRepo := awsecr.NewRepository(stack, jsii.String("RefactorEcrRepo"), &awsecr.RepositoryProps{
+	// ECR Repository
+	ecrRepo := awsecr.NewRepository(resources.Stack, jsii.String("RefactorEcrRepo"), &awsecr.RepositoryProps{
 		RepositoryName: jsii.String("refactor-ecr-repo"),
 		RemovalPolicy:  awscdk.RemovalPolicy_DESTROY,
 	})
 	awscdk.Tags_Of(ecrRepo).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
-	// Add container using an image from that ECR repo (tag must be pre-pushed)
+	// Container Definition
 	container := taskDef.AddContainer(jsii.String("RefactorContainer"), &awsecs.ContainerDefinitionOptions{
 		Image: awsecs.ContainerImage_FromEcrRepository(ecrRepo, jsii.String("latest")),
 		Logging: awsecs.LogDrivers_AwsLogs(&awsecs.AwsLogDriverProps{
@@ -399,20 +538,12 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 	container.AddPortMappings(&awsecs.PortMapping{
 		ContainerPort: jsii.Number(8080),
 	})
-	awscdk.Tags_Of(logGroup).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
-	awscdk.Tags_Of(taskDef).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
-
-	return &AppStack{
-		Stack:                            stack,
-		BedrockKnowledgeBaseRole:         knowledgeBaseRole.RoleArn(),
-		BedrockAgentRole:                 agentRole.RoleArn(),
-		BucketName:                       bucketName,
-		Account:                          account,
-		Region:                           region,
-		RDSPostgresInstanceARN:           *rdsPostgresInstance.InstanceArn(),
-		RDSPostgresCredentialsSecretARN:  *rdsPostgresCredentialsSecret.SecretArn(),
-		RDSPostgresSchemaEnsureLambdaARN: *dbMigrationLambda.FunctionArn(),
+	return &ComputeResources{
+		Cluster:  cluster,
+		TaskDef:  taskDef,
+		EcrRepo:  ecrRepo,
+		LogGroup: logGroup,
 	}
 }
 

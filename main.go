@@ -29,7 +29,10 @@ func main() {
 	repo := repository.NewGitHubRepo(cfg.Git)
 
 	// Initialize S3 dataStore
-	dataStore := storage.NewS3Storage(cfg.AWSConfig, cfg.S3BucketName, repo.GetPath())
+	dataStore := storage.NewS3DataStore(cfg.AWSConfig, cfg.S3BucketName, repo.GetPath())
+
+	// Initialise storage
+	storage := storage.NewRDSPostgresStorage(cfg.AWSConfig, cfg.RDSPostgres.SchemaEnsureLambdaARN)
 
 	// Initialize RAG pipeline
 	rag := rag.NewBedrockRAG(cfg.AWSConfig, repo.GetPath(), cfg.KnowledgeBaseServiceRoleARN, cfg.RDSPostgres)
@@ -38,6 +41,7 @@ func main() {
 	ragBuilder := builder.NewBedrockRAGBuilder(
 		repo.GetPath(),
 		dataStore,
+		storage,
 		rag,
 	)
 

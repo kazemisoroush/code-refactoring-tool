@@ -88,9 +88,10 @@ type Config struct {
 
 // RDSPostgres represents the configuration for AWS RDS Postgres
 type RDSPostgres struct {
-	CredentialsSecretARN string `envconfig:"CREDENTIALS_SECRET_ARN"`
-	InstanceARN          string `envconfig:"INSTANCE_ARN"`
-	DatabaseName         string `envconfig:"DATABASE_NAME" default:"RefactorVectorDb"`
+	CredentialsSecretARN  string `envconfig:"CREDENTIALS_SECRET_ARN"`
+	SchemaEnsureLambdaARN string `envconfig:"RDS_POSTGRES_SCHEMA_ENSURE_LAMBDA_ARN"`
+	InstanceARN           string `envconfig:"INSTANCE_ARN"`
+	DatabaseName          string `envconfig:"DATABASE_NAME" default:"RefactorVectorDb"`
 }
 
 // GitConfig represents the Git configuration
@@ -141,7 +142,7 @@ func LoadConfig() (Config, error) {
 
 	// Populate BedrockKnowledgeBaseRoleARN and AgentServiceRoleARN from CloudFormation outputs if not set
 	if cfg.KnowledgeBaseServiceRoleARN == "" || cfg.AgentServiceRoleARN == "" ||
-		cfg.S3BucketName == "" || cfg.RDSPostgres.InstanceARN == "" ||
+		cfg.S3BucketName == "" || cfg.RDSPostgres.InstanceARN == "" || cfg.RDSPostgres.SchemaEnsureLambdaARN == "" ||
 		cfg.RDSPostgres.CredentialsSecretARN == "" {
 		stackName := "CodeRefactorInfra"
 		cfnClient := cfn.NewFromConfig(awsCfg)
@@ -157,6 +158,8 @@ func LoadConfig() (Config, error) {
 				cfg.KnowledgeBaseServiceRoleARN = *output.OutputValue
 			case "BedrockAgentRoleArn":
 				cfg.AgentServiceRoleARN = *output.OutputValue
+			case "RDSPostgresSchemaEnsureLambdaARN":
+				cfg.RDSPostgres.SchemaEnsureLambdaARN = *output.OutputValue
 			case "BucketName":
 				cfg.S3BucketName = *output.OutputValue
 			case "RDSPostgresInstanceARN":

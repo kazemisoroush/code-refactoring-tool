@@ -68,6 +68,7 @@ func (b *BedrockRAG) Create(ctx context.Context, tableName string) (string, erro
 		RoleArn:     aws.String(b.kbRoleARN),
 		Description: aws.String(CodeRefactoringKBDescription),
 		StorageConfiguration: &types.StorageConfiguration{
+			Type: types.KnowledgeBaseStorageTypeRds,
 			RdsConfiguration: &types.RdsConfiguration{
 				CredentialsSecretArn: aws.String(b.rdsCredentialsSecretARN),
 				DatabaseName:         aws.String(b.rdsPostgresDatabaseName),
@@ -77,6 +78,8 @@ func (b *BedrockRAG) Create(ctx context.Context, tableName string) (string, erro
 					VectorField:     aws.String("embedding"),
 					MetadataField:   aws.String("metadata"),
 				},
+				// arn:aws:rds:us-east-1:698315877107:db:coderefactorinfra-refactorvectordb152eceac-pnzbicpefp4r
+				// arn:aws(-cn|-us-gov|-eusc|-iso(-[b-f])?)?:rds:[a-zA-Z0-9-]*:[0-9]{12}:cluster:[a-zA-Z0-9-]{1,63}
 				ResourceArn: aws.String(b.RDSPostgresInstanceARN),
 				TableName:   aws.String(tableName),
 			},

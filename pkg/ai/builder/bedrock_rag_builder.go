@@ -18,25 +18,32 @@ const (
 type BedrockRAGBuilder struct {
 	repoPath  string
 	dataStore storage.DataStore
+	storage   storage.Storage
 	rag       rag.RAG
 }
 
 // NewBedrockRAGBuilder creates a new instance of BedrockRAGBuilder.
 func NewBedrockRAGBuilder(
 	repoPath string,
-	storage storage.DataStore,
+	dataStore storage.DataStore,
+	storage storage.Storage,
 	rag rag.RAG,
 ) RAGBuilder {
 	return &BedrockRAGBuilder{
 		repoPath:  repoPath,
-		dataStore: storage,
+		dataStore: dataStore,
+		storage:   storage,
 		rag:       rag,
 	}
 }
 
 // Build implements RAGBuilder.
 func (b BedrockRAGBuilder) Build(ctx context.Context) (string, error) {
-	// TODO: Invoke Ensure RDS Postgres Schema Lambda
+	// Invoke Ensure RDS Postgres Schema Lambda
+	err := b.storage.EnsureSchema(ctx, b.getRDSTableName())
+	if err != nil {
+		return "", fmt.Errorf("failed to ensure storage schema: %w", err)
+	}
 
 	// Create the RAG object
 	kbID, err := b.rag.Create(ctx, b.getRDSTableName())

@@ -43,9 +43,9 @@ func main() {
 		Value: &infrastructureStack.Region,
 	})
 
-	// Output RDSPostgresInstanceARN
+	// Output RDSPostgresClusterARN
 	awscdk.NewCfnOutput(infrastructureStack.Stack, jsii.String("RDSPostgresInstanceARN"), &awscdk.CfnOutputProps{
-		Value: &infrastructureStack.RDSPostgresInstanceARN,
+		Value: &infrastructureStack.RDSPostgresClusterARN,
 	})
 
 	// Output RDSPostgresCredentialsSecretARN

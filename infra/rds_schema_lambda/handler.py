@@ -65,8 +65,9 @@ def lambda_handler(event, _):
 
         print("Reading environment variables...")
         secret_arn = os.environ["DB_SECRET_ARN"]
+        print(f"port: {os.environ["DB_PORT"]}")
         db_host = os.environ["DB_HOST"]
-        db_port = os.environ["DB_PORT"]
+        db_port = int(os.environ["DB_PORT"])
         db_name = os.environ["DB_NAME"]
 
         print("Fetching DB secret...")
