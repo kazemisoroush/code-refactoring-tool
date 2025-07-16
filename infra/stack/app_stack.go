@@ -342,7 +342,7 @@ func createMigrationLambda(resources *Resources, networking *NetworkingResources
 			"DB_HOST":              cluster.ClusterEndpoint().Hostname(),
 			"DB_PORT":              jsii.String("5432"),
 			"EMBEDDING_DIMENSIONS": jsii.String("1536"), // Default for amazon.titan-embed-text-v1
-			"AUTO_MIGRATE_SCHEMA":  jsii.String("true"),  // Enable automatic schema migration
+			"AUTO_MIGRATE_SCHEMA":  jsii.String("true"), // Enable automatic schema migration
 		},
 		Timeout:           awscdk.Duration_Seconds(jsii.Number(10)),
 		Role:              migrationLambdaRole,

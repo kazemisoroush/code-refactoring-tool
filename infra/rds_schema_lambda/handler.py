@@ -257,6 +257,26 @@ def ensure_schema(config: DatabaseConfig, username: str, password: str, table_na
                         return
                 else:
                     print(f"Table {table_name} already has correct schema")
+                    
+                    # Even if schema is correct, ensure the text index exists
+                    # Check if the text search index exists
+                    cursor.execute("""
+                        SELECT indexname FROM pg_indexes 
+                        WHERE tablename = %s AND indexdef LIKE '%%gin%%to_tsvector%%'
+                    """, (table_name,))
+                    
+                    existing_index = cursor.fetchone()
+                    if not existing_index:
+                        print(f"Creating missing text search index for table {table_name}")
+                        create_index_sql = f"""
+                            CREATE INDEX IF NOT EXISTS {table_name}_text_gin_idx 
+                            ON {table_name} USING gin (to_tsvector('simple', text))
+                        """
+                        cursor.execute(create_index_sql)
+                        print(f"Created text search index for table {table_name}")
+                    else:
+                        print(f"Text search index already exists for table {table_name}")
+                    
                     conn.commit()
                     return
             else:
@@ -271,6 +291,14 @@ def ensure_schema(config: DatabaseConfig, username: str, password: str, table_na
                     )
                 """
                 cursor.execute(create_table_sql)
+                
+                # Create the required text search index for Bedrock Knowledge Base
+                create_index_sql = f"""
+                    CREATE INDEX IF NOT EXISTS {table_name}_text_gin_idx 
+                    ON {table_name} USING gin (to_tsvector('simple', text))
+                """
+                cursor.execute(create_index_sql)
+                print(f"Created text search index for table {table_name}")
         
         conn.commit()
         print(f"Schema ensured for table: {table_name}")
@@ -333,6 +361,14 @@ def _migrate_table_schema(cursor, table_name: str, embedding_dimensions: str, ex
         """
         cursor.execute(create_table_sql)
         print(f"Created new table {table_name} with correct schema")
+        
+        # Create the required text search index for Bedrock Knowledge Base
+        create_index_sql = f"""
+            CREATE INDEX IF NOT EXISTS {table_name}_text_gin_idx 
+            ON {table_name} USING gin (to_tsvector('simple', text))
+        """
+        cursor.execute(create_index_sql)
+        print(f"Created text search index for table {table_name}")
         
         # Step 4: Migrate data if there was any
         if row_count > 0:

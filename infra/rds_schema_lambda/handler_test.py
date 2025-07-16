@@ -157,8 +157,8 @@ class TestEnsureSchema(unittest.TestCase):
         config = handler.DatabaseConfig("localhost", 5432, "testdb", "arn:secret")
         handler.ensure_schema(config, "user", "pass", "my_table")
 
-        # Should execute extension creation, schema check, and table creation
-        assert mock_cursor.execute.call_count == 3
+        # Should execute extension creation, schema check, table creation, and index creation
+        assert mock_cursor.execute.call_count == 4
         
         # Check that the extension is created first
         first_call = mock_cursor.execute.call_args_list[0][0][0]
@@ -175,28 +175,51 @@ class TestEnsureSchema(unittest.TestCase):
         assert "metadata JSONB" in third_call
         assert "my_table" in third_call
         
+        # Check that the text search index is created
+        fourth_call = mock_cursor.execute.call_args_list[3][0][0]
+        assert "CREATE INDEX" in fourth_call
+        assert "gin" in fourth_call
+        assert "to_tsvector" in fourth_call
+        assert "text" in fourth_call
+        
         mock_conn.commit.assert_called_once()
         mock_conn.close.assert_called_once()
 
     @patch("handler.psycopg2.connect")
     def test_ensure_schema_table_exists_correct_schema(self, mock_connect):
-        """Should skip table creation when table exists with correct vector schema."""
+        """Should skip table creation when table exists with correct vector schema but check for index."""
         mock_conn = MagicMock()
         mock_connect.return_value = mock_conn
         mock_cursor = MagicMock()
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
         
         # Mock that table exists with correct schema (id: uuid, embedding: vector)
-        mock_cursor.fetchall.return_value = [
-            ("embedding", "USER-DEFINED", "vector"),
-            ("id", "USER-DEFINED", "uuid")
-        ]
+        # Use side_effect to return different results for different queries
+        def mock_fetchall_side_effect():
+            if "information_schema.columns" in mock_cursor.execute.call_args_list[-1][0][0]:
+                return [
+                    ("embedding", "USER-DEFINED", "vector"),
+                    ("id", "USER-DEFINED", "uuid"),
+                    ("metadata", "jsonb", "jsonb"),
+                    ("text", "text", "text")
+                ]
+            elif "pg_indexes" in mock_cursor.execute.call_args_list[-1][0][0]:
+                return [("my_table_text_gin_idx",)]  # Index exists
+            return []
+        
+        def mock_fetchone_side_effect():
+            if "pg_indexes" in mock_cursor.execute.call_args_list[-1][0][0]:
+                return ("my_table_text_gin_idx",)  # Index exists
+            return None
+            
+        mock_cursor.fetchall.side_effect = mock_fetchall_side_effect
+        mock_cursor.fetchone.side_effect = mock_fetchone_side_effect
 
         config = handler.DatabaseConfig("localhost", 5432, "testdb", "arn:secret")
         handler.ensure_schema(config, "user", "pass", "my_table")
 
-        # Should only execute extension creation and schema check (no table creation)
-        assert mock_cursor.execute.call_count == 2
+        # Should execute extension creation, schema check, and index check
+        assert mock_cursor.execute.call_count == 3
         
         # Check that the extension is created first
         first_call = mock_cursor.execute.call_args_list[0][0][0]
@@ -205,6 +228,10 @@ class TestEnsureSchema(unittest.TestCase):
         # Check that it queries for existing schema
         second_call = mock_cursor.execute.call_args_list[1][0][0]
         assert "information_schema.columns" in second_call
+        
+        # Check that it queries for existing index
+        third_call = mock_cursor.execute.call_args_list[2][0][0]
+        assert "pg_indexes" in third_call
         
         mock_conn.commit.assert_called_once()
         mock_conn.close.assert_called_once()
