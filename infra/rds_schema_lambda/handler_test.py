@@ -1,6 +1,7 @@
 """
 Test suite for Lambda handler functions that ensure Postgres schema creation.
 """
+# pylint: disable=invalid-name  # Test method names follow unittest conventions
 
 import unittest
 from unittest.mock import patch, MagicMock
@@ -150,7 +151,7 @@ class TestEnsureSchema(unittest.TestCase):
         mock_connect.return_value = mock_conn
         mock_cursor = MagicMock()
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        
+
         # Mock that table doesn't exist (no columns found)
         mock_cursor.fetchall.return_value = []
 
@@ -159,29 +160,29 @@ class TestEnsureSchema(unittest.TestCase):
 
         # Should execute extension creation, schema check, table creation, and index creation
         assert mock_cursor.execute.call_count == 4
-        
+
         # Check that the extension is created first
         first_call = mock_cursor.execute.call_args_list[0][0][0]
         assert "CREATE EXTENSION IF NOT EXISTS vector" in first_call
-        
+
         # Check that it queries for existing schema
         second_call = mock_cursor.execute.call_args_list[1][0][0]
         assert "information_schema.columns" in second_call
-        
+
         # Check that the table creation uses UUID and vector types
         third_call = mock_cursor.execute.call_args_list[2][0][0]
         assert "id UUID PRIMARY KEY" in third_call
         assert "vector(1536)" in third_call
         assert "metadata JSONB" in third_call
         assert "my_table" in third_call
-        
+
         # Check that the text search index is created
         fourth_call = mock_cursor.execute.call_args_list[3][0][0]
         assert "CREATE INDEX" in fourth_call
         assert "gin" in fourth_call
         assert "to_tsvector" in fourth_call
         assert "text" in fourth_call
-        
+
         mock_conn.commit.assert_called_once()
         mock_conn.close.assert_called_once()
 
@@ -192,7 +193,7 @@ class TestEnsureSchema(unittest.TestCase):
         mock_connect.return_value = mock_conn
         mock_cursor = MagicMock()
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        
+
         # Mock that table exists with correct schema (id: uuid, embedding: vector)
         # Use side_effect to return different results for different queries
         def mock_fetchall_side_effect():
@@ -203,15 +204,15 @@ class TestEnsureSchema(unittest.TestCase):
                     ("metadata", "jsonb", "jsonb"),
                     ("text", "text", "text")
                 ]
-            elif "pg_indexes" in mock_cursor.execute.call_args_list[-1][0][0]:
+            if "pg_indexes" in mock_cursor.execute.call_args_list[-1][0][0]:
                 return [("my_table_text_gin_idx",)]  # Index exists
             return []
-        
+
         def mock_fetchone_side_effect():
             if "pg_indexes" in mock_cursor.execute.call_args_list[-1][0][0]:
                 return ("my_table_text_gin_idx",)  # Index exists
             return None
-            
+
         mock_cursor.fetchall.side_effect = mock_fetchall_side_effect
         mock_cursor.fetchone.side_effect = mock_fetchone_side_effect
 
@@ -220,19 +221,19 @@ class TestEnsureSchema(unittest.TestCase):
 
         # Should execute extension creation, schema check, and index check
         assert mock_cursor.execute.call_count == 3
-        
+
         # Check that the extension is created first
         first_call = mock_cursor.execute.call_args_list[0][0][0]
         assert "CREATE EXTENSION IF NOT EXISTS vector" in first_call
-        
+
         # Check that it queries for existing schema
         second_call = mock_cursor.execute.call_args_list[1][0][0]
         assert "information_schema.columns" in second_call
-        
+
         # Check that it queries for existing index
         third_call = mock_cursor.execute.call_args_list[2][0][0]
         assert "pg_indexes" in third_call
-        
+
         mock_conn.commit.assert_called_once()
         mock_conn.close.assert_called_once()
 
@@ -243,7 +244,7 @@ class TestEnsureSchema(unittest.TestCase):
         mock_connect.return_value = mock_conn
         mock_cursor = MagicMock()
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        
+
         # Mock that table exists with wrong type (old array type and varchar id)
         mock_cursor.fetchall.return_value = [
             ("embedding", "ARRAY", "_float8"),
@@ -255,15 +256,15 @@ class TestEnsureSchema(unittest.TestCase):
 
         # Should only execute extension creation and schema check (no table creation)
         assert mock_cursor.execute.call_count == 2
-        
+
         # Check that the extension is created first
         first_call = mock_cursor.execute.call_args_list[0][0][0]
         assert "CREATE EXTENSION IF NOT EXISTS vector" in first_call
-        
+
         # Check that it queries for existing schema
         second_call = mock_cursor.execute.call_args_list[1][0][0]
         assert "information_schema.columns" in second_call
-        
+
         mock_conn.commit.assert_called_once()
         mock_conn.close.assert_called_once()
 
@@ -274,7 +275,7 @@ class TestEnsureSchema(unittest.TestCase):
         mock_connect.return_value = mock_conn
         mock_cursor = MagicMock()
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        
+
         # Mock that table exists with correct embedding but wrong ID type
         mock_cursor.fetchall.return_value = [
             ("embedding", "USER-DEFINED", "vector"),
@@ -286,15 +287,15 @@ class TestEnsureSchema(unittest.TestCase):
 
         # Should only execute extension creation and schema check (no table creation)
         assert mock_cursor.execute.call_count == 2
-        
+
         # Check that the extension is created first
         first_call = mock_cursor.execute.call_args_list[0][0][0]
         assert "CREATE EXTENSION IF NOT EXISTS vector" in first_call
-        
+
         # Check that it queries for existing schema
         second_call = mock_cursor.execute.call_args_list[1][0][0]
         assert "information_schema.columns" in second_call
-        
+
         mock_conn.commit.assert_called_once()
         mock_conn.close.assert_called_once()
 
@@ -318,7 +319,7 @@ class TestLambdaHandler(unittest.TestCase):
 
         self.assertEqual(result["status"], "success")
         self.assertIn("Schema ensured", result["message"])
-        
+
         # Verify all functions were called
         mock_load_config.assert_called_once()
         mock_get_secret.assert_called_once_with("arn:secret")
@@ -333,7 +334,7 @@ class TestLambdaHandler(unittest.TestCase):
         self.assertIn("Configuration error", result["message"])
 
     @patch("handler.load_database_config", side_effect=handler.ConfigurationError("Config failed"))
-    def test_lambda_handler_configuration_error(self, mock_load_config):
+    def test_lambda_handler_configuration_error(self, mock_load_config):  # pylint: disable=unused-argument
         """Should return configuration error when config loading fails."""
         event = {"table": "my_table"}
         result = handler.lambda_handler(event, {})
@@ -342,11 +343,11 @@ class TestLambdaHandler(unittest.TestCase):
 
     @patch("handler.load_database_config")
     @patch("handler.get_secret_value", side_effect=handler.SecretManagerError("Secret failed"))
-    def test_lambda_handler_secret_error(self, mock_get_secret, mock_load_config):
+    def test_lambda_handler_secret_error(self, mock_get_secret, mock_load_config):  # pylint: disable=unused-argument
         """Should return secret manager error when secret retrieval fails."""
         mock_config = handler.DatabaseConfig("localhost", 5432, "testdb", "arn:secret")
         mock_load_config.return_value = mock_config
-        
+
         event = {"table": "my_table"}
         result = handler.lambda_handler(event, {})
         self.assertEqual(result["status"], "error")
@@ -355,12 +356,12 @@ class TestLambdaHandler(unittest.TestCase):
     @patch("handler.load_database_config")
     @patch("handler.get_secret_value")
     @patch("handler.ensure_database_exists", side_effect=handler.DatabaseError("DB failed"))
-    def test_lambda_handler_database_error(self, mock_ensure_db, mock_get_secret, mock_load_config):
+    def test_lambda_handler_database_error(self, mock_ensure_db, mock_get_secret, mock_load_config):  # pylint: disable=unused-argument
         """Should return database error when database operations fail."""
         mock_config = handler.DatabaseConfig("localhost", 5432, "testdb", "arn:secret")
         mock_load_config.return_value = mock_config
         mock_get_secret.return_value = {"username": "user", "password": "pass"}
-        
+
         event = {"table": "my_table"}
         result = handler.lambda_handler(event, {})
         self.assertEqual(result["status"], "error")

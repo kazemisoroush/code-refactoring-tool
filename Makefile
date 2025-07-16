@@ -10,6 +10,8 @@ lint:
 	@echo "Running linter..."
 	@golangci-lint -v run
 	@cd infra/stack && golangci-lint -v run
+	@echo "Running Python linter..."
+	@cd infra/rds_schema_lambda && pylint --rcfile=../../.pylintrc *.py
 	@echo "Linter passed."
 
 mock:

@@ -31,6 +31,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r infra/rds_schema_lambda/requirements_test.txt
+          pip install pylint
 
       - name: Install Go Dependencies
         run: |
@@ -59,3 +60,7 @@ jobs:
       - name: Run Lambda Tests
         run: |
           cd infra/rds_schema_lambda && pytest .
+
+      - name: Run Python Linting
+        run: |
+          cd infra/rds_schema_lambda && pylint --rcfile=../../.pylintrc *.py
