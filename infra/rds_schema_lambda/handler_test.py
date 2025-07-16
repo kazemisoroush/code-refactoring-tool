@@ -158,8 +158,8 @@ class TestEnsureSchema(unittest.TestCase):
         config = handler.DatabaseConfig("localhost", 5432, "testdb", "arn:secret")
         handler.ensure_schema(config, "user", "pass", "my_table")
 
-        # Should execute extension creation, schema check, table creation, and index creation
-        assert mock_cursor.execute.call_count == 4
+        # Should execute extension creation, schema check, table creation, text index, and vector index creation
+        assert mock_cursor.execute.call_count == 5
 
         # Check that the extension is created first
         first_call = mock_cursor.execute.call_args_list[0][0][0]
@@ -182,6 +182,13 @@ class TestEnsureSchema(unittest.TestCase):
         assert "gin" in fourth_call
         assert "to_tsvector" in fourth_call
         assert "text" in fourth_call
+
+        # Check that the vector index is created
+        fifth_call = mock_cursor.execute.call_args_list[4][0][0]
+        assert "CREATE INDEX" in fifth_call
+        assert "hnsw" in fifth_call
+        assert "vector_cosine_ops" in fifth_call
+        assert "embedding" in fifth_call
 
         mock_conn.commit.assert_called_once()
         mock_conn.close.assert_called_once()
@@ -209,8 +216,13 @@ class TestEnsureSchema(unittest.TestCase):
             return []
 
         def mock_fetchone_side_effect():
+            # Check the specific query to return appropriate index info
             if "pg_indexes" in mock_cursor.execute.call_args_list[-1][0][0]:
-                return ("my_table_text_gin_idx",)  # Index exists
+                query = mock_cursor.execute.call_args_list[-1][0][0]
+                if "gin" in query and "to_tsvector" in query:
+                    return ("my_table_text_gin_idx",)  # Text index exists
+                elif ("hnsw" in query or "ivfflat" in query) and "vector_cosine_ops" in query:
+                    return ("my_table_embedding_hnsw_idx",)  # Vector index exists
             return None
 
         mock_cursor.fetchall.side_effect = mock_fetchall_side_effect
@@ -219,8 +231,8 @@ class TestEnsureSchema(unittest.TestCase):
         config = handler.DatabaseConfig("localhost", 5432, "testdb", "arn:secret")
         handler.ensure_schema(config, "user", "pass", "my_table")
 
-        # Should execute extension creation, schema check, and index check
-        assert mock_cursor.execute.call_count == 3
+        # Should execute extension creation, schema check, text index check, and vector index check
+        assert mock_cursor.execute.call_count == 4
 
         # Check that the extension is created first
         first_call = mock_cursor.execute.call_args_list[0][0][0]
@@ -230,9 +242,17 @@ class TestEnsureSchema(unittest.TestCase):
         second_call = mock_cursor.execute.call_args_list[1][0][0]
         assert "information_schema.columns" in second_call
 
-        # Check that it queries for existing index
+        # Check that it queries for existing text index
         third_call = mock_cursor.execute.call_args_list[2][0][0]
         assert "pg_indexes" in third_call
+        assert "gin" in third_call
+        assert "to_tsvector" in third_call
+
+        # Check that it queries for existing vector index
+        fourth_call = mock_cursor.execute.call_args_list[3][0][0]
+        assert "pg_indexes" in fourth_call
+        assert ("hnsw" in fourth_call or "ivfflat" in fourth_call)
+        assert "vector_cosine_ops" in fourth_call
 
         mock_conn.commit.assert_called_once()
         mock_conn.close.assert_called_once()
@@ -254,8 +274,8 @@ class TestEnsureSchema(unittest.TestCase):
         config = handler.DatabaseConfig("localhost", 5432, "testdb", "arn:secret")
         handler.ensure_schema(config, "user", "pass", "my_table")
 
-        # Should only execute extension creation and schema check (no table creation)
-        assert mock_cursor.execute.call_count == 2
+        # Should execute extension creation, schema check, and index checks (no table creation)
+        assert mock_cursor.execute.call_count == 4
 
         # Check that the extension is created first
         first_call = mock_cursor.execute.call_args_list[0][0][0]
@@ -285,8 +305,8 @@ class TestEnsureSchema(unittest.TestCase):
         config = handler.DatabaseConfig("localhost", 5432, "testdb", "arn:secret")
         handler.ensure_schema(config, "user", "pass", "my_table")
 
-        # Should only execute extension creation and schema check (no table creation)
-        assert mock_cursor.execute.call_count == 2
+        # Should execute extension creation, schema check, and index checks (no table creation)
+        assert mock_cursor.execute.call_count == 4
 
         # Check that the extension is created first
         first_call = mock_cursor.execute.call_args_list[0][0][0]

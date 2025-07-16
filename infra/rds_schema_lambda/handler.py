@@ -236,6 +236,35 @@ def ensure_schema(config: DatabaseConfig, username: str, password: str, table_na
                     needs_migration = True
                     migration_issues.append("Missing metadata column")
 
+                # Always check for required indexes, even if schema seems correct
+                needs_index_update = False
+                index_issues = []
+
+                # Check if the text search index exists
+                cursor.execute("""
+                    SELECT indexname FROM pg_indexes
+                    WHERE tablename = %s AND indexdef LIKE '%%gin%%to_tsvector%%'
+                """, (table_name,))
+                
+                text_index_exists = cursor.fetchone()
+                if not text_index_exists:
+                    needs_index_update = True
+                    index_issues.append("Missing text search index")
+
+                # Check if any vector index exists (HNSW or IVFFlat)
+                cursor.execute("""
+                    SELECT indexname FROM pg_indexes
+                    WHERE tablename = %s AND (
+                        indexdef LIKE '%%hnsw%%vector_cosine_ops%%' OR 
+                        indexdef LIKE '%%ivfflat%%vector_cosine_ops%%'
+                    )
+                """, (table_name,))
+                
+                vector_index_exists = cursor.fetchone()
+                if not vector_index_exists:
+                    needs_index_update = True
+                    index_issues.append("Missing vector index")
+
                 if needs_migration:
                     print(f"Table {table_name} needs migration. Issues: {migration_issues}")
 
@@ -253,18 +282,11 @@ def ensure_schema(config: DatabaseConfig, username: str, password: str, table_na
                             print(f"Migration issue: {issue}")
                         conn.commit()
                         return
-                else:
-                    print(f"Table {table_name} already has correct schema")
-
-                    # Even if schema is correct, ensure the text index exists
-                    # Check if the text search index exists
-                    cursor.execute("""
-                        SELECT indexname FROM pg_indexes
-                        WHERE tablename = %s AND indexdef LIKE '%%gin%%to_tsvector%%'
-                    """, (table_name,))
-
-                    existing_index = cursor.fetchone()
-                    if not existing_index:
+                elif needs_index_update:
+                    print(f"Table {table_name} has correct schema but needs index updates. Issues: {index_issues}")
+                    
+                    # Create missing indexes
+                    if not text_index_exists:
                         print(f"Creating missing text search index for table {table_name}")
                         create_index_sql = f"""
                             CREATE INDEX IF NOT EXISTS {table_name}_text_gin_idx
@@ -272,8 +294,36 @@ def ensure_schema(config: DatabaseConfig, username: str, password: str, table_na
                         """
                         cursor.execute(create_index_sql)
                         print(f"Created text search index for table {table_name}")
-                    else:
-                        print(f"Text search index already exists for table {table_name}")
+
+                    if not vector_index_exists:
+                        print(f"Creating missing vector index for table {table_name}")
+                        # Try HNSW first, fallback to IVFFlat if HNSW is not available
+                        try:
+                            create_vector_index_sql = f"""
+                                CREATE INDEX IF NOT EXISTS {table_name}_embedding_hnsw_idx
+                                ON {table_name} USING hnsw (embedding vector_cosine_ops)
+                            """
+                            cursor.execute(create_vector_index_sql)
+                            print(f"Created HNSW vector index for table {table_name}")
+                        except psycopg2.Error as hnsw_error:
+                            # Rollback the failed transaction before trying the fallback
+                            conn.rollback()
+                            if "access method" in str(hnsw_error) and "hnsw" in str(hnsw_error):
+                                print(f"HNSW not available, falling back to IVFFlat: {hnsw_error}")
+                                try:
+                                    create_vector_index_sql = f"""
+                                        CREATE INDEX IF NOT EXISTS {table_name}_embedding_ivfflat_idx
+                                        ON {table_name} USING ivfflat (embedding vector_cosine_ops)
+                                        WITH (lists = 100)
+                                    """
+                                    cursor.execute(create_vector_index_sql)
+                                    print(f"Created IVFFlat vector index for table {table_name}")
+                                except psycopg2.Error as ivf_error:
+                                    conn.rollback()
+                                    print(f"Both HNSW and IVFFlat failed, skipping vector index: {ivf_error}")
+                                    # Continue without vector index - it's not critical for basic functionality
+                            else:
+                                raise hnsw_error
 
                     conn.commit()
                     return
@@ -297,6 +347,76 @@ def ensure_schema(config: DatabaseConfig, username: str, password: str, table_na
                 """
                 cursor.execute(create_index_sql)
                 print(f"Created text search index for table {table_name}")
+
+                # Create the required vector index for Bedrock Knowledge Base
+                # Try HNSW first, fallback to IVFFlat if HNSW is not available
+                try:
+                    create_vector_index_sql = f"""
+                        CREATE INDEX IF NOT EXISTS {table_name}_embedding_hnsw_idx
+                        ON {table_name} USING hnsw (embedding vector_cosine_ops)
+                    """
+                    cursor.execute(create_vector_index_sql)
+                    print(f"Created HNSW vector index for table {table_name}")
+                except psycopg2.Error as hnsw_error:
+                    # Rollback the failed transaction before trying the fallback
+                    conn.rollback()
+                    if "access method" in str(hnsw_error) and "hnsw" in str(hnsw_error):
+                        print(f"HNSW not available, falling back to IVFFlat: {hnsw_error}")
+                        try:
+                            # Need to recreate the table and text index since we rolled back
+                            create_table_sql = f"""
+                                CREATE TABLE {table_name} (
+                                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                    text TEXT,
+                                    embedding vector({embedding_dimensions}),
+                                    metadata JSONB
+                                )
+                            """
+                            cursor.execute(create_table_sql)
+                            
+                            # Recreate the text index
+                            create_index_sql = f"""
+                                CREATE INDEX IF NOT EXISTS {table_name}_text_gin_idx
+                                ON {table_name} USING gin (to_tsvector('simple', text))
+                            """
+                            cursor.execute(create_index_sql)
+                            print(f"Recreated text search index for table {table_name}")
+                            
+                            # Now create the IVFFlat vector index
+                            create_vector_index_sql = f"""
+                                CREATE INDEX IF NOT EXISTS {table_name}_embedding_ivfflat_idx
+                                ON {table_name} USING ivfflat (embedding vector_cosine_ops)
+                                WITH (lists = 100)
+                            """
+                            cursor.execute(create_vector_index_sql)
+                            print(f"Created IVFFlat vector index for table {table_name}")
+                        except psycopg2.Error as ivf_error:
+                            conn.rollback()
+                            print(f"Both HNSW and IVFFlat failed, skipping vector index: {ivf_error}")
+                            # Recreate at least the basic table without vector index
+                            try:
+                                create_table_sql = f"""
+                                    CREATE TABLE {table_name} (
+                                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                        text TEXT,
+                                        embeddings vector({embedding_dimensions}),
+                                        metadata JSONB
+                                    )
+                                """
+                                cursor.execute(create_table_sql)
+                                
+                                # Create the text index
+                                create_index_sql = f"""
+                                    CREATE INDEX IF NOT EXISTS {table_name}_text_gin_idx
+                                    ON {table_name} USING gin (to_tsvector('simple', text))
+                                """
+                                cursor.execute(create_index_sql)
+                                print(f"Created table and text index without vector index for {table_name}")
+                            except psycopg2.Error as basic_error:
+                                print(f"Failed to create basic table structure: {basic_error}")
+                                raise basic_error
+                    else:
+                        raise hnsw_error
 
         conn.commit()
         print(f"Schema ensured for table: {table_name}")
@@ -367,6 +487,33 @@ def _migrate_table_schema(cursor, table_name: str, embedding_dimensions: str, ex
         """
         cursor.execute(create_index_sql)
         print(f"Created text search index for table {table_name}")
+
+        # Create the required vector index for Bedrock Knowledge Base
+        # Try HNSW first, fallback to IVFFlat if HNSW is not available
+        try:
+            create_vector_index_sql = f"""
+                CREATE INDEX IF NOT EXISTS {table_name}_embedding_hnsw_idx
+                ON {table_name} USING hnsw (embedding vector_cosine_ops)
+            """
+            cursor.execute(create_vector_index_sql)
+            print(f"Created HNSW vector index for table {table_name}")
+        except psycopg2.Error as hnsw_error:
+            # For migration, we're already in a transaction, so no manual rollback needed
+            if "access method" in str(hnsw_error) and "hnsw" in str(hnsw_error):
+                print(f"HNSW not available, falling back to IVFFlat: {hnsw_error}")
+                try:
+                    create_vector_index_sql = f"""
+                        CREATE INDEX IF NOT EXISTS {table_name}_embedding_ivfflat_idx
+                        ON {table_name} USING ivfflat (embedding vector_cosine_ops)
+                        WITH (lists = 100)
+                    """
+                    cursor.execute(create_vector_index_sql)
+                    print(f"Created IVFFlat vector index for table {table_name}")
+                except psycopg2.Error as ivf_error:
+                    print(f"Both HNSW and IVFFlat failed, continuing without vector index: {ivf_error}")
+                    # Continue migration without vector index - it's not critical
+            else:
+                raise hnsw_error
 
         # Step 4: Migrate data if there was any
         if row_count > 0:
