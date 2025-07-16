@@ -5,3 +5,5 @@ coverage.out
 .DS_Store
 __pycache__
 .pytest_cache
+code-refactoring-tool
+config.test

@@ -48,12 +48,27 @@ func NewBedrockRAG(
 
 // Create implements RAG.
 func (b *BedrockRAG) Create(ctx context.Context, tableName string) (string, error) {
+	// Get the embedding model configuration
+	modelConfig, exists := config.GetCurrentEmbeddingModelConfig()
+	if !exists {
+		return "", fmt.Errorf("unsupported embedding model: %s", config.AWSBedrockRAGEmbeddingModel)
+	}
+
+	// Build the vector knowledge base configuration
+	vectorConfig := &types.VectorKnowledgeBaseConfiguration{
+		EmbeddingModelArn: aws.String(modelConfig.GetEmbeddingModelARN(config.AWSRegion)),
+	}
+
+	// Add embedding configuration if the model supports it
+	if modelConfig.SupportsConfiguration && modelConfig.Configuration != nil {
+		vectorConfig.EmbeddingModelConfiguration = modelConfig.Configuration
+	}
+
 	// Create Bedrock Knowledge Base
 	kbOutput, err := b.kbClient.CreateKnowledgeBase(ctx, &bedrockagent.CreateKnowledgeBaseInput{
 		KnowledgeBaseConfiguration: &types.KnowledgeBaseConfiguration{
-			Type: types.KnowledgeBaseTypeVector, VectorKnowledgeBaseConfiguration: &types.VectorKnowledgeBaseConfiguration{
-				EmbeddingModelArn: aws.String(fmt.Sprintf("arn:aws:bedrock:%s::foundation-model/%s", config.AWSRegion, config.AWSBedrockRAGEmbeddingModel)),
-			},
+			Type:                             types.KnowledgeBaseTypeVector,
+			VectorKnowledgeBaseConfiguration: vectorConfig,
 		},
 		Name:        aws.String(b.getName()),
 		RoleArn:     aws.String(b.kbRoleARN),

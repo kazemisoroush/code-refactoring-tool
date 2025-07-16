@@ -245,22 +245,25 @@ func createDatabaseResources(resources *Resources, networking *NetworkingResourc
 	// RDS Postgres Serverless v2
 	cluster := awsrds.NewDatabaseCluster(resources.Stack, jsii.String(RDSPostgresDatabaseName), &awsrds.DatabaseClusterProps{
 		Engine: awsrds.DatabaseClusterEngine_AuroraPostgres(&awsrds.AuroraPostgresClusterEngineProps{
-			Version: awsrds.AuroraPostgresEngineVersion_VER_15_3(),
+			Version: awsrds.AuroraPostgresEngineVersion_VER_15_12(), // Updated to latest available version to exceed AWS recommendation
 		}),
-		Instances: jsii.Number(1),
-		InstanceProps: &awsrds.InstanceProps{
-			InstanceType: awsec2.InstanceType_Of(awsec2.InstanceClass_T4G, awsec2.InstanceSize_MEDIUM),
-			Vpc:          networking.Vpc,
-			VpcSubnets: &awsec2.SubnetSelection{
-				SubnetType: awsec2.SubnetType_PUBLIC,
-			},
-			PubliclyAccessible: jsii.Bool(false),
+		Writer: awsrds.ClusterInstance_ServerlessV2(jsii.String("writer"), &awsrds.ServerlessV2ClusterInstanceProps{
+			AutoMinorVersionUpgrade: jsii.Bool(true),
+		}),
+		Vpc: networking.Vpc,
+		VpcSubnets: &awsec2.SubnetSelection{
+			SubnetType: awsec2.SubnetType_PUBLIC,
 		},
 		DefaultDatabaseName: jsii.String(RDSPostgresDatabaseName),
 		Port:                jsii.Number(5432),
 		Credentials:         awsrds.Credentials_FromSecret(credentialsSecret, jsii.String("postgres")),
 		RemovalPolicy:       awscdk.RemovalPolicy_DESTROY,
 		ClusterIdentifier:   jsii.String("code-refactor-cluster"),
+		// Enable Data API v2 for Bedrock Knowledge Base integration
+		EnableDataApi: jsii.Bool(true),
+		// Configure Serverless v2 scaling
+		ServerlessV2MinCapacity: jsii.Number(0.5),
+		ServerlessV2MaxCapacity: jsii.Number(4.0),
 	})
 	awscdk.Tags_Of(cluster).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
@@ -334,10 +337,12 @@ func createMigrationLambda(resources *Resources, networking *NetworkingResources
 			migrationLambdaSG,
 		},
 		Environment: &map[string]*string{
-			"DB_SECRET_ARN": credentialsSecret.SecretArn(),
-			"DB_NAME":       jsii.String(RDSPostgresDatabaseName),
-			"DB_HOST":       cluster.ClusterEndpoint().Hostname(),
-			"DB_PORT":       jsii.String("5432"),
+			"DB_SECRET_ARN":        credentialsSecret.SecretArn(),
+			"DB_NAME":              jsii.String(RDSPostgresDatabaseName),
+			"DB_HOST":              cluster.ClusterEndpoint().Hostname(),
+			"DB_PORT":              jsii.String("5432"),
+			"EMBEDDING_DIMENSIONS": jsii.String("1536"), // Default for amazon.titan-embed-text-v1
+			"AUTO_MIGRATE_SCHEMA":  jsii.String("true"),  // Enable automatic schema migration
 		},
 		Timeout:           awscdk.Duration_Seconds(jsii.Number(10)),
 		Role:              migrationLambdaRole,

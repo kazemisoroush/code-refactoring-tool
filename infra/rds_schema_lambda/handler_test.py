@@ -141,6 +141,8 @@ class TestValidateEvent(unittest.TestCase):
 class TestEnsureSchema(unittest.TestCase):
     """Test ensure_schema function."""
 
+    @patch.dict(os.environ, {"EMBEDDING_DIMENSIONS": "1024"})
+    @patch.dict(os.environ, {"EMBEDDING_DIMENSIONS": "1536"})
     @patch("handler.psycopg2.connect")
     def test_ensure_schema_success(self, mock_connect):
         """Should call execute and commit when schema creation is successful."""
@@ -148,11 +150,124 @@ class TestEnsureSchema(unittest.TestCase):
         mock_connect.return_value = mock_conn
         mock_cursor = MagicMock()
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        
+        # Mock that table doesn't exist (no columns found)
+        mock_cursor.fetchall.return_value = []
 
         config = handler.DatabaseConfig("localhost", 5432, "testdb", "arn:secret")
         handler.ensure_schema(config, "user", "pass", "my_table")
 
-        mock_cursor.execute.assert_called_once()
+        # Should execute extension creation, schema check, and table creation
+        assert mock_cursor.execute.call_count == 3
+        
+        # Check that the extension is created first
+        first_call = mock_cursor.execute.call_args_list[0][0][0]
+        assert "CREATE EXTENSION IF NOT EXISTS vector" in first_call
+        
+        # Check that it queries for existing schema
+        second_call = mock_cursor.execute.call_args_list[1][0][0]
+        assert "information_schema.columns" in second_call
+        
+        # Check that the table creation uses UUID and vector types
+        third_call = mock_cursor.execute.call_args_list[2][0][0]
+        assert "id UUID PRIMARY KEY" in third_call
+        assert "vector(1536)" in third_call
+        assert "metadata JSONB" in third_call
+        assert "my_table" in third_call
+        
+        mock_conn.commit.assert_called_once()
+        mock_conn.close.assert_called_once()
+
+    @patch("handler.psycopg2.connect")
+    def test_ensure_schema_table_exists_correct_schema(self, mock_connect):
+        """Should skip table creation when table exists with correct vector schema."""
+        mock_conn = MagicMock()
+        mock_connect.return_value = mock_conn
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        
+        # Mock that table exists with correct schema (id: uuid, embedding: vector)
+        mock_cursor.fetchall.return_value = [
+            ("embedding", "USER-DEFINED", "vector"),
+            ("id", "USER-DEFINED", "uuid")
+        ]
+
+        config = handler.DatabaseConfig("localhost", 5432, "testdb", "arn:secret")
+        handler.ensure_schema(config, "user", "pass", "my_table")
+
+        # Should only execute extension creation and schema check (no table creation)
+        assert mock_cursor.execute.call_count == 2
+        
+        # Check that the extension is created first
+        first_call = mock_cursor.execute.call_args_list[0][0][0]
+        assert "CREATE EXTENSION IF NOT EXISTS vector" in first_call
+        
+        # Check that it queries for existing schema
+        second_call = mock_cursor.execute.call_args_list[1][0][0]
+        assert "information_schema.columns" in second_call
+        
+        mock_conn.commit.assert_called_once()
+        mock_conn.close.assert_called_once()
+
+    @patch("handler.psycopg2.connect")
+    def test_ensure_schema_table_exists_wrong_schema(self, mock_connect):
+        """Should skip table creation when table exists with wrong schema to avoid data loss."""
+        mock_conn = MagicMock()
+        mock_connect.return_value = mock_conn
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        
+        # Mock that table exists with wrong type (old array type and varchar id)
+        mock_cursor.fetchall.return_value = [
+            ("embedding", "ARRAY", "_float8"),
+            ("id", "character varying", "varchar")
+        ]
+
+        config = handler.DatabaseConfig("localhost", 5432, "testdb", "arn:secret")
+        handler.ensure_schema(config, "user", "pass", "my_table")
+
+        # Should only execute extension creation and schema check (no table creation)
+        assert mock_cursor.execute.call_count == 2
+        
+        # Check that the extension is created first
+        first_call = mock_cursor.execute.call_args_list[0][0][0]
+        assert "CREATE EXTENSION IF NOT EXISTS vector" in first_call
+        
+        # Check that it queries for existing schema
+        second_call = mock_cursor.execute.call_args_list[1][0][0]
+        assert "information_schema.columns" in second_call
+        
+        mock_conn.commit.assert_called_once()
+        mock_conn.close.assert_called_once()
+
+    @patch("handler.psycopg2.connect")
+    def test_ensure_schema_table_exists_wrong_id_type(self, mock_connect):
+        """Should skip table creation when table exists with wrong ID column type."""
+        mock_conn = MagicMock()
+        mock_connect.return_value = mock_conn
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        
+        # Mock that table exists with correct embedding but wrong ID type
+        mock_cursor.fetchall.return_value = [
+            ("embedding", "USER-DEFINED", "vector"),
+            ("id", "character varying", "varchar")
+        ]
+
+        config = handler.DatabaseConfig("localhost", 5432, "testdb", "arn:secret")
+        handler.ensure_schema(config, "user", "pass", "my_table")
+
+        # Should only execute extension creation and schema check (no table creation)
+        assert mock_cursor.execute.call_count == 2
+        
+        # Check that the extension is created first
+        first_call = mock_cursor.execute.call_args_list[0][0][0]
+        assert "CREATE EXTENSION IF NOT EXISTS vector" in first_call
+        
+        # Check that it queries for existing schema
+        second_call = mock_cursor.execute.call_args_list[1][0][0]
+        assert "information_schema.columns" in second_call
+        
         mock_conn.commit.assert_called_once()
         mock_conn.close.assert_called_once()
 

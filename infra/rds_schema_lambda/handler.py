@@ -6,6 +6,7 @@ import json
 import psycopg2
 import boto3
 import traceback
+import time
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
 
@@ -165,7 +166,7 @@ def ensure_database_exists(config: DatabaseConfig, username: str, password: str)
 
 def ensure_schema(config: DatabaseConfig, username: str, password: str, table_name: str) -> None:
     """
-    Ensure the schema/table exists in the database.
+    Ensure the schema/table exists in the database with proper migration support.
     
     Args:
         config: Database configuration
@@ -189,15 +190,87 @@ def ensure_schema(config: DatabaseConfig, username: str, password: str, table_na
         )
         
         with conn.cursor() as cursor:
-            create_table_sql = f"""
-                CREATE TABLE IF NOT EXISTS {table_name} (
-                    id VARCHAR(255) PRIMARY KEY,
-                    text TEXT,
-                    embedding FLOAT8[],
-                    metadata JSON
-                )
-            """
-            cursor.execute(create_table_sql)
+            # First, create the pgvector extension if it doesn't exist
+            cursor.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+            
+            # Get embedding dimensions from environment variable
+            embedding_dimensions = os.getenv("EMBEDDING_DIMENSIONS", "1536")
+            
+            # Check if table exists and get its current schema
+            cursor.execute("""
+                SELECT column_name, data_type, udt_name
+                FROM information_schema.columns 
+                WHERE table_name = %s 
+                ORDER BY ordinal_position
+            """, (table_name,))
+            
+            columns = cursor.fetchall()
+            
+            if columns:
+                print(f"Table {table_name} exists with {len(columns)} columns")
+                column_info = {col[0]: (col[1], col[2]) for col in columns}
+                
+                needs_migration = False
+                migration_issues = []
+                
+                # Check ID column
+                if 'id' in column_info:
+                    id_data_type, id_udt_name = column_info['id']
+                    if id_udt_name != 'uuid':
+                        needs_migration = True
+                        migration_issues.append(f"ID column type: {id_udt_name} (needs uuid)")
+                else:
+                    needs_migration = True
+                    migration_issues.append("Missing ID column")
+                
+                # Check embedding column
+                if 'embedding' in column_info:
+                    emb_data_type, emb_udt_name = column_info['embedding']
+                    if emb_udt_name != 'vector':
+                        needs_migration = True
+                        migration_issues.append(f"Embedding column type: {emb_udt_name} (needs vector)")
+                else:
+                    needs_migration = True
+                    migration_issues.append("Missing embedding column")
+                
+                # Check metadata column
+                if 'metadata' not in column_info:
+                    needs_migration = True
+                    migration_issues.append("Missing metadata column")
+                
+                if needs_migration:
+                    print(f"Table {table_name} needs migration. Issues: {migration_issues}")
+                    
+                    # For testing/development, we can perform automatic migration
+                    # In production, you might want to be more careful
+                    auto_migrate = os.getenv("AUTO_MIGRATE_SCHEMA", "false").lower() == "true"
+                    
+                    if auto_migrate:
+                        print(f"Performing automatic migration for table {table_name}")
+                        _migrate_table_schema(cursor, table_name, embedding_dimensions, column_info)
+                    else:
+                        print(f"Auto-migration disabled. Table {table_name} requires manual migration.")
+                        # Log each issue for clarity
+                        for issue in migration_issues:
+                            print(f"Migration issue: {issue}")
+                        conn.commit()
+                        return
+                else:
+                    print(f"Table {table_name} already has correct schema")
+                    conn.commit()
+                    return
+            else:
+                print(f"Table {table_name} does not exist, creating with proper schema")
+                # Table doesn't exist, create it with proper vector type
+                create_table_sql = f"""
+                    CREATE TABLE {table_name} (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        text TEXT,
+                        embedding vector({embedding_dimensions}),
+                        metadata JSONB
+                    )
+                """
+                cursor.execute(create_table_sql)
         
         conn.commit()
         print(f"Schema ensured for table: {table_name}")
@@ -211,6 +284,91 @@ def ensure_schema(config: DatabaseConfig, username: str, password: str, table_na
     finally:
         if conn:
             conn.close()
+
+
+def _migrate_table_schema(cursor, table_name: str, embedding_dimensions: str, existing_columns: dict) -> None:
+    """
+    Migrate existing table schema to the required format for Bedrock Knowledge Base.
+    
+    Args:
+        cursor: Database cursor
+        table_name: Name of the table to migrate
+        embedding_dimensions: Target embedding dimensions
+        existing_columns: Dictionary of existing column info
+        
+    Raises:
+        DatabaseError: If migration fails
+    """
+    print(f"Starting schema migration for table {table_name}")
+    
+    try:
+        # Begin transaction for safe migration
+        cursor.execute("BEGIN;")
+        
+        # Create a backup table name
+        backup_table = f"{table_name}_backup_{int(time.time())}"
+        
+        # Step 1: Check if there's existing data
+        cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+        row_count = cursor.fetchone()[0]
+        
+        if row_count > 0:
+            print(f"Found {row_count} rows in {table_name}, creating backup")
+            # Create backup of existing data
+            cursor.execute(f"CREATE TABLE {backup_table} AS SELECT * FROM {table_name}")
+            print(f"Backup created as {backup_table}")
+        
+        # Step 2: Drop existing table (we have backup if needed)
+        cursor.execute(f"DROP TABLE {table_name}")
+        print(f"Dropped existing table {table_name}")
+        
+        # Step 3: Create new table with correct schema
+        create_table_sql = f"""
+            CREATE TABLE {table_name} (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                text TEXT,
+                embedding vector({embedding_dimensions}),
+                metadata JSONB
+            )
+        """
+        cursor.execute(create_table_sql)
+        print(f"Created new table {table_name} with correct schema")
+        
+        # Step 4: Migrate data if there was any
+        if row_count > 0:
+            # Try to migrate compatible data
+            try:
+                # Check what columns exist in backup
+                if 'text' in existing_columns:
+                    if 'metadata' in existing_columns:
+                        # Migrate text and metadata, skip embedding (will need to be regenerated)
+                        cursor.execute(f"""
+                            INSERT INTO {table_name} (text, metadata) 
+                            SELECT text, metadata FROM {backup_table}
+                        """)
+                    else:
+                        # Only migrate text
+                        cursor.execute(f"""
+                            INSERT INTO {table_name} (text) 
+                            SELECT text FROM {backup_table}
+                        """)
+                    print(f"Migrated text data from backup table")
+                else:
+                    print("No compatible text data found in backup table")
+                
+                print(f"Data migration completed. Backup table {backup_table} retained for safety")
+            except Exception as e:
+                print(f"Warning: Could not migrate data: {e}")
+                print(f"Backup table {backup_table} contains original data")
+        
+        # Commit the transaction
+        cursor.execute("COMMIT;")
+        print(f"Migration completed successfully for table {table_name}")
+        
+    except Exception as e:
+        # Rollback on error
+        cursor.execute("ROLLBACK;")
+        raise DatabaseError(f"Schema migration failed: {e}")
 
 
 def validate_event(event: Dict[str, Any]) -> str:
