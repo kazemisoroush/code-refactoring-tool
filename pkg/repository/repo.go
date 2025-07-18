@@ -1,11 +1,13 @@
 package repository
 
+import "context"
+
 // Repository is an interface for interacting with a git repository
 //
 //go:generate mockgen -destination=./mocks/mock_repository.go -mock_names=Repository=MockRepository -package=mocks . Repository
 type Repository interface {
 	// Clone clones a git repository
-	Clone() error
+	Clone(ctx context.Context) error
 
 	// GetPath returns the path to the repository
 	GetPath() string

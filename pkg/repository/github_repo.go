@@ -2,6 +2,7 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -46,8 +47,8 @@ func (g *GitHubRepo) GetPath() string {
 }
 
 // Clone clones the repository to the local filesystem
-func (g *GitHubRepo) Clone() error {
-	repo, err := git.PlainClone(g.path, false, &git.CloneOptions{
+func (g *GitHubRepo) Clone(ctx context.Context) error {
+	repo, err := git.PlainCloneContext(ctx, g.path, false, &git.CloneOptions{
 		URL:      g.RepoURL,
 		Progress: os.Stdout,
 	})

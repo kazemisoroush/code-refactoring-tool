@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -62,17 +63,17 @@ func (mr *MockRepositoryMockRecorder) Cleanup() *gomock.Call {
 }
 
 // Clone mocks base method.
-func (m *MockRepository) Clone() error {
+func (m *MockRepository) Clone(arg0 context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Clone")
+	ret := m.ctrl.Call(m, "Clone", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Clone indicates an expected call of Clone.
-func (mr *MockRepositoryMockRecorder) Clone() *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Clone(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clone", reflect.TypeOf((*MockRepository)(nil).Clone))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clone", reflect.TypeOf((*MockRepository)(nil).Clone), arg0)
 }
 
 // Commit mocks base method.

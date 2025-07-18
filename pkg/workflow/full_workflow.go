@@ -52,7 +52,7 @@ func (o *FullWorkflow) Run(ctx context.Context) error {
 	}()
 
 	// Clone the repository
-	err := o.Repository.Clone()
+	err := o.Repository.Clone(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to clone repository: %w", err)
 	}

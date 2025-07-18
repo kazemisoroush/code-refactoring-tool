@@ -38,6 +38,12 @@ func NewFixWorkflow(
 func (o *FixWorkflow) Run(ctx context.Context) error {
 	log.Println("Running workflow...")
 
+	// Clone the repository
+	err := o.Repository.Clone(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to clone repository: %w", err)
+	}
+
 	// Build the RAG
 	ragID, err := o.RAGBuilder.Build(ctx)
 	if err != nil {

@@ -146,8 +146,8 @@ func (s S3DataStore) Create(ctx context.Context, ragID string) (string, error) {
 	return *response.DataSource.DataSourceId, nil
 }
 
-// Detele deletes the data source from the knowledge base.
-func (s S3DataStore) Detele(ctx context.Context, dataSourceID string, ragID string) error {
+// Delete deletes the data source from the knowledge base.
+func (s S3DataStore) Delete(ctx context.Context, dataSourceID string, ragID string) error {
 	_, err := s.client.DeleteDataSource(ctx, &bedrockagent.DeleteDataSourceInput{
 		DataSourceId:    aws.String(dataSourceID),
 		KnowledgeBaseId: aws.String(ragID),
@@ -188,7 +188,10 @@ func (s S3DataStore) UploadDirectory(ctx context.Context, localPath, remotePath 
 			Key:    aws.String(key),
 			Body:   f,
 		})
-		return fmt.Errorf("failed to upload %s to S3: %w", key, err)
+		if err != nil {
+			return fmt.Errorf("failed to upload %s to S3: %w", key, err)
+		}
+		return nil
 	})
 }
 

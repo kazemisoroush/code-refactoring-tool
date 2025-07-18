@@ -49,6 +49,20 @@ func (mr *MockDataStoreMockRecorder) Create(arg0, arg1 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockDataStore)(nil).Create), arg0, arg1)
 }
 
+// Delete mocks base method.
+func (m *MockDataStore) Delete(arg0 context.Context, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockDataStoreMockRecorder) Delete(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockDataStore)(nil).Delete), arg0, arg1, arg2)
+}
+
 // DeleteDirectory mocks base method.
 func (m *MockDataStore) DeleteDirectory(arg0 context.Context, arg1 string) error {
 	m.ctrl.T.Helper()
@@ -61,20 +75,6 @@ func (m *MockDataStore) DeleteDirectory(arg0 context.Context, arg1 string) error
 func (mr *MockDataStoreMockRecorder) DeleteDirectory(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDirectory", reflect.TypeOf((*MockDataStore)(nil).DeleteDirectory), arg0, arg1)
-}
-
-// Detele mocks base method.
-func (m *MockDataStore) Detele(arg0 context.Context, arg1, arg2 string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Detele", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Detele indicates an expected call of Detele.
-func (mr *MockDataStoreMockRecorder) Detele(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Detele", reflect.TypeOf((*MockDataStore)(nil).Detele), arg0, arg1, arg2)
 }
 
 // UploadDirectory mocks base method.

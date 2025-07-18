@@ -11,7 +11,7 @@ type DataStore interface {
 	Create(ctx context.Context, ragID string) (string, error)
 
 	// Delete removes the data store, cleaning up any resources it holds.
-	Detele(ctx context.Context, dataSourceID string, ragID string) error
+	Delete(ctx context.Context, dataSourceID string, ragID string) error
 
 	// UploadDirectory uploads a local directory to a remote path in the storage system.
 	UploadDirectory(ctx context.Context, localPath, remotePath string) error

@@ -69,7 +69,7 @@ func (b BedrockRAGBuilder) Build(ctx context.Context) (string, error) {
 // TearDown implements RAGBuilder.
 func (b BedrockRAGBuilder) TearDown(ctx context.Context, vectorStoreID string, ragID string) error {
 	// Delete the data source from the RAG pipeline if it exists
-	err := b.dataStore.Detele(ctx, vectorStoreID, ragID)
+	err := b.dataStore.Delete(ctx, vectorStoreID, ragID)
 	if err != nil {
 		return fmt.Errorf("failed to delete data source: %w", err)
 	}
