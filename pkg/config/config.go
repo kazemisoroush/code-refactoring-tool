@@ -81,6 +81,7 @@ var (
 type Config struct {
 	Git            GitConfig  `envconfig:"GIT"`
 	TimeoutSeconds int        `envconfig:"TIMEOUT_SECONDS" default:"180"`
+	LogLevel       string     `envconfig:"LOG_LEVEL" default:"info"`
 	AWSConfig      aws.Config // Loaded using AWS SDK, not from env
 
 	S3BucketName                string      `envconfig:"S3_BUCKET_NAME"`

@@ -4,7 +4,7 @@ package workflow
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/analyzer"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/analyzer/models"
@@ -42,12 +42,12 @@ func NewFullWorkflow(
 
 // Run executes the code analysis workflow
 func (o *FullWorkflow) Run(ctx context.Context) error {
-	log.Println("Running workflow...")
+	slog.Info("Running workflow")
 
 	defer func() {
 		err := o.Repository.Cleanup()
 		if err != nil {
-			log.Printf("failed to cleanup repository: %v", err)
+			slog.Error("failed to cleanup repository", "error", err)
 		}
 	}()
 
@@ -61,11 +61,11 @@ func (o *FullWorkflow) Run(ctx context.Context) error {
 	allIssues := []models.CodeIssue{}
 
 	for _, a := range o.Analyzers {
-		log.Printf("Running analyzer: %T", a)
+		slog.Info("Running analyzer", "type", fmt.Sprintf("%T", a))
 
 		result, err := a.AnalyzeCode(path)
 		if err != nil {
-			log.Printf("Analyzer %T failed: %v", a, err)
+			slog.Warn("Analyzer failed", "type", fmt.Sprintf("%T", a), "error", err)
 			// still continue to extract issues
 		}
 
@@ -77,7 +77,7 @@ func (o *FullWorkflow) Run(ctx context.Context) error {
 	}
 
 	if len(allIssues) == 0 {
-		log.Println("No issues found.")
+		slog.Info("No issues found")
 		return nil
 	}
 
@@ -116,7 +116,7 @@ func (o *FullWorkflow) Run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to create PR: %w", err)
 	}
-	log.Println("PR created:", output)
+	slog.Info("PR created", "output", output)
 
 	return nil
 }

@@ -53,8 +53,8 @@ func (g *GitHubRepo) Clone(ctx context.Context) error {
 		Progress: os.Stdout,
 	})
 	if err != nil {
-		slog.Error("something went wrong", "error", err)
-		return nil
+		slog.Error("failed to clone repository", "error", err, "url", g.RepoURL, "path", g.path)
+		return fmt.Errorf("failed to clone repository: %w", err)
 	}
 	g.repo = repo
 	return nil

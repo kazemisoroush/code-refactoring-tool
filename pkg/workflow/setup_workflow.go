@@ -4,7 +4,7 @@ package workflow
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/builder"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
@@ -42,37 +42,37 @@ func NewSetupWorkflow(
 
 // Run executes the setup workflow to provision AI resources
 func (s *SetupWorkflow) Run(ctx context.Context) error {
-	log.Println("Running setup workflow...")
+	slog.Info("Running setup workflow")
 
 	// 1. Clone the repository
-	log.Println("Cloning repository...")
+	slog.Info("Cloning repository")
 	err := s.Repository.Clone(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to clone repository: %w", err)
 	}
-	log.Printf("✅ Repository cloned successfully")
+	slog.Info("Repository cloned successfully")
 
 	// 2. Build the RAG pipeline
-	log.Println("Building RAG pipeline...")
+	slog.Info("Building RAG pipeline")
 	ragID, err := s.RAGBuilder.Build(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to build RAG pipeline: %w", err)
 	}
 	s.RAGID = ragID
 	s.VectorStoreID = ragID // In Bedrock, the KB ID serves as both RAG ID and vector store ID
-	log.Printf("✅ RAG pipeline built successfully. RAG ID: %s", ragID)
+	slog.Info("RAG pipeline built successfully", "ragID", ragID)
 
 	// 3. Build the agent
-	log.Printf("Building agent with RAG ID: %s", ragID)
+	slog.Info("Building agent", "ragID", ragID)
 	agentID, agentVersion, err := s.AgentBuilder.Build(ctx, ragID)
 	if err != nil {
 		return fmt.Errorf("failed to build agent: %w", err)
 	}
 	s.AgentID = agentID
 	s.AgentVersion = agentVersion
-	log.Printf("✅ Agent built successfully. Agent ID: %s, Version: %s", agentID, agentVersion)
+	slog.Info("Agent built successfully", "agentID", agentID, "version", agentVersion)
 
-	log.Println("✅ Setup workflow completed successfully")
+	slog.Info("Setup workflow completed successfully")
 	return nil
 }
 

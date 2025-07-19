@@ -3,13 +3,14 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/builder"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/rag"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/storage"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/logging"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/workflow"
 )
@@ -19,8 +20,12 @@ func main() {
 	// Load environment + AWS config
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("❌ failed to load config: %v", err)
+		slog.Error("failed to load config", "error", err)
+		return
 	}
+
+	// Setup structured logging
+	logging.SetupLogger(cfg.LogLevel)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.TimeoutSeconds)*time.Second)
 	defer cancel()
@@ -55,13 +60,15 @@ func main() {
 	// Compose the full workflow
 	wf, err := workflow.NewSetupWorkflow(cfg, repo, ragBuilder, agentBuilder)
 	if err != nil {
-		log.Fatalf("❌ failed to create workflow: %v", err)
+		slog.Error("failed to create workflow", "error", err)
+		return
 	}
 
 	// Run the workflow
 	if err := wf.Run(ctx); err != nil {
-		log.Fatalf("❌ workflow failed: %v", err)
+		slog.Error("workflow failed", "error", err)
+		return
 	}
 
-	log.Println("✅ Workflow completed successfully.")
+	slog.Info("Workflow completed successfully")
 }
