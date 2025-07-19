@@ -107,6 +107,7 @@ func (o *ValidateWorkflow) Run(ctx context.Context) error {
 	}
 
 	output, err := o.Repository.CreatePR(
+		ctx,
 		plan.Change.Title,
 		plan.Change.Description,
 		"fix/linter",

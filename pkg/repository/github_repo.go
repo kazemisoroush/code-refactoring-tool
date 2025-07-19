@@ -109,16 +109,16 @@ func (g *GitHubRepo) Push(ctx context.Context) error {
 }
 
 // CreatePR creates a new pull request
-func (g *GitHubRepo) CreatePR(title, description, sourceBranch, targetBranch string) (string, error) {
+func (g *GitHubRepo) CreatePR(ctx context.Context, title, description, sourceBranch, targetBranch string) (string, error) {
 	owner, repo, err := g.getOwnerRepo()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get owner/repo: %w", err)
 	}
 
 	createURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls", owner, repo)
 	cmd := fmt.Sprintf(`curl -X POST -H "Authorization: token %s" -H "Accept: application/vnd.github.v3+json" %s -d '{"title":"%s", "body":"%s", "head":"%s", "base":"%s"}'`,
 		g.Token, createURL, title, description, sourceBranch, targetBranch)
-	output, err := exec.Command("bash", "-c", cmd).Output()
+	output, err := exec.CommandContext(ctx, "bash", "-c", cmd).Output()
 	if err != nil {
 		return "", fmt.Errorf("failed to create pull request: %w", err)
 	}
@@ -126,30 +126,30 @@ func (g *GitHubRepo) CreatePR(title, description, sourceBranch, targetBranch str
 }
 
 // UpsertPR creates a PR if it doesn't exist, otherwise updates the existing one.
-func (g *GitHubRepo) UpsertPR(title, description, sourceBranch, targetBranch string) (string, error) {
-	exists, prNumber, err := g.PRExists(sourceBranch, targetBranch)
+func (g *GitHubRepo) UpsertPR(ctx context.Context, title, description, sourceBranch, targetBranch string) (string, error) {
+	exists, prNumber, err := g.prExists(ctx, sourceBranch, targetBranch)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to check existing PRs: %w", err)
 	}
 	if exists {
-		if err := g.UpdatePR(prNumber, title, description); err != nil {
-			return "", err
+		if err := g.UpdatePR(ctx, prNumber, title, description); err != nil {
+			return "", fmt.Errorf("failed to update existing PR: %w", err)
 		}
 		return fmt.Sprintf("PR #%d updated", prNumber), nil
 	}
-	return g.CreatePR(title, description, sourceBranch, targetBranch)
+	return g.CreatePR(ctx, title, description, sourceBranch, targetBranch)
 }
 
-// PRExists checks if a PR exists and returns (true, PR number) or (false, 0)
-func (g *GitHubRepo) PRExists(sourceBranch, targetBranch string) (bool, int, error) {
+// prExists checks if a PR exists and returns (true, PR number) or (false, 0)
+func (g *GitHubRepo) prExists(ctx context.Context, sourceBranch, targetBranch string) (bool, int, error) {
 	owner, repo, err := g.getOwnerRepo()
 	if err != nil {
-		return false, 0, err
+		return false, 0, fmt.Errorf("failed to get owner/repo: %w", err)
 	}
 
 	listURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls?head=%s:%s&base=%s", owner, repo, owner, sourceBranch, targetBranch)
 	cmd := fmt.Sprintf(`curl -s -H "Authorization: token %s" %s`, g.Token, listURL)
-	out, err := exec.Command("bash", "-c", cmd).Output()
+	out, err := exec.CommandContext(ctx, "bash", "-c", cmd).Output()
 	if err != nil {
 		return false, 0, fmt.Errorf("failed to check existing PRs: %w", err)
 	}
@@ -168,16 +168,16 @@ func (g *GitHubRepo) PRExists(sourceBranch, targetBranch string) (bool, int, err
 }
 
 // UpdatePR updates an existing pull request's title and body
-func (g *GitHubRepo) UpdatePR(prNumber int, title, description string) error {
+func (g *GitHubRepo) UpdatePR(ctx context.Context, prNumber int, title, description string) error {
 	owner, repo, err := g.getOwnerRepo()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get owner/repo: %w", err)
 	}
 
 	updateURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls/%d", owner, repo, prNumber)
 	cmd := fmt.Sprintf(`curl -X PATCH -H "Authorization: token %s" -H "Accept: application/vnd.github.v3+json" %s -d '{"title":"%s", "body":"%s"}'`,
 		g.Token, updateURL, title, description)
-	_, err = exec.Command("bash", "-c", cmd).Output()
+	_, err = exec.CommandContext(ctx, "bash", "-c", cmd).Output()
 	if err != nil {
 		return fmt.Errorf("failed to update PR: %w", err)
 	}

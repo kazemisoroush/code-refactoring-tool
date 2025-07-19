@@ -91,18 +91,18 @@ func (mr *MockRepositoryMockRecorder) Commit(arg0 interface{}) *gomock.Call {
 }
 
 // CreatePR mocks base method.
-func (m *MockRepository) CreatePR(arg0, arg1, arg2, arg3 string) (string, error) {
+func (m *MockRepository) CreatePR(arg0 context.Context, arg1, arg2, arg3, arg4 string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreatePR", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "CreatePR", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreatePR indicates an expected call of CreatePR.
-func (mr *MockRepositoryMockRecorder) CreatePR(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) CreatePR(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePR", reflect.TypeOf((*MockRepository)(nil).CreatePR), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePR", reflect.TypeOf((*MockRepository)(nil).CreatePR), arg0, arg1, arg2, arg3, arg4)
 }
 
 // GetPath mocks base method.
@@ -117,22 +117,6 @@ func (m *MockRepository) GetPath() string {
 func (mr *MockRepositoryMockRecorder) GetPath() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPath", reflect.TypeOf((*MockRepository)(nil).GetPath))
-}
-
-// PRExists mocks base method.
-func (m *MockRepository) PRExists(arg0, arg1 string) (bool, int, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PRExists", arg0, arg1)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(int)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// PRExists indicates an expected call of PRExists.
-func (mr *MockRepositoryMockRecorder) PRExists(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PRExists", reflect.TypeOf((*MockRepository)(nil).PRExists), arg0, arg1)
 }
 
 // Push mocks base method.
@@ -150,30 +134,30 @@ func (mr *MockRepositoryMockRecorder) Push(arg0 interface{}) *gomock.Call {
 }
 
 // UpdatePR mocks base method.
-func (m *MockRepository) UpdatePR(arg0 int, arg1, arg2 string) error {
+func (m *MockRepository) UpdatePR(arg0 context.Context, arg1 int, arg2, arg3 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdatePR", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "UpdatePR", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdatePR indicates an expected call of UpdatePR.
-func (mr *MockRepositoryMockRecorder) UpdatePR(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) UpdatePR(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePR", reflect.TypeOf((*MockRepository)(nil).UpdatePR), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePR", reflect.TypeOf((*MockRepository)(nil).UpdatePR), arg0, arg1, arg2, arg3)
 }
 
 // UpsertPR mocks base method.
-func (m *MockRepository) UpsertPR(arg0, arg1, arg2, arg3 string) (string, error) {
+func (m *MockRepository) UpsertPR(arg0 context.Context, arg1, arg2, arg3, arg4 string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpsertPR", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "UpsertPR", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpsertPR indicates an expected call of UpsertPR.
-func (mr *MockRepositoryMockRecorder) UpsertPR(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) UpsertPR(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertPR", reflect.TypeOf((*MockRepository)(nil).UpsertPR), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertPR", reflect.TypeOf((*MockRepository)(nil).UpsertPR), arg0, arg1, arg2, arg3, arg4)
 }

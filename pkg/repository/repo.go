@@ -22,16 +22,13 @@ type Repository interface {
 	Push(ctx context.Context) error
 
 	// UpsertPR creates a PR if not exists otherwise updates the existing PR
-	UpsertPR(title, description, sourceBranch, targetBranch string) (string, error)
+	UpsertPR(ctx context.Context, title, description, sourceBranch, targetBranch string) (string, error)
 
 	// CreatePR creates a pull request in the repository
-	CreatePR(title, description, sourceBranch, targetBranch string) (string, error)
+	CreatePR(ctx context.Context, title, description, sourceBranch, targetBranch string) (string, error)
 
 	// UpdatePR updates a pull request in the repository
-	UpdatePR(prNumber int, title, description string) error
-
-	// PRExists checks if a PR exists in the repository
-	PRExists(sourceBranch, targetBranch string) (bool, int, error)
+	UpdatePR(ctx context.Context, prNumber int, title, description string) error
 
 	// Cleanup deletes the repository
 	Cleanup() error
