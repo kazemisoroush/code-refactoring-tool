@@ -6,6 +6,8 @@ import (
 )
 
 // AgentBuilder defines how an agent is configured based on RAG metadata.
+//
+//go:generate mockgen -destination=./mocks/mock_agent_builder.go -mock_names=AgentBuilder=MockAgentBuilder -package=mocks . AgentBuilder
 type AgentBuilder interface {
 	// Build creates an agent connected to the RAG metadata (vector store).
 	Build(ctx context.Context, ragID string) (string, string, error)

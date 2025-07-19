@@ -53,7 +53,7 @@ func main() {
 	)
 
 	// Compose the full workflow
-	wf, err := workflow.NewFixWorkflow(cfg, repo, ragBuilder, agentBuilder)
+	wf, err := workflow.NewSetupWorkflow(cfg, repo, ragBuilder, agentBuilder)
 	if err != nil {
 		log.Fatalf("❌ failed to create workflow: %v", err)
 	}
