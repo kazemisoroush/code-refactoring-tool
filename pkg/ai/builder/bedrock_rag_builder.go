@@ -7,6 +7,7 @@ import (
 
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/rag"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/storage"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 )
 
 const (
@@ -40,7 +41,7 @@ func NewBedrockRAGBuilder(
 // Build implements RAGBuilder.
 func (b BedrockRAGBuilder) Build(ctx context.Context) (string, error) {
 	// Invoke Ensure RDS Postgres Schema Lambda
-	err := b.storage.EnsureSchema(ctx, b.getRDSTableName())
+	err := b.storage.EnsureSchema(ctx, config.CodeRefactoringDatabaseName, b.getRDSTableName())
 	if err != nil {
 		return "", fmt.Errorf("failed to ensure storage schema: %w", err)
 	}

@@ -17,9 +17,10 @@ type Storage interface {
 	//
 	// Parameters:
 	//   - ctx: Context for managing cancellation and timeouts.
+	//   - databaseName: Name of the database to create or verify.
 	//   - tableName: Name of the table or schema to create or verify.
 	//
 	// Returns:
 	//   - error: Any error encountered while ensuring the schema.
-	EnsureSchema(ctx context.Context, tableName string) error
+	EnsureSchema(ctx context.Context, databaseName string, tableName string) error
 }

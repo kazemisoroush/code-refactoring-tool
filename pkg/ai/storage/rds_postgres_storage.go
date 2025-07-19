@@ -37,9 +37,12 @@ func NewRDSPostgresStorage(awsConfig aws.Config, lambdaARN string) Storage {
 }
 
 // EnsureSchema triggers the Lambda function to create the schema/table in the RDS Postgres database.
-// It sends the table name in the request payload and parses the response to confirm success or capture errors.
-func (c *RDSPostgresStorage) EnsureSchema(ctx context.Context, tableName string) error {
-	payload := map[string]string{"table": tableName}
+// It sends the database name and table name in the request payload and parses the response to confirm success or capture errors.
+func (c *RDSPostgresStorage) EnsureSchema(ctx context.Context, databaseName string, tableName string) error {
+	payload := map[string]string{
+		"database": databaseName,
+		"table":    tableName,
+	}
 	data, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("error marshaling Lambda payload: %w", err)

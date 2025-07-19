@@ -24,6 +24,9 @@ const (
 	// DefaultRepositoryTagKey get repository tag key per code base.
 	DefaultRepositoryTagKey = "repository"
 
+	// CodeRefactoringDatabaseName is the name of the database for this project
+	CodeRefactoringDatabaseName = "code_refactoring_db"
+
 	// AWSBedrockAgentModel model used for Bedrock Agent.
 	AWSBedrockAgentModel = "amazon.titan-tg1-large"
 

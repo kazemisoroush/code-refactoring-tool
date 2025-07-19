@@ -43,6 +43,78 @@ class TestGetSecretValue(unittest.TestCase):
             handler.get_secret_value("arn:denied")
 
 
+class TestCreateDatabaseIfNotExists(unittest.TestCase):
+    """Test create_database_if_not_exists function."""
+
+    @patch("handler.psycopg2.connect")
+    def test_create_database_if_not_exists_already_exists(self, mock_connect):
+        """Should not create database when it already exists."""
+        mock_conn = MagicMock()
+        mock_connect.return_value = mock_conn
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+
+        # Mock database exists
+        mock_cursor.fetchone.return_value = [1]
+
+        admin_db_config = {
+            "host": "localhost",
+            "port": 5432,
+            "dbname": "postgres",
+            "username": "user",
+            "password": "pass"
+        }
+
+        handler.create_database_if_not_exists(admin_db_config, "test_db")
+
+        # Should check if database exists
+        mock_cursor.execute.assert_called_once_with(
+            "SELECT 1 FROM pg_database WHERE datname = %s",
+            ("test_db",)
+        )
+
+        # Should not create database since it exists
+        create_calls = [call for call in mock_cursor.execute.call_args_list
+                       if "CREATE DATABASE" in str(call)]
+        self.assertEqual(len(create_calls), 0)
+
+    @patch("handler.psycopg2.connect")
+    def test_create_database_if_not_exists_creates_new(self, mock_connect):
+        """Should create database when it doesn't exist."""
+        mock_conn = MagicMock()
+        mock_connect.return_value = mock_conn
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+
+        # Mock database doesn't exist
+        mock_cursor.fetchone.return_value = None
+
+        admin_db_config = {
+            "host": "localhost",
+            "port": 5432,
+            "dbname": "postgres",
+            "username": "user",
+            "password": "pass"
+        }
+
+        handler.create_database_if_not_exists(admin_db_config, "test_db")
+
+        # Should check if database exists and then create it
+        self.assertEqual(mock_cursor.execute.call_count, 2)
+
+        # Check first call (existence check)
+        first_call = mock_cursor.execute.call_args_list[0]
+        self.assertEqual(first_call[0][0], "SELECT 1 FROM pg_database WHERE datname = %s")
+        self.assertEqual(first_call[0][1], ("test_db",))
+
+        # Check second call (database creation)
+        second_call = mock_cursor.execute.call_args_list[1][0][0]
+        self.assertEqual(second_call, 'CREATE DATABASE "test_db"')
+
+        # Should set autocommit
+        self.assertTrue(mock_conn.autocommit)
+
+
 class TestCreateTableAndIndexes(unittest.TestCase):
     """Test create_table_and_indexes function."""
 
@@ -188,24 +260,39 @@ class TestLambdaHandler(unittest.TestCase):
         "DB_SECRET_ARN": "arn:secret"
     })
     @patch("handler.get_secret_value")
+    @patch("handler.create_database_if_not_exists")
     @patch("handler.create_table_and_indexes")
-    def test_lambda_handler_success(self, mock_create_table, mock_get_secret):
+    def test_lambda_handler_success(self, mock_create_table, mock_create_db, mock_get_secret):
         """Should return success when all operations complete successfully."""
         mock_get_secret.return_value = {"username": "user", "password": "pass"}
 
-        event = {"table": "my_table"}
+        event = {"table": "my_table", "database": "my_database"}
         result = handler.lambda_handler(event, {})
 
         self.assertEqual(result["status"], "success")
-        self.assertIn("Table and indexes created for my_table", result["message"])
+        self.assertIn("Database my_database and table my_table created successfully", result["message"])
 
         # Verify functions were called
         mock_get_secret.assert_called_once_with("arn:secret")
+
+        # Verify create_database_if_not_exists was called with admin config
+        mock_create_db.assert_called_once_with(
+            {
+                "host": "localhost",
+                "port": 5432,
+                "dbname": "testdb",  # admin database
+                "username": "user",
+                "password": "pass"
+            },
+            "my_database"
+        )
+
+        # Verify create_table_and_indexes was called with target database config
         mock_create_table.assert_called_once_with(
             {
                 "host": "localhost",
                 "port": 5432,
-                "dbname": "testdb",
+                "dbname": "my_database",  # target database
                 "username": "user",
                 "password": "pass"
             },
@@ -214,17 +301,31 @@ class TestLambdaHandler(unittest.TestCase):
 
     def test_lambda_handler_missing_table(self):
         """Should return error when 'table' is missing in event."""
-        event = {}  # No "table" key
+        event = {"database": "my_database"}  # No "table" key
         result = handler.lambda_handler(event, {})
         self.assertEqual(result["status"], "error")
         self.assertIn("Missing 'table' in event", result["message"])
 
+    def test_lambda_handler_missing_database(self):
+        """Should return error when 'database' is missing in event."""
+        event = {"table": "my_table"}  # No "database" key
+        result = handler.lambda_handler(event, {})
+        self.assertEqual(result["status"], "error")
+        self.assertIn("Missing 'database' in event", result["message"])
+
     def test_lambda_handler_empty_table(self):
         """Should return error when 'table' is empty."""
-        event = {"table": ""}
+        event = {"table": "", "database": "my_database"}
         result = handler.lambda_handler(event, {})
         self.assertEqual(result["status"], "error")
         self.assertIn("Missing 'table' in event", result["message"])
+
+    def test_lambda_handler_empty_database(self):
+        """Should return error when 'database' is empty."""
+        event = {"table": "my_table", "database": ""}
+        result = handler.lambda_handler(event, {})
+        self.assertEqual(result["status"], "error")
+        self.assertIn("Missing 'database' in event", result["message"])
 
     @patch.dict(os.environ, {}, clear=True)
     def test_lambda_handler_missing_env_vars(self):
@@ -246,7 +347,7 @@ class TestLambdaHandler(unittest.TestCase):
     ))
     def test_lambda_handler_secret_error(self, _mock_get_secret):
         """Should return error when secret retrieval fails."""
-        event = {"table": "my_table"}
+        event = {"table": "my_table", "database": "my_database"}
         result = handler.lambda_handler(event, {})
         self.assertEqual(result["status"], "error")
         self.assertIn("AccessDeniedException", result["message"])
@@ -258,15 +359,33 @@ class TestLambdaHandler(unittest.TestCase):
         "DB_SECRET_ARN": "arn:secret"
     })
     @patch("handler.get_secret_value")
-    @patch("handler.create_table_and_indexes", side_effect=psycopg2.Error("Connection failed"))
-    def test_lambda_handler_database_error(self, _mock_create_table, mock_get_secret):
+    @patch("handler.create_database_if_not_exists", side_effect=psycopg2.Error("Connection failed"))
+    def test_lambda_handler_database_error(self, _mock_create_db, mock_get_secret):
         """Should return error when database operations fail."""
         mock_get_secret.return_value = {"username": "user", "password": "pass"}
 
-        event = {"table": "my_table"}
+        event = {"table": "my_table", "database": "my_database"}
         result = handler.lambda_handler(event, {})
         self.assertEqual(result["status"], "error")
         self.assertIn("Connection failed", result["message"])
+
+    @patch.dict(os.environ, {
+        "DB_HOST": "localhost",
+        "DB_PORT": "5432",
+        "DB_NAME": "testdb",
+        "DB_SECRET_ARN": "arn:secret"
+    })
+    @patch("handler.get_secret_value")
+    @patch("handler.create_database_if_not_exists")
+    @patch("handler.create_table_and_indexes", side_effect=psycopg2.Error("Table creation failed"))
+    def test_lambda_handler_table_creation_error(self, _mock_create_table, _mock_create_db, mock_get_secret):
+        """Should return error when table creation fails."""
+        mock_get_secret.return_value = {"username": "user", "password": "pass"}
+
+        event = {"table": "my_table", "database": "my_database"}
+        result = handler.lambda_handler(event, {})
+        self.assertEqual(result["status"], "error")
+        self.assertIn("Table creation failed", result["message"])
 
 
 if __name__ == '__main__':
