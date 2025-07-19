@@ -136,17 +136,17 @@ func (mr *MockRepositoryMockRecorder) PRExists(arg0, arg1 interface{}) *gomock.C
 }
 
 // Push mocks base method.
-func (m *MockRepository) Push() error {
+func (m *MockRepository) Push(arg0 context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Push")
+	ret := m.ctrl.Call(m, "Push", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Push indicates an expected call of Push.
-func (mr *MockRepositoryMockRecorder) Push() *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Push(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Push", reflect.TypeOf((*MockRepository)(nil).Push))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Push", reflect.TypeOf((*MockRepository)(nil).Push), arg0)
 }
 
 // UpdatePR mocks base method.

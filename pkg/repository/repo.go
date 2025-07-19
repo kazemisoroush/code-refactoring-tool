@@ -19,7 +19,7 @@ type Repository interface {
 	Commit(message string) error
 
 	// Push pushes the current branch to the remote repository
-	Push() error
+	Push(ctx context.Context) error
 
 	// UpsertPR creates a PR if not exists otherwise updates the existing PR
 	UpsertPR(title, description, sourceBranch, targetBranch string) (string, error)

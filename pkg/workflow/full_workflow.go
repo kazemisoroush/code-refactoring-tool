@@ -101,7 +101,7 @@ func (o *FullWorkflow) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}
 
-	err = o.Repository.Push()
+	err = o.Repository.Push(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to push changes: %w", err)
 	}

@@ -96,8 +96,8 @@ func (g *GitHubRepo) Commit(message string) error {
 }
 
 // Push pushes commits to the remote repository
-func (g *GitHubRepo) Push() error {
-	return g.repo.Push(&git.PushOptions{
+func (g *GitHubRepo) Push(ctx context.Context) error {
+	return g.repo.PushContext(ctx, &git.PushOptions{
 		RemoteURL:  g.RepoURL,
 		RemoteName: "origin",
 		Force:      true,
