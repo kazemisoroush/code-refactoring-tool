@@ -145,7 +145,7 @@ class TestCreateTableAndIndexes(unittest.TestCase):
 
         # Check table creation
         second_call = mock_cursor.execute.call_args_list[1][0][0]
-        self.assertIn("CREATE TABLE IF NOT EXISTS my_table", second_call)
+        self.assertIn('CREATE TABLE IF NOT EXISTS "my_table"', second_call)
         self.assertIn("id UUID PRIMARY KEY", second_call)
         self.assertIn("vector(1536)", second_call)
         self.assertIn("metadata JSONB", second_call)

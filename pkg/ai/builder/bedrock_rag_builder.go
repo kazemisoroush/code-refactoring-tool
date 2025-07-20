@@ -4,6 +4,9 @@ package builder
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/rag"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/storage"
@@ -91,6 +94,21 @@ func (b BedrockRAGBuilder) TearDown(ctx context.Context, vectorStoreID string, r
 }
 
 // getRDSTableName returns the name of the RDS table used for vector storage.
+// It sanitizes the repo path to create a valid SQL identifier.
 func (b BedrockRAGBuilder) getRDSTableName() string {
-	return b.repoPath
+	// Get the base name from the repo path
+	baseName := filepath.Base(b.repoPath)
+
+	// Replace hyphens and other invalid characters with underscores
+	// Keep only alphanumeric characters and underscores
+	reg := regexp.MustCompile(`[^a-zA-Z0-9_]`)
+	sanitized := reg.ReplaceAllString(baseName, "_")
+
+	// Ensure it starts with a letter or underscore (SQL identifier requirement)
+	if len(sanitized) > 0 && sanitized[0] >= '0' && sanitized[0] <= '9' {
+		sanitized = "_" + sanitized
+	}
+
+	// Convert to lowercase for consistency
+	return strings.ToLower(sanitized)
 }

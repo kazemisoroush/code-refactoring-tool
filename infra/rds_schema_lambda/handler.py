@@ -69,8 +69,9 @@ def create_table_and_indexes(db_config, table_name):
             cursor.execute("CREATE EXTENSION IF NOT EXISTS vector;")
 
             # Create table if it doesn't exist
+            # Table name is pre-sanitized by the Go code to be a valid SQL identifier
             create_table_sql = f"""
-                CREATE TABLE IF NOT EXISTS {table_name} (
+                CREATE TABLE IF NOT EXISTS "{table_name}" (
                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     text TEXT,
                     embedding vector({embedding_dimensions}),
@@ -82,8 +83,8 @@ def create_table_and_indexes(db_config, table_name):
 
             # Create text search index
             create_text_index_sql = f"""
-                CREATE INDEX IF NOT EXISTS {table_name}_text_gin_idx
-                ON {table_name} USING gin (to_tsvector('simple', text))
+                CREATE INDEX IF NOT EXISTS "{table_name}_text_gin_idx"
+                ON "{table_name}" USING gin (to_tsvector('simple', text))
             """
             cursor.execute(create_text_index_sql)
             print(f"Text search index created for {table_name}")
@@ -91,8 +92,8 @@ def create_table_and_indexes(db_config, table_name):
             # Create vector index - try HNSW first, fallback to IVFFlat
             try:
                 create_vector_index_sql = f"""
-                    CREATE INDEX IF NOT EXISTS {table_name}_embedding_hnsw_idx
-                    ON {table_name} USING hnsw (embedding vector_cosine_ops)
+                    CREATE INDEX IF NOT EXISTS "{table_name}_embedding_hnsw_idx"
+                    ON "{table_name}" USING hnsw (embedding vector_cosine_ops)
                 """
                 cursor.execute(create_vector_index_sql)
                 print(f"HNSW vector index created for {table_name}")
@@ -100,8 +101,8 @@ def create_table_and_indexes(db_config, table_name):
                 if "access method" in str(e) and "hnsw" in str(e):
                     print(f"HNSW not available, using IVFFlat: {e}")
                     create_vector_index_sql = f"""
-                        CREATE INDEX IF NOT EXISTS {table_name}_embedding_ivfflat_idx
-                        ON {table_name} USING ivfflat (embedding vector_cosine_ops)
+                        CREATE INDEX IF NOT EXISTS "{table_name}_embedding_ivfflat_idx"
+                        ON "{table_name}" USING ivfflat (embedding vector_cosine_ops)
                         WITH (lists = 100)
                     """
                     cursor.execute(create_vector_index_sql)

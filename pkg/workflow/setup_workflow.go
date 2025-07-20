@@ -46,7 +46,13 @@ func (s *SetupWorkflow) Run(ctx context.Context) error {
 
 	// 1. Clone the repository
 	slog.Info("Cloning repository")
-	err := s.Repository.Clone(ctx)
+	err := s.Repository.Cleanup()
+	if err != nil {
+		return fmt.Errorf("failed to clean up repository: %w", err)
+	}
+	slog.Info("Repository cleaned up successfully")
+
+	err = s.Repository.Clone(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to clone repository: %w", err)
 	}

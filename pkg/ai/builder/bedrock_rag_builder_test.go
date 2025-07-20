@@ -26,7 +26,7 @@ func TestBedrockRAGBuilder_Build(t *testing.T) {
 	dataStore.EXPECT().Create(ctx, gomock.Any()).Return("test-data-source-id", nil).Times(1)
 
 	storage := mocks_storage.NewMockStorage(ctrl)
-	storage.EXPECT().EnsureSchema(ctx, "code_refactoring_db", "test-repo-path").Return(nil).Times(1)
+	storage.EXPECT().EnsureSchema(ctx, "code_refactoring_db", "test_repo_path").Return(nil).Times(1)
 
 	rag := mocks_rag.NewMockRAG(ctrl)
 	rag.EXPECT().Create(ctx, gomock.Any()).Return("test-kb-id", nil).Times(1)
@@ -44,4 +44,65 @@ func TestBedrockRAGBuilder_Build(t *testing.T) {
 	// Assert
 	require.NoError(t, err, "Failed to build RAG pipeline")
 	require.NotNil(t, ragMetadata, "RAG metadata should not be nil")
+}
+
+func TestBedrockRAGBuilder_TableNameSanitization(t *testing.T) {
+	tests := []struct {
+		name         string
+		repoPath     string
+		expectedName string
+	}{
+		{
+			name:         "hyphens replaced with underscores",
+			repoPath:     "code-refactoring-test",
+			expectedName: "code_refactoring_test",
+		},
+		{
+			name:         "special characters replaced",
+			repoPath:     "/path/to/my-repo@v1.0",
+			expectedName: "my_repo_v1_0",
+		},
+		{
+			name:         "starts with number gets underscore prefix",
+			repoPath:     "123-project",
+			expectedName: "_123_project",
+		},
+		{
+			name:         "already valid name stays same",
+			repoPath:     "valid_repo_name",
+			expectedName: "valid_repo_name",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			// Create mocks (won't be used in this test)
+			dataStore := mocks_storage.NewMockDataStore(ctrl)
+			storage := mocks_storage.NewMockStorage(ctrl)
+			rag := mocks_rag.NewMockRAG(ctrl)
+
+			builder := builder.NewBedrockRAGBuilder(
+				tt.repoPath,
+				dataStore,
+				storage,
+				rag,
+			)
+
+			// Use reflection to access the private method for testing
+			// Since the method is private, we'll test it indirectly by checking
+			// that EnsureSchema is called with the expected sanitized name
+			ctx := context.Background()
+
+			storage.EXPECT().EnsureSchema(ctx, "code_refactoring_db", tt.expectedName).Return(nil).Times(1)
+			dataStore.EXPECT().UploadDirectory(ctx, tt.repoPath, tt.repoPath).Return(nil).Times(1)
+			dataStore.EXPECT().Create(ctx, gomock.Any()).Return("test-data-source-id", nil).Times(1)
+			rag.EXPECT().Create(ctx, tt.expectedName).Return("test-kb-id", nil).Times(1)
+
+			_, err := builder.Build(ctx)
+			require.NoError(t, err)
+		})
+	}
 }
