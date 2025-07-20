@@ -49,6 +49,11 @@ func TestSetupWorkflow_Run_Success(t *testing.T) {
 
 	// Set up expectations
 	mockRepo.EXPECT().
+		Cleanup().
+		Return(nil).
+		Times(1)
+
+	mockRepo.EXPECT().
 		Clone(gomock.Any()).
 		Return(nil).
 		Times(1)
@@ -96,6 +101,11 @@ func TestSetupWorkflow_Run_RepositoryCloneError(t *testing.T) {
 
 	// Set up expectations
 	mockRepo.EXPECT().
+		Cleanup().
+		Return(nil).
+		Times(1)
+
+	mockRepo.EXPECT().
 		Clone(gomock.Any()).
 		Return(repoError).
 		Times(1)
@@ -133,6 +143,11 @@ func TestSetupWorkflow_Run_RAGBuildError(t *testing.T) {
 	ragError := errors.New("rag build failed")
 
 	// Set up expectations
+	mockRepo.EXPECT().
+		Cleanup().
+		Return(nil).
+		Times(1)
+
 	mockRepo.EXPECT().
 		Clone(gomock.Any()).
 		Return(nil).
@@ -173,6 +188,11 @@ func TestSetupWorkflow_Run_AgentBuildError(t *testing.T) {
 	agentError := errors.New("agent build failed")
 
 	// Set up expectations
+	mockRepo.EXPECT().
+		Cleanup().
+		Return(nil).
+		Times(1)
+
 	mockRepo.EXPECT().
 		Clone(gomock.Any()).
 		Return(nil).
@@ -240,6 +260,11 @@ func BenchmarkSetupWorkflow_Run(b *testing.B) {
 	agentVersion := "test-agent-version"
 
 	// Set up expectations
+	mockRepo.EXPECT().
+		Cleanup().
+		Return(nil).
+		AnyTimes()
+
 	mockRepo.EXPECT().
 		Clone(gomock.Any()).
 		Return(nil).

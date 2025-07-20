@@ -13,7 +13,6 @@ import (
 	bedrocktypes "github.com/aws/aws-sdk-go-v2/service/bedrockagent/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 )
 
 const (
@@ -83,60 +82,61 @@ func (s S3DataStore) Create(ctx context.Context, ragID string) (string, error) {
 				},
 			},
 
-			// TODO: Do we need this?
-			ContextEnrichmentConfiguration: &bedrocktypes.ContextEnrichmentConfiguration{
-				Type: bedrocktypes.ContextEnrichmentTypeBedrockFoundationModel,
-				BedrockFoundationModelConfiguration: &bedrocktypes.BedrockFoundationModelContextEnrichmentConfiguration{
-					EnrichmentStrategyConfiguration: &bedrocktypes.EnrichmentStrategyConfiguration{
-						Method: bedrocktypes.EnrichmentStrategyMethodChunkEntityExtraction,
-					},
-					ModelArn: aws.String(
-						fmt.Sprintf(
-							"arn:aws:bedrock:%s::foundation-model/%s",
-							config.AWSRegion,
-							config.AWSBedrockDataStoreEnrichmentModelARN,
-						),
-					),
-				},
-			},
+			// // TODO: Do we need this?
+			// ContextEnrichmentConfiguration: &bedrocktypes.ContextEnrichmentConfiguration{
+			// 	Type: bedrocktypes.ContextEnrichmentTypeBedrockFoundationModel,
+			// 	BedrockFoundationModelConfiguration: &bedrocktypes.BedrockFoundationModelContextEnrichmentConfiguration{
+			// 		EnrichmentStrategyConfiguration: &bedrocktypes.EnrichmentStrategyConfiguration{
+			// 			Method: bedrocktypes.EnrichmentStrategyMethodChunkEntityExtraction,
+			// 		},
+			// 		ModelArn: aws.String(
+			// 			fmt.Sprintf(
+			// 				"arn:aws:bedrock:%s::foundation-model/%s",
+			// 				config.AWSRegion,
+			// 				config.AWSBedrockDataStoreEnrichmentModelARN,
+			// 			),
+			// 		),
+			// 	},
+			// },
 
-			// TODO: This might be needed for code parsing
-			CustomTransformationConfiguration: &bedrocktypes.CustomTransformationConfiguration{
-				IntermediateStorage: &bedrocktypes.IntermediateStorage{
-					S3Location: &bedrocktypes.S3Location{
-						Uri: aws.String(fmt.Sprintf("s3://%s/%s/", s.bucketName, s.repoName)),
-					},
-				},
-				Transformations: []bedrocktypes.Transformation{
-					{
-						StepToApply: bedrocktypes.StepTypePostChunking,
-						TransformationFunction: &bedrocktypes.TransformationFunction{
-							TransformationLambdaConfiguration: &bedrocktypes.TransformationLambdaConfiguration{
-								LambdaArn: aws.String("arn:aws:lambda:us-east-1:123456789012:function:MyTransformationFunction"), // TODO: Use a more suitable Lambda function
-							},
-						},
-					},
-				},
-			},
+			// // TODO: This might be needed for code parsing
+			// {"time":"2025-07-20T08:23:18.444387949Z","level":"ERROR","msg":"workflow failed","error":"failed to build RAG pipeline: failed to create data source: failed to create data source: operation error Bedrock Agent: CreateDataSource, https response error StatusCode: 400, RequestID: 31f19628-fc06-4766-956c-4967e7fda73a, ValidationException: A custom transformation configuration cannot have the same s3 bucket for intermediate storage as the data source."}
+			// CustomTransformationConfiguration: &bedrocktypes.CustomTransformationConfiguration{
+			// 	IntermediateStorage: &bedrocktypes.IntermediateStorage{
+			// 		S3Location: &bedrocktypes.S3Location{
+			// 			Uri: aws.String(fmt.Sprintf("s3://%s/%s/", s.bucketName, s.repoName)),
+			// 		},
+			// 	},
+			// 	Transformations: []bedrocktypes.Transformation{
+			// 		{
+			// 			StepToApply: bedrocktypes.StepTypePostChunking,
+			// 			TransformationFunction: &bedrocktypes.TransformationFunction{
+			// 				TransformationLambdaConfiguration: &bedrocktypes.TransformationLambdaConfiguration{
+			// 					LambdaArn: aws.String("arn:aws:lambda:us-east-1:123456789012:function:MyTransformationFunction"), // TODO: Use a more suitable Lambda function
+			// 				},
+			// 			},
+			// 		},
+			// 	},
+			// },
 
-			// TODO: Do we need this?
-			ParsingConfiguration: &bedrocktypes.ParsingConfiguration{
-				ParsingStrategy: bedrocktypes.ParsingStrategyBedrockFoundationModel,
-				BedrockFoundationModelConfiguration: &bedrocktypes.BedrockFoundationModelConfiguration{
-					ModelArn: aws.String(
-						fmt.Sprintf(
-							"arn:aws:bedrock:%s::foundation-model/%s",
-							config.AWSRegion,
-							config.AWSBedrockDataStoreParsingModelARN,
-						),
-					),
-					// Code base could have images, so we use multimodal parsing
-					ParsingModality: bedrocktypes.ParsingModalityMultimodal,
-					ParsingPrompt: &bedrocktypes.ParsingPrompt{
-						ParsingPromptText: aws.String("Extract code and comments from the provided files."), // TODO: Use a more suitable prompt
-					},
-				},
-			},
+			// // TODO: Do we need this?
+			// ParsingConfiguration: &bedrocktypes.ParsingConfiguration{
+			// 	ParsingStrategy: bedrocktypes.ParsingStrategyBedrockFoundationModel,
+			// 	BedrockFoundationModelConfiguration: &bedrocktypes.BedrockFoundationModelConfiguration{
+			// 		ModelArn: aws.String(
+			// 			fmt.Sprintf(
+			// 				"arn:aws:bedrock:%s::foundation-model/%s",
+			// 				config.AWSRegion,
+			// 				config.AWSBedrockDataStoreParsingModelARN,
+			// 			),
+			// 		),
+			// 		// Code base could have images, so we use multimodal parsing
+			// 		ParsingModality: bedrocktypes.ParsingModalityMultimodal,
+			// 		ParsingPrompt: &bedrocktypes.ParsingPrompt{
+			// 			ParsingPromptText: aws.String("Extract code and comments from the provided files."), // TODO: Use a more suitable prompt
+			// 		},
+			// 	},
+			// },
 		},
 		Description: aws.String(DataSourceDescription),
 	})
