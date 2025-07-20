@@ -26,7 +26,7 @@ import (
 
 const (
 	// RDSPostgresDatabaseName is the name of the RDS Postgres database.
-	RDSPostgresDatabaseName = "RefactorVectorDb"
+	RDSPostgresDatabaseName = "code_refactoring_db"
 
 	// RDSPostgresTableName table name.
 	RDSPostgresTableName = "vector_store" // Define your table name here

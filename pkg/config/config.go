@@ -95,7 +95,7 @@ type RDSPostgres struct {
 	CredentialsSecretARN  string `envconfig:"CREDENTIALS_SECRET_ARN"`
 	SchemaEnsureLambdaARN string `envconfig:"RDS_POSTGRES_SCHEMA_ENSURE_LAMBDA_ARN"`
 	InstanceARN           string `envconfig:"INSTANCE_ARN"`
-	DatabaseName          string `envconfig:"DATABASE_NAME" default:"RefactorVectorDb"`
+	DatabaseName          string `envconfig:"DATABASE_NAME" default:"code_refactoring_db"`
 }
 
 // GitConfig represents the Git configuration

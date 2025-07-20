@@ -60,6 +60,7 @@ func (s S3DataStore) Create(ctx context.Context, ragID string) (string, error) {
 		KnowledgeBaseId:    aws.String(ragID),
 		DataDeletionPolicy: bedrocktypes.DataDeletionPolicyDelete,
 		DataSourceConfiguration: &bedrocktypes.DataSourceConfiguration{
+			Type: bedrocktypes.DataSourceTypeS3,
 			S3Configuration: &bedrocktypes.S3DataSourceConfiguration{
 				BucketArn:         aws.String(bucketARN),
 				InclusionPrefixes: []string{s.repoName},
