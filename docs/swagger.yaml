@@ -1,0 +1,174 @@
+basePath: /api/v1
+definitions:
+  CreateAgentRequest:
+    properties:
+      agent_name:
+        description: Optional custom agent name
+        example: my-code-analyzer
+        type: string
+      branch:
+        description: Optional branch name, defaults to main
+        example: main
+        type: string
+      repository_url:
+        description: Repository URL to analyze
+        example: https://github.com/user/repo
+        type: string
+    required:
+    - repository_url
+    type: object
+  CreateAgentResponse:
+    properties:
+      agent_id:
+        description: Unique identifier for the agent
+        example: agent-12345
+        type: string
+      agent_version:
+        description: Agent version
+        example: v1.0.0
+        type: string
+      created_at:
+        description: Timestamp when the agent was created
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      knowledge_base_id:
+        description: Knowledge base ID associated with the agent
+        example: kb-67890
+        type: string
+      status:
+        description: Agent creation status
+        example: created
+        type: string
+      vector_store_id:
+        description: Vector store ID for the knowledge base
+        example: vs-abcde
+        type: string
+    type: object
+  ErrorResponse:
+    properties:
+      code:
+        description: Error code
+        example: 400
+        type: integer
+      details:
+        description: Optional error details
+        example: repository_url is required
+        type: string
+      message:
+        description: Error message
+        example: Invalid request parameters
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API for creating and managing AI-powered code refactoring agents
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Code Refactor Tool API
+  version: "1.0"
+paths:
+  /agent/{id}:
+    delete:
+      description: Delete an agent and its associated resources
+      parameters:
+      - description: Agent ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Agent deleted successfully
+        "404":
+          description: Agent not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Delete an agent by ID
+      tags:
+      - agents
+    get:
+      description: Retrieve agent information by agent ID
+      parameters:
+      - description: Agent ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Agent found
+          schema:
+            $ref: '#/definitions/CreateAgentResponse'
+        "404":
+          description: Agent not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get an agent by ID
+      tags:
+      - agents
+  /agent/create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new agent for code analysis with the specified repository
+      parameters:
+      - description: Agent creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateAgentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Agent created successfully
+          schema:
+            $ref: '#/definitions/CreateAgentResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Create a new agent
+      tags:
+      - agents
+  /agents:
+    get:
+      description: Get a list of all agents
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of agents
+          schema:
+            items:
+              $ref: '#/definitions/CreateAgentResponse'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: List all agents
+      tags:
+      - agents
+swagger: "2.0"

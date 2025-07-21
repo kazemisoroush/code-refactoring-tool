@@ -1,0 +1,75 @@
+// Package repository provides data access layer for the API
+package repository
+
+import (
+	"context"
+	"time"
+
+	"github.com/kazemisoroush/code-refactoring-tool/api/models"
+)
+
+// AgentRecord represents the agent data stored in DynamoDB
+type AgentRecord struct {
+	AgentID         string    `dynamodbav:"agent_id"`
+	AgentVersion    string    `dynamodbav:"agent_version"`
+	KnowledgeBaseID string    `dynamodbav:"knowledge_base_id"`
+	VectorStoreID   string    `dynamodbav:"vector_store_id"`
+	RepositoryURL   string    `dynamodbav:"repository_url"`
+	Branch          string    `dynamodbav:"branch,omitempty"`
+	AgentName       string    `dynamodbav:"agent_name,omitempty"`
+	Status          string    `dynamodbav:"status"`
+	CreatedAt       time.Time `dynamodbav:"created_at"`
+	UpdatedAt       time.Time `dynamodbav:"updated_at"`
+}
+
+// ToResponse converts AgentRecord to CreateAgentResponse
+func (r *AgentRecord) ToResponse() *models.CreateAgentResponse {
+	return &models.CreateAgentResponse{
+		AgentID:         r.AgentID,
+		AgentVersion:    r.AgentVersion,
+		KnowledgeBaseID: r.KnowledgeBaseID,
+		VectorStoreID:   r.VectorStoreID,
+		Status:          r.Status,
+		CreatedAt:       r.CreatedAt,
+	}
+}
+
+// NewAgentRecord creates an AgentRecord from CreateAgentRequest
+func NewAgentRecord(request models.CreateAgentRequest, agentID, agentVersion, kbID, vectorStoreID string) *AgentRecord {
+	now := time.Now().UTC()
+	return &AgentRecord{
+		AgentID:         agentID,
+		AgentVersion:    agentVersion,
+		KnowledgeBaseID: kbID,
+		VectorStoreID:   vectorStoreID,
+		RepositoryURL:   request.RepositoryURL,
+		Branch:          request.Branch,
+		AgentName:       request.AgentName,
+		Status:          string(models.AgentStatusReady),
+		CreatedAt:       now,
+		UpdatedAt:       now,
+	}
+}
+
+// AgentRepository defines the interface for agent data operations
+//
+//go:generate mockgen -destination=./mocks/mock_agent_repository.go -mock_names=AgentRepository=MockAgentRepository -package=mocks . AgentRepository
+type AgentRepository interface {
+	// CreateAgent stores a new agent record
+	CreateAgent(ctx context.Context, agent *AgentRecord) error
+
+	// GetAgent retrieves an agent by ID
+	GetAgent(ctx context.Context, agentID string) (*AgentRecord, error)
+
+	// UpdateAgent updates an existing agent record
+	UpdateAgent(ctx context.Context, agent *AgentRecord) error
+
+	// DeleteAgent removes an agent record
+	DeleteAgent(ctx context.Context, agentID string) error
+
+	// ListAgents retrieves all agent records
+	ListAgents(ctx context.Context) ([]*AgentRecord, error)
+
+	// UpdateAgentStatus updates only the status field
+	UpdateAgentStatus(ctx context.Context, agentID string, status models.AgentStatus) error
+}

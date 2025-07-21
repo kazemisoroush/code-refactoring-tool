@@ -19,7 +19,25 @@ mock:
 	@go generate ./...
 	@echo "Mocks generated."
 
-ci: mock test lint
+swagger:
+	@echo "Generating Swagger documentation..."
+	@swag init -g cmd/api/main.go -o docs/
+	@echo "Swagger documentation generated."
+
+build-api:
+	@echo "Building API server..."
+	@go build -o bin/api-server ./cmd/api/
+	@echo "API server built."
+
+run-api: swagger build-api
+	@echo "Running API server..."
+	@./bin/api-server
+
+clean:
+	@echo "Cleaning build artifacts..."
+	@rm -rf bin/
+	@rm -rf docs/
+	@echo "Clean completed."
 
 deploy:
 	@echo "Deploying infra..."
@@ -34,3 +52,5 @@ destroy:
 		--secret-id code-refactor-db-secret \
 		--force-delete-without-recovery
 	@echo "Infra destroy done."
+
+ci: mock test lint clean swagger

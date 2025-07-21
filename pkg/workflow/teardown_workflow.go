@@ -7,13 +7,11 @@ import (
 	"log/slog"
 
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/builder"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
 )
 
 // TeardownWorkflow represents a workflow for tearing down AI resources
 type TeardownWorkflow struct {
-	Config       config.Config
 	Repository   repository.Repository
 	RAGBuilder   builder.RAGBuilder
 	AgentBuilder builder.AgentBuilder
@@ -27,13 +25,11 @@ type TeardownWorkflow struct {
 
 // NewTeardownWorkflow creates a new TeardownWorkflow instance
 func NewTeardownWorkflow(
-	cfg config.Config,
 	repo repository.Repository,
 	ragBuilder builder.RAGBuilder,
 	agentBuilder builder.AgentBuilder,
 ) (Workflow, error) {
 	return &TeardownWorkflow{
-		Config:       cfg,
 		Repository:   repo,
 		RAGBuilder:   ragBuilder,
 		AgentBuilder: agentBuilder,
@@ -42,14 +38,12 @@ func NewTeardownWorkflow(
 
 // NewTeardownWorkflowWithResources creates a new TeardownWorkflow instance with resource IDs
 func NewTeardownWorkflowWithResources(
-	cfg config.Config,
 	repo repository.Repository,
 	ragBuilder builder.RAGBuilder,
 	agentBuilder builder.AgentBuilder,
 	vectorStoreID, ragID, agentID, agentVersion string,
 ) (Workflow, error) {
 	return &TeardownWorkflow{
-		Config:        cfg,
 		Repository:    repo,
 		RAGBuilder:    ragBuilder,
 		AgentBuilder:  agentBuilder,

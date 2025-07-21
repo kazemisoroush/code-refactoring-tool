@@ -58,7 +58,7 @@ func main() {
 	)
 
 	// Compose the full workflow
-	wf, err := workflow.NewSetupWorkflow(cfg, repo, ragBuilder, agentBuilder)
+	wf, err := workflow.NewSetupWorkflow(repo, ragBuilder, agentBuilder)
 	if err != nil {
 		slog.Error("failed to create workflow", "error", err)
 		return

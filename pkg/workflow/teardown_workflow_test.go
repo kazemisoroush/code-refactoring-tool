@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	builderMocks "github.com/kazemisoroush/code-refactoring-tool/pkg/ai/builder/mocks"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 	repositoryMocks "github.com/kazemisoroush/code-refactoring-tool/pkg/repository/mocks"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/workflow"
 )
@@ -20,13 +19,12 @@ func TestNewTeardownWorkflow(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
 
 	// Act
-	wf, err := workflow.NewTeardownWorkflow(cfg, mockRepo, mockRAGBuilder, mockAgentBuilder)
+	wf, err := workflow.NewTeardownWorkflow(mockRepo, mockRAGBuilder, mockAgentBuilder)
 
 	// Assert
 	require.NoError(t, err)
@@ -38,7 +36,6 @@ func TestNewTeardownWorkflowWithResources(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
@@ -50,7 +47,7 @@ func TestNewTeardownWorkflowWithResources(t *testing.T) {
 
 	// Act
 	wf, err := workflow.NewTeardownWorkflowWithResources(
-		cfg, mockRepo, mockRAGBuilder, mockAgentBuilder,
+		mockRepo, mockRAGBuilder, mockAgentBuilder,
 		vectorStoreID, ragID, agentID, agentVersion,
 	)
 
@@ -64,7 +61,6 @@ func TestTeardownWorkflow_Run_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
@@ -91,7 +87,7 @@ func TestTeardownWorkflow_Run_Success(t *testing.T) {
 		Times(1)
 
 	wf, err := workflow.NewTeardownWorkflowWithResources(
-		cfg, mockRepo, mockRAGBuilder, mockAgentBuilder,
+		mockRepo, mockRAGBuilder, mockAgentBuilder,
 		vectorStoreID, ragID, agentID, agentVersion,
 	)
 	require.NoError(t, err)
@@ -108,7 +104,6 @@ func TestTeardownWorkflow_Run_AgentTearDownError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
@@ -137,7 +132,7 @@ func TestTeardownWorkflow_Run_AgentTearDownError(t *testing.T) {
 		Times(1)
 
 	wf, err := workflow.NewTeardownWorkflowWithResources(
-		cfg, mockRepo, mockRAGBuilder, mockAgentBuilder,
+		mockRepo, mockRAGBuilder, mockAgentBuilder,
 		vectorStoreID, ragID, agentID, agentVersion,
 	)
 	require.NoError(t, err)
@@ -155,7 +150,6 @@ func TestTeardownWorkflow_Run_RAGTearDownError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
@@ -184,7 +178,7 @@ func TestTeardownWorkflow_Run_RAGTearDownError(t *testing.T) {
 		Times(1)
 
 	wf, err := workflow.NewTeardownWorkflowWithResources(
-		cfg, mockRepo, mockRAGBuilder, mockAgentBuilder,
+		mockRepo, mockRAGBuilder, mockAgentBuilder,
 		vectorStoreID, ragID, agentID, agentVersion,
 	)
 	require.NoError(t, err)
@@ -202,7 +196,6 @@ func TestTeardownWorkflow_Run_RepositoryCleanupError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
@@ -231,7 +224,7 @@ func TestTeardownWorkflow_Run_RepositoryCleanupError(t *testing.T) {
 		Times(1)
 
 	wf, err := workflow.NewTeardownWorkflowWithResources(
-		cfg, mockRepo, mockRAGBuilder, mockAgentBuilder,
+		mockRepo, mockRAGBuilder, mockAgentBuilder,
 		vectorStoreID, ragID, agentID, agentVersion,
 	)
 	require.NoError(t, err)
@@ -249,7 +242,6 @@ func TestTeardownWorkflow_Run_AllErrors(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
@@ -280,7 +272,7 @@ func TestTeardownWorkflow_Run_AllErrors(t *testing.T) {
 		Times(1)
 
 	wf, err := workflow.NewTeardownWorkflowWithResources(
-		cfg, mockRepo, mockRAGBuilder, mockAgentBuilder,
+		mockRepo, mockRAGBuilder, mockAgentBuilder,
 		vectorStoreID, ragID, agentID, agentVersion,
 	)
 	require.NoError(t, err)
@@ -299,7 +291,6 @@ func TestTeardownWorkflow_Run_EmptyResourceIDs(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
@@ -319,7 +310,7 @@ func TestTeardownWorkflow_Run_EmptyResourceIDs(t *testing.T) {
 		TearDown(gomock.Any(), gomock.Any(), gomock.Any()).
 		Times(0)
 
-	wf, err := workflow.NewTeardownWorkflow(cfg, mockRepo, mockRAGBuilder, mockAgentBuilder)
+	wf, err := workflow.NewTeardownWorkflow(mockRepo, mockRAGBuilder, mockAgentBuilder)
 	require.NoError(t, err)
 
 	// Act
@@ -334,7 +325,6 @@ func TestTeardownWorkflow_SetResourceIDs(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
@@ -344,7 +334,7 @@ func TestTeardownWorkflow_SetResourceIDs(t *testing.T) {
 	agentID := "test-agent-id"
 	agentVersion := "test-agent-version"
 
-	wf, err := workflow.NewTeardownWorkflow(cfg, mockRepo, mockRAGBuilder, mockAgentBuilder)
+	wf, err := workflow.NewTeardownWorkflow(mockRepo, mockRAGBuilder, mockAgentBuilder)
 	require.NoError(t, err)
 
 	// Cast to concrete type to access SetResourceIDs method
@@ -379,7 +369,6 @@ func TestTeardownWorkflow_Run_PartialResourceIDs(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
@@ -404,7 +393,7 @@ func TestTeardownWorkflow_Run_PartialResourceIDs(t *testing.T) {
 		Times(0)
 
 	wf, err := workflow.NewTeardownWorkflowWithResources(
-		cfg, mockRepo, mockRAGBuilder, mockAgentBuilder,
+		mockRepo, mockRAGBuilder, mockAgentBuilder,
 		"", "", agentID, agentVersion, // Empty vectorStoreID and ragID
 	)
 	require.NoError(t, err)
@@ -421,7 +410,6 @@ func BenchmarkTeardownWorkflow_Run(b *testing.B) {
 	ctrl := gomock.NewController(b)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
@@ -448,7 +436,7 @@ func BenchmarkTeardownWorkflow_Run(b *testing.B) {
 		AnyTimes()
 
 	wf, err := workflow.NewTeardownWorkflowWithResources(
-		cfg, mockRepo, mockRAGBuilder, mockAgentBuilder,
+		mockRepo, mockRAGBuilder, mockAgentBuilder,
 		vectorStoreID, ragID, agentID, agentVersion,
 	)
 	if err != nil {

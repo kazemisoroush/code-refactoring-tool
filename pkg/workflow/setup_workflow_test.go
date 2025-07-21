@@ -1,3 +1,4 @@
+// Package workflow_test contains tests for the workflow package.
 package workflow_test
 
 import (
@@ -10,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	builderMocks "github.com/kazemisoroush/code-refactoring-tool/pkg/ai/builder/mocks"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 	repositoryMocks "github.com/kazemisoroush/code-refactoring-tool/pkg/repository/mocks"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/workflow"
 )
@@ -20,13 +20,12 @@ func TestNewSetupWorkflow(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
 
 	// Act
-	wf, err := workflow.NewSetupWorkflow(cfg, mockRepo, mockRAGBuilder, mockAgentBuilder)
+	wf, err := workflow.NewSetupWorkflow(mockRepo, mockRAGBuilder, mockAgentBuilder)
 
 	// Assert
 	require.NoError(t, err)
@@ -38,7 +37,6 @@ func TestSetupWorkflow_Run_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
@@ -68,7 +66,7 @@ func TestSetupWorkflow_Run_Success(t *testing.T) {
 		Return(agentID, agentVersion, nil).
 		Times(1)
 
-	wf, err := workflow.NewSetupWorkflow(cfg, mockRepo, mockRAGBuilder, mockAgentBuilder)
+	wf, err := workflow.NewSetupWorkflow(mockRepo, mockRAGBuilder, mockAgentBuilder)
 	require.NoError(t, err)
 
 	// Act
@@ -92,7 +90,6 @@ func TestSetupWorkflow_Run_RepositoryCloneError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
@@ -119,7 +116,7 @@ func TestSetupWorkflow_Run_RepositoryCloneError(t *testing.T) {
 		Build(gomock.Any(), gomock.Any()).
 		Times(0)
 
-	wf, err := workflow.NewSetupWorkflow(cfg, mockRepo, mockRAGBuilder, mockAgentBuilder)
+	wf, err := workflow.NewSetupWorkflow(mockRepo, mockRAGBuilder, mockAgentBuilder)
 	require.NoError(t, err)
 
 	// Act
@@ -135,7 +132,6 @@ func TestSetupWorkflow_Run_RAGBuildError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
@@ -163,7 +159,7 @@ func TestSetupWorkflow_Run_RAGBuildError(t *testing.T) {
 		Build(gomock.Any(), gomock.Any()).
 		Times(0)
 
-	wf, err := workflow.NewSetupWorkflow(cfg, mockRepo, mockRAGBuilder, mockAgentBuilder)
+	wf, err := workflow.NewSetupWorkflow(mockRepo, mockRAGBuilder, mockAgentBuilder)
 	require.NoError(t, err)
 
 	// Act
@@ -179,7 +175,6 @@ func TestSetupWorkflow_Run_AgentBuildError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
@@ -208,7 +203,7 @@ func TestSetupWorkflow_Run_AgentBuildError(t *testing.T) {
 		Return("", "", agentError).
 		Times(1)
 
-	wf, err := workflow.NewSetupWorkflow(cfg, mockRepo, mockRAGBuilder, mockAgentBuilder)
+	wf, err := workflow.NewSetupWorkflow(mockRepo, mockRAGBuilder, mockAgentBuilder)
 	require.NoError(t, err)
 
 	// Act
@@ -224,12 +219,11 @@ func TestSetupWorkflow_GetResourceIDs(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
 
-	wf, err := workflow.NewSetupWorkflow(cfg, mockRepo, mockRAGBuilder, mockAgentBuilder)
+	wf, err := workflow.NewSetupWorkflow(mockRepo, mockRAGBuilder, mockAgentBuilder)
 	require.NoError(t, err)
 
 	// Cast to concrete type to access GetResourceIDs method
@@ -250,7 +244,6 @@ func BenchmarkSetupWorkflow_Run(b *testing.B) {
 	ctrl := gomock.NewController(b)
 	defer ctrl.Finish()
 
-	cfg := config.Config{}
 	mockRepo := repositoryMocks.NewMockRepository(ctrl)
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
@@ -280,7 +273,7 @@ func BenchmarkSetupWorkflow_Run(b *testing.B) {
 		Return(agentID, agentVersion, nil).
 		AnyTimes()
 
-	wf, err := workflow.NewSetupWorkflow(cfg, mockRepo, mockRAGBuilder, mockAgentBuilder)
+	wf, err := workflow.NewSetupWorkflow(mockRepo, mockRAGBuilder, mockAgentBuilder)
 	if err != nil {
 		b.Fatal(err)
 	}
