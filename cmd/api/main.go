@@ -90,6 +90,7 @@ func main() {
 
 	// Initialize controllers
 	agentController := controllers.NewAgentController(agentService)
+	healthController := controllers.NewHealthController("code-refactor-tool-api", "1.0.0")
 
 	// Initialize authentication middleware
 	authMiddleware := middleware.NewAuthMiddleware(middleware.CognitoConfig{
@@ -98,11 +99,29 @@ func main() {
 		ClientID:   cfg.Cognito.ClientID,
 	})
 
+	// Initialize metrics middleware
+	metricsMiddleware, err := middleware.NewMetricsMiddleware(middleware.MetricsConfig{
+		Namespace:   cfg.Metrics.Namespace,
+		Region:      cfg.Metrics.Region,
+		ServiceName: cfg.Metrics.ServiceName,
+		Enabled:     cfg.Metrics.Enabled,
+	})
+	if err != nil {
+		slog.Error("failed to initialize metrics middleware", "error", err)
+		os.Exit(1)
+	}
+
 	// Setup Gin router
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
+
+	// Add metrics middleware (before auth to capture all requests)
+	router.Use(metricsMiddleware.RequestMetrics())
+	router.Use(metricsMiddleware.SetMetricsInContext())
+
+	// Add authentication middleware
 	router.Use(authMiddleware.RequireAuth())
 
 	// Setup API routes
@@ -119,13 +138,7 @@ func main() {
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Health check
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status":  "healthy",
-			"service": "code-refactor-tool-api",
-			"version": "1.0.0",
-		})
-	})
+	router.GET("/health", healthController.HealthCheck)
 
 	// Create HTTP server
 	srv := &http.Server{
