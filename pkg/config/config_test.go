@@ -36,6 +36,8 @@ func TestLoadConfig_Success(t *testing.T) {
 	require.NoError(t, err, "Setenv should not return an error")
 	err = os.Setenv("METRICS_ENABLED", "true")
 	require.NoError(t, err, "Setenv should not return an error")
+	err = os.Setenv("POSTGRES_PASSWORD", "testpassword123")
+	require.NoError(t, err, "Setenv should not return an error")
 
 	defer os.Unsetenv("GIT_REPO_URL")                          //nolint:errcheck
 	defer os.Unsetenv("GIT_TOKEN")                             //nolint:errcheck
@@ -48,6 +50,7 @@ func TestLoadConfig_Success(t *testing.T) {
 	defer os.Unsetenv("COGNITO_USER_POOL_ID")                  //nolint:errcheck
 	defer os.Unsetenv("COGNITO_CLIENT_ID")                     //nolint:errcheck
 	defer os.Unsetenv("METRICS_ENABLED")                       //nolint:errcheck
+	defer os.Unsetenv("POSTGRES_PASSWORD")                     //nolint:errcheck
 
 	// Act: Load configuration
 	cfg, err := config.LoadConfig()
@@ -94,6 +97,8 @@ func TestLoadConfig_InvalidGitHubURL(t *testing.T) {
 	require.NoError(t, err, "Setenv should not return an error")
 	err = os.Setenv("COGNITO_CLIENT_ID", "1234567890abcdef")
 	require.NoError(t, err, "Setenv should not return an error")
+	err = os.Setenv("POSTGRES_PASSWORD", "testpassword123")
+	require.NoError(t, err, "Setenv should not return an error")
 
 	defer os.Unsetenv("GIT_REPO_URL")                          //nolint:errcheck
 	defer os.Unsetenv("GIT_TOKEN")                             //nolint:errcheck
@@ -105,6 +110,7 @@ func TestLoadConfig_InvalidGitHubURL(t *testing.T) {
 	defer os.Unsetenv("S3_BUCKET_NAME")                        //nolint:errcheck
 	defer os.Unsetenv("COGNITO_USER_POOL_ID")                  //nolint:errcheck
 	defer os.Unsetenv("COGNITO_CLIENT_ID")                     //nolint:errcheck
+	defer os.Unsetenv("POSTGRES_PASSWORD")                     //nolint:errcheck
 
 	// Act: Attempt to load configuration
 	_, err = config.LoadConfig()

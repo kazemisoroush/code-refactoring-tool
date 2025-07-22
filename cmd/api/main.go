@@ -53,10 +53,18 @@ func main() {
 	logging.SetupLogger(cfg.LogLevel)
 
 	// Initialize repositories and services
-	agentRepository := repository.NewDynamoDBAgentRepository(
-		cfg.AWSConfig,
-		"", // Use default table name
-	)
+	agentRepository, err := repository.NewPostgresAgentRepository(repository.PostgresConfig{
+		Host:     cfg.Postgres.Host,
+		Port:     cfg.Postgres.Port,
+		Database: cfg.Postgres.Database,
+		Username: cfg.Postgres.Username,
+		Password: cfg.Postgres.Password,
+		SSLMode:  cfg.Postgres.SSLMode,
+	}, "agents")
+	if err != nil {
+		slog.Error("failed to initialize agent repository", "error", err)
+		os.Exit(1)
+	}
 
 	// Initialize git repository (this will be used as a template)
 	gitRepo := pkgRepo.NewGitHubRepo(cfg.Git)

@@ -79,12 +79,13 @@ var (
 
 // Config represents the configuration for the application
 type Config struct {
-	Git            GitConfig     `envconfig:"GIT"`
-	TimeoutSeconds int           `envconfig:"TIMEOUT_SECONDS" default:"180"`
-	LogLevel       string        `envconfig:"LOG_LEVEL" default:"info"`
-	AWSConfig      aws.Config    // Loaded using AWS SDK, not from env
-	Cognito        CognitoConfig `envconfig:"COGNITO"`
-	Metrics        MetricsConfig `envconfig:"METRICS"`
+	Git            GitConfig      `envconfig:"GIT"`
+	TimeoutSeconds int            `envconfig:"TIMEOUT_SECONDS" default:"180"`
+	LogLevel       string         `envconfig:"LOG_LEVEL" default:"info"`
+	AWSConfig      aws.Config     // Loaded using AWS SDK, not from env
+	Cognito        CognitoConfig  `envconfig:"COGNITO"`
+	Metrics        MetricsConfig  `envconfig:"METRICS"`
+	Postgres       PostgresConfig `envconfig:"POSTGRES"`
 
 	S3BucketName                string      `envconfig:"S3_BUCKET_NAME"`
 	KnowledgeBaseServiceRoleARN string      `envconfig:"KNOWLEDGE_BASE_SERVICE_ROLE_ARN"`
@@ -113,6 +114,16 @@ type MetricsConfig struct {
 	Region      string `envconfig:"REGION" default:"us-east-1"`
 	ServiceName string `envconfig:"SERVICE_NAME" default:"code-refactor-api"`
 	Enabled     bool   `envconfig:"ENABLED" default:"true"`
+}
+
+// PostgresConfig represents the configuration for PostgreSQL connection
+type PostgresConfig struct {
+	Host     string `envconfig:"HOST" default:"localhost"`
+	Port     int    `envconfig:"PORT" default:"5432"`
+	Database string `envconfig:"DATABASE" default:"code_refactoring_db"`
+	Username string `envconfig:"USERNAME" default:"postgres"`
+	Password string `envconfig:"PASSWORD" required:"true"`
+	SSLMode  string `envconfig:"SSL_MODE" default:"disable"`
 }
 
 // GitConfig represents the Git configuration
