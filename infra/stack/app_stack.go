@@ -7,10 +7,14 @@ import (
 	"runtime"
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awscognito"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsecr"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsecs"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awselasticloadbalancingv2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslogs"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsrds"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awss3"
@@ -18,9 +22,6 @@ import (
 	"github.com/aws/aws-cdk-go/awscdk/v2/awssecretsmanager"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
-
-	// NEW IMPORT for Lambda
-	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 	// NEW IMPORT for Custom Resources
 )
 
@@ -92,6 +93,9 @@ type AppStack struct {
 	RDSPostgresClusterARN            string
 	RDSPostgresCredentialsSecretARN  string
 	RDSPostgresSchemaEnsureLambdaARN string
+	APIGatewayURL                    string
+	CognitoUserPoolID                string
+	CognitoUserPoolClientID          string
 }
 
 // Resources holds the common resources that are shared across different components
@@ -137,6 +141,21 @@ type StorageResources struct {
 	Name   string
 }
 
+// APIGatewayResources holds API Gateway and related resources
+type APIGatewayResources struct {
+	RestAPI      awsapigateway.IRestApi
+	LoadBalancer awselasticloadbalancingv2.IApplicationLoadBalancer
+	URL          string
+}
+
+// CognitoResources holds Cognito User Pool and related authentication resources
+type CognitoResources struct {
+	UserPool       awscognito.IUserPool
+	UserPoolClient awscognito.IUserPoolClient
+	UserPoolID     string
+	ClientID       string
+}
+
 // NewAppStack creates a new CDK stack for the application.
 func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *AppStack {
 	stack := awscdk.NewStack(scope, &id, &props.StackProps)
@@ -153,10 +172,15 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 
 	storage := createStorageResources(resources)
 	database := createDatabaseResources(resources, networking)
-	bedrock := createBedrockResources(resources, storage, database)
 
 	// Create compute resources (ECS, Fargate, ECR)
-	createComputeResources(resources, networking)
+	compute := createComputeResources(resources, networking)
+
+	// Create API Gateway and authentication resources
+	cognito := createCognitoResources(resources)
+	apigateway := createAPIGatewayResources(resources, networking, compute, cognito)
+
+	bedrock := createBedrockResources(resources, storage, database)
 
 	return &AppStack{
 		Stack:                            stack,
@@ -168,6 +192,9 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 		RDSPostgresClusterARN:            *database.Cluster.ClusterArn(),
 		RDSPostgresCredentialsSecretARN:  *database.CredentialsSecret.SecretArn(),
 		RDSPostgresSchemaEnsureLambdaARN: *database.MigrationLambda.FunctionArn(),
+		APIGatewayURL:                    apigateway.URL,
+		CognitoUserPoolID:                cognito.UserPoolID,
+		CognitoUserPoolClientID:          cognito.ClientID,
 	}
 }
 
@@ -187,6 +214,9 @@ func createNetworkingResources(resources *Resources) *NetworkingResources {
 	})
 	awscdk.Tags_Of(vpc).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
+	// Apply removal policy to VPC for clean deletion
+	vpc.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
+
 	// Add VPC Endpoint for AWS Secrets Manager to allow private access from Lambda
 	secretsManagerEndpoint := awsec2.NewInterfaceVpcEndpoint(resources.Stack, jsii.String("SecretsManagerVpcEndpoint"), &awsec2.InterfaceVpcEndpointProps{
 		Vpc:     vpc,
@@ -203,6 +233,9 @@ func createNetworkingResources(resources *Resources) *NetworkingResources {
 		jsii.String(DefaultResourceTagValue),
 		nil,
 	)
+
+	// Apply removal policy to VPC endpoint to ensure clean deletion
+	secretsManagerEndpoint.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
 
 	return &NetworkingResources{
 		Vpc:                    vpc,
@@ -349,6 +382,10 @@ func createMigrationLambda(resources *Resources, networking *NetworkingResources
 		AllowPublicSubnet: jsii.Bool(true),
 	})
 	awscdk.Tags_Of(migrationLambda).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	// Apply removal policies to ensure clean deletion
+	migrationLambda.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
+	migrationLambdaSG.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
 
 	return &MigrationLambdaResources{
 		MigrationLambda:     migrationLambda,
@@ -559,6 +596,166 @@ func createComputeResources(resources *Resources, networking *NetworkingResource
 		TaskDef:  taskDef,
 		EcrRepo:  ecrRepo,
 		LogGroup: logGroup,
+	}
+}
+
+// createCognitoResources creates Cognito User Pool and authentication resources
+func createCognitoResources(resources *Resources) *CognitoResources {
+	// Create Cognito User Pool
+	userPool := awscognito.NewUserPool(resources.Stack, jsii.String("CodeRefactorUserPool"), &awscognito.UserPoolProps{
+		UserPoolName:      jsii.String("code-refactor-user-pool"),
+		SelfSignUpEnabled: jsii.Bool(true),
+		SignInAliases: &awscognito.SignInAliases{
+			Email:    jsii.Bool(true),
+			Username: jsii.Bool(true),
+		},
+		AutoVerify: &awscognito.AutoVerifiedAttrs{
+			Email: jsii.Bool(true),
+		},
+		PasswordPolicy: &awscognito.PasswordPolicy{
+			MinLength:        jsii.Number(8),
+			RequireLowercase: jsii.Bool(true),
+			RequireUppercase: jsii.Bool(true),
+			RequireDigits:    jsii.Bool(true),
+			RequireSymbols:   jsii.Bool(true),
+		},
+		AccountRecovery: awscognito.AccountRecovery_EMAIL_ONLY,
+	})
+	awscdk.Tags_Of(userPool).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	// Create User Pool Client
+	userPoolClient := awscognito.NewUserPoolClient(resources.Stack, jsii.String("CodeRefactorUserPoolClient"), &awscognito.UserPoolClientProps{
+		UserPool:           userPool,
+		UserPoolClientName: jsii.String("code-refactor-client"),
+		GenerateSecret:     jsii.Bool(false), // For public clients (web/mobile apps)
+		AuthFlows: &awscognito.AuthFlow{
+			UserPassword: jsii.Bool(true),
+			UserSrp:      jsii.Bool(true),
+		},
+		OAuth: &awscognito.OAuthSettings{
+			Flows: &awscognito.OAuthFlows{
+				AuthorizationCodeGrant: jsii.Bool(true),
+				ImplicitCodeGrant:      jsii.Bool(true),
+			},
+			Scopes: &[]awscognito.OAuthScope{
+				awscognito.OAuthScope_EMAIL(),
+				awscognito.OAuthScope_OPENID(),
+				awscognito.OAuthScope_PROFILE(),
+			},
+			CallbackUrls: &[]*string{
+				jsii.String("https://localhost:3000/callback"),
+				jsii.String("https://example.com/callback"), // Replace with your actual callback URL
+			},
+			LogoutUrls: &[]*string{
+				jsii.String("https://localhost:3000/logout"),
+				jsii.String("https://example.com/logout"), // Replace with your actual logout URL
+			},
+		},
+		IdTokenValidity:      awscdk.Duration_Hours(jsii.Number(24)),
+		AccessTokenValidity:  awscdk.Duration_Hours(jsii.Number(24)),
+		RefreshTokenValidity: awscdk.Duration_Days(jsii.Number(30)),
+	})
+
+	return &CognitoResources{
+		UserPool:       userPool,
+		UserPoolClient: userPoolClient,
+		UserPoolID:     *userPool.UserPoolId(),
+		ClientID:       *userPoolClient.UserPoolClientId(),
+	}
+}
+
+// createAPIGatewayResources creates API Gateway, Load Balancer, and VPC Link resources
+func createAPIGatewayResources(resources *Resources, networking *NetworkingResources, _ *ComputeResources, cognito *CognitoResources) *APIGatewayResources {
+	// Create Application Load Balancer
+	loadBalancer := awselasticloadbalancingv2.NewApplicationLoadBalancer(resources.Stack, jsii.String("CodeRefactorALB"), &awselasticloadbalancingv2.ApplicationLoadBalancerProps{
+		Vpc:            networking.Vpc,
+		InternetFacing: jsii.Bool(false), // Internal ALB
+		VpcSubnets: &awsec2.SubnetSelection{
+			SubnetType: awsec2.SubnetType_PUBLIC, // Use public subnets for ALB
+		},
+	})
+	awscdk.Tags_Of(loadBalancer).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	// Apply removal policy for clean deletion
+	loadBalancer.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
+
+	// Create Target Group for ECS Service
+	targetGroup := awselasticloadbalancingv2.NewApplicationTargetGroup(resources.Stack, jsii.String("CodeRefactorTargetGroup"), &awselasticloadbalancingv2.ApplicationTargetGroupProps{
+		Port:       jsii.Number(8080),
+		Protocol:   awselasticloadbalancingv2.ApplicationProtocol_HTTP,
+		Vpc:        networking.Vpc,
+		TargetType: awselasticloadbalancingv2.TargetType_IP,
+		HealthCheck: &awselasticloadbalancingv2.HealthCheck{
+			Path:                    jsii.String("/health"),
+			HealthyHttpCodes:        jsii.String("200"),
+			HealthyThresholdCount:   jsii.Number(2),
+			UnhealthyThresholdCount: jsii.Number(3),
+			Timeout:                 awscdk.Duration_Seconds(jsii.Number(5)),
+			Interval:                awscdk.Duration_Seconds(jsii.Number(30)),
+		},
+	})
+
+	// Add Listener to Load Balancer
+	loadBalancer.AddListener(jsii.String("CodeRefactorListener"), &awselasticloadbalancingv2.BaseApplicationListenerProps{
+		Port:     jsii.Number(80),
+		Protocol: awselasticloadbalancingv2.ApplicationProtocol_HTTP,
+		DefaultTargetGroups: &[]awselasticloadbalancingv2.IApplicationTargetGroup{
+			targetGroup,
+		},
+	})
+
+	// Create API Gateway REST API
+	api := awsapigateway.NewRestApi(resources.Stack, jsii.String("CodeRefactorAPI"), &awsapigateway.RestApiProps{
+		RestApiName: jsii.String("code-refactor-api"),
+		Description: jsii.String("API Gateway for Code Refactoring Tool"),
+		EndpointTypes: &[]awsapigateway.EndpointType{
+			awsapigateway.EndpointType_REGIONAL,
+		},
+		DefaultCorsPreflightOptions: &awsapigateway.CorsOptions{
+			AllowOrigins: &[]*string{jsii.String("*")},
+			AllowMethods: &[]*string{jsii.String("GET"), jsii.String("POST"), jsii.String("PUT"), jsii.String("DELETE"), jsii.String("OPTIONS")},
+			AllowHeaders: &[]*string{jsii.String("Content-Type"), jsii.String("Authorization")},
+		},
+	})
+	awscdk.Tags_Of(api).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	// Create Cognito Authorizer
+	cognitoAuthorizer := awsapigateway.NewCognitoUserPoolsAuthorizer(resources.Stack, jsii.String("CodeRefactorAuthorizer"), &awsapigateway.CognitoUserPoolsAuthorizerProps{
+		CognitoUserPools: &[]awscognito.IUserPool{cognito.UserPool},
+		AuthorizerName:   jsii.String("code-refactor-authorizer"),
+	})
+
+	// Create API Gateway integration with Load Balancer (direct HTTP integration for now)
+	albURL := fmt.Sprintf("http://%s", *loadBalancer.LoadBalancerDnsName())
+	integration := awsapigateway.NewHttpIntegration(jsii.String(albURL), &awsapigateway.HttpIntegrationProps{
+		Proxy: jsii.Bool(true),
+	})
+
+	// Add proxy resource to handle all paths
+	api.Root().AddProxy(&awsapigateway.ProxyResourceOptions{
+		DefaultIntegration: integration,
+		DefaultMethodOptions: &awsapigateway.MethodOptions{
+			Authorizer:        cognitoAuthorizer,
+			AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		},
+		AnyMethod: jsii.Bool(true),
+	})
+
+	// Add public endpoints without authorization (health check, swagger docs)
+	healthResource := api.Root().AddResource(jsii.String("health"), nil)
+	healthResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+	})
+
+	docsResource := api.Root().AddResource(jsii.String("swagger"), nil)
+	docsResource.AddMethod(jsii.String("GET"), integration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_NONE,
+	})
+
+	return &APIGatewayResources{
+		RestAPI:      api,
+		LoadBalancer: loadBalancer,
+		URL:          *api.Url(),
 	}
 }
 

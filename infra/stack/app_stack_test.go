@@ -43,8 +43,8 @@ func TestAppStack_CreatesExpectedResources(t *testing.T) {
 		})
 
 		t.Run("creates appropriate security groups", func(_ *testing.T) {
-			// Should have: RDS default SG, Lambda migration SG, and VPC default SG
-			template.ResourceCountIs(jsii.String("AWS::EC2::SecurityGroup"), jsii.Number(3))
+			// Should have: RDS default SG, Lambda migration SG, VPC default SG, and ALB SG
+			template.ResourceCountIs(jsii.String("AWS::EC2::SecurityGroup"), jsii.Number(4))
 		})
 	})
 
@@ -131,11 +131,112 @@ func TestAppStack_CreatesExpectedResources(t *testing.T) {
 		})
 	})
 
+	// Test API Gateway and Load Balancer infrastructure
+	t.Run("API Gateway", func(t *testing.T) {
+		t.Run("creates API Gateway with correct configuration", func(_ *testing.T) {
+			template.ResourceCountIs(jsii.String("AWS::ApiGateway::RestApi"), jsii.Number(1))
+			template.HasResourceProperties(jsii.String("AWS::ApiGateway::RestApi"), map[string]interface{}{
+				"Name":        "code-refactor-api",
+				"Description": "API Gateway for Code Refactoring Tool",
+				"EndpointConfiguration": map[string]interface{}{
+					"Types": []interface{}{"REGIONAL"},
+				},
+			})
+		})
+
+		t.Run("creates Application Load Balancer", func(_ *testing.T) {
+			// We have 1 load balancer: ALB for ECS (dummy NLB removed for cost optimization)
+			template.ResourceCountIs(jsii.String("AWS::ElasticLoadBalancingV2::LoadBalancer"), jsii.Number(1))
+			template.HasResourceProperties(jsii.String("AWS::ElasticLoadBalancingV2::LoadBalancer"), map[string]interface{}{
+				"Type":   "application",
+				"Scheme": "internal",
+			})
+		})
+
+		t.Run("creates ALB Target Group for ECS service", func(_ *testing.T) {
+			template.ResourceCountIs(jsii.String("AWS::ElasticLoadBalancingV2::TargetGroup"), jsii.Number(1))
+			template.HasResourceProperties(jsii.String("AWS::ElasticLoadBalancingV2::TargetGroup"), map[string]interface{}{
+				"Port":            8080,
+				"Protocol":        "HTTP",
+				"TargetType":      "ip",
+				"HealthCheckPath": "/health",
+			})
+		})
+
+		t.Run("creates ALB Listener", func(_ *testing.T) {
+			template.ResourceCountIs(jsii.String("AWS::ElasticLoadBalancingV2::Listener"), jsii.Number(1))
+			template.HasResourceProperties(jsii.String("AWS::ElasticLoadBalancingV2::Listener"), map[string]interface{}{
+				"Port":     80,
+				"Protocol": "HTTP",
+			})
+		})
+
+		t.Run("creates API Gateway deployment and stage", func(_ *testing.T) {
+			template.ResourceCountIs(jsii.String("AWS::ApiGateway::Deployment"), jsii.Number(1))
+			template.ResourceCountIs(jsii.String("AWS::ApiGateway::Stage"), jsii.Number(1))
+			template.HasResourceProperties(jsii.String("AWS::ApiGateway::Stage"), map[string]interface{}{
+				"StageName": "prod",
+			})
+		})
+	})
+
+	// Test Authentication and Authorization
+	t.Run("Authentication", func(t *testing.T) {
+		t.Run("creates Cognito User Pool", func(_ *testing.T) {
+			template.ResourceCountIs(jsii.String("AWS::Cognito::UserPool"), jsii.Number(1))
+			template.HasResourceProperties(jsii.String("AWS::Cognito::UserPool"), map[string]interface{}{
+				"UserPoolName": "code-refactor-user-pool",
+				"Policies": map[string]interface{}{
+					"PasswordPolicy": map[string]interface{}{
+						"MinimumLength":    8,
+						"RequireLowercase": true,
+						"RequireNumbers":   true,
+						"RequireSymbols":   true,
+						"RequireUppercase": true,
+					},
+				},
+			})
+		})
+
+		t.Run("creates Cognito User Pool Client", func(_ *testing.T) {
+			template.ResourceCountIs(jsii.String("AWS::Cognito::UserPoolClient"), jsii.Number(1))
+			template.HasResourceProperties(jsii.String("AWS::Cognito::UserPoolClient"), map[string]interface{}{
+				"ClientName":           "code-refactor-client",
+				"ExplicitAuthFlows":    []interface{}{"ALLOW_USER_PASSWORD_AUTH", "ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"},
+				"GenerateSecret":       false,
+				"AccessTokenValidity":  1440,  // 24 hours in minutes
+				"IdTokenValidity":      1440,  // 24 hours in minutes
+				"RefreshTokenValidity": 43200, // 30 days in minutes
+				"TokenValidityUnits": map[string]interface{}{
+					"AccessToken":  "minutes",
+					"IdToken":      "minutes",
+					"RefreshToken": "minutes",
+				},
+			})
+		})
+
+		t.Run("creates API Gateway Authorizer", func(_ *testing.T) {
+			template.ResourceCountIs(jsii.String("AWS::ApiGateway::Authorizer"), jsii.Number(1))
+			template.HasResourceProperties(jsii.String("AWS::ApiGateway::Authorizer"), map[string]interface{}{
+				"Type": "COGNITO_USER_POOLS",
+				"Name": "code-refactor-authorizer",
+			})
+		})
+
+		t.Run("creates API Gateway resources with authorization", func(_ *testing.T) {
+			// Check that API resources require authorization
+			// We have: proxy resource, /health resource, and /swagger resource
+			template.ResourceCountIs(jsii.String("AWS::ApiGateway::Resource"), jsii.Number(3))
+			// We have methods from proxy resource (ANY method creates multiple HTTP methods) + health + swagger
+			template.ResourceCountIs(jsii.String("AWS::ApiGateway::Method"), jsii.Number(8))
+		})
+	})
+
 	// Test IAM and security
 	t.Run("IAM and Security", func(t *testing.T) {
 		t.Run("creates appropriate number of IAM roles", func(_ *testing.T) {
 			// Expected roles: Bedrock KB, Bedrock Agent, Lambda execution, ECS task execution, ECS task role, Lambda migration role
-			template.ResourceCountIs(jsii.String("AWS::IAM::Role"), jsii.Number(6))
+			template.ResourceCountIs(jsii.String("AWS::IAM::Role"), jsii.Number(7))
 		})
 
 		t.Run("creates Bedrock Knowledge Base role with correct trust policy", func(_ *testing.T) {
@@ -230,6 +331,16 @@ func TestAppStack_ExposesCorrectOutputs(t *testing.T) {
 		}
 		if stack.RDSPostgresSchemaEnsureLambdaARN == "" {
 			t.Error("RDSPostgresSchemaEnsureLambdaARN should not be empty")
+		}
+		// API Gateway and Auth properties
+		if stack.APIGatewayURL == "" {
+			t.Error("APIGatewayURL should not be empty")
+		}
+		if stack.CognitoUserPoolID == "" {
+			t.Error("CognitoUserPoolID should not be empty")
+		}
+		if stack.CognitoUserPoolClientID == "" {
+			t.Error("CognitoUserPoolClientID should not be empty")
 		}
 	})
 }

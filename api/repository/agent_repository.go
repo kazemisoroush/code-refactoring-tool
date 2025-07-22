@@ -8,18 +8,18 @@ import (
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
 )
 
-// AgentRecord represents the agent data stored in DynamoDB
+// AgentRecord represents the agent data stored in the database
 type AgentRecord struct {
-	AgentID         string    `dynamodbav:"agent_id"`
-	AgentVersion    string    `dynamodbav:"agent_version"`
-	KnowledgeBaseID string    `dynamodbav:"knowledge_base_id"`
-	VectorStoreID   string    `dynamodbav:"vector_store_id"`
-	RepositoryURL   string    `dynamodbav:"repository_url"`
-	Branch          string    `dynamodbav:"branch,omitempty"`
-	AgentName       string    `dynamodbav:"agent_name,omitempty"`
-	Status          string    `dynamodbav:"status"`
-	CreatedAt       time.Time `dynamodbav:"created_at"`
-	UpdatedAt       time.Time `dynamodbav:"updated_at"`
+	AgentID         string    `json:"agent_id" db:"agent_id"`
+	AgentVersion    string    `json:"agent_version" db:"agent_version"`
+	KnowledgeBaseID string    `json:"knowledge_base_id" db:"knowledge_base_id"`
+	VectorStoreID   string    `json:"vector_store_id" db:"vector_store_id"`
+	RepositoryURL   string    `json:"repository_url" db:"repository_url"`
+	Branch          string    `json:"branch,omitempty" db:"branch"`
+	AgentName       string    `json:"agent_name,omitempty" db:"agent_name"`
+	Status          string    `json:"status" db:"status"`
+	CreatedAt       time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // ToResponse converts AgentRecord to CreateAgentResponse

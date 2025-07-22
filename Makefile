@@ -50,7 +50,12 @@ destroy:
 	@cd infra && cdk destroy --all --force
 	@aws secretsmanager delete-secret \
 		--secret-id code-refactor-db-secret \
-		--force-delete-without-recovery
+		--force-delete-without-recovery || true
+	@echo "Cleaning up any remaining ENIs..."
+	@aws ec2 describe-network-interfaces \
+		--filters "Name=tag:project,Values=CodeRefactoring" \
+		--query "NetworkInterfaces[?Status=='available'].NetworkInterfaceId" \
+		--output text | xargs -r -n1 aws ec2 delete-network-interface --network-interface-id || true
 	@echo "Infra destroy done."
 
 ci: mock test lint clean swagger

@@ -41,7 +41,32 @@ func NewDynamoDBAgentRepository(awsConfig aws.Config, tableName string) AgentRep
 
 // CreateAgent stores a new agent record
 func (r *DynamoDBAgentRepository) CreateAgent(ctx context.Context, agent *AgentRecord) error {
-	item, err := attributevalue.MarshalMap(agent)
+	// Create a DynamoDB-specific struct with proper tags
+	dynamoAgent := struct {
+		AgentID         string    `dynamodbav:"agent_id"`
+		AgentVersion    string    `dynamodbav:"agent_version"`
+		KnowledgeBaseID string    `dynamodbav:"knowledge_base_id"`
+		VectorStoreID   string    `dynamodbav:"vector_store_id"`
+		RepositoryURL   string    `dynamodbav:"repository_url"`
+		Branch          string    `dynamodbav:"branch,omitempty"`
+		AgentName       string    `dynamodbav:"agent_name,omitempty"`
+		Status          string    `dynamodbav:"status"`
+		CreatedAt       time.Time `dynamodbav:"created_at"`
+		UpdatedAt       time.Time `dynamodbav:"updated_at"`
+	}{
+		AgentID:         agent.AgentID,
+		AgentVersion:    agent.AgentVersion,
+		KnowledgeBaseID: agent.KnowledgeBaseID,
+		VectorStoreID:   agent.VectorStoreID,
+		RepositoryURL:   agent.RepositoryURL,
+		Branch:          agent.Branch,
+		AgentName:       agent.AgentName,
+		Status:          agent.Status,
+		CreatedAt:       agent.CreatedAt,
+		UpdatedAt:       agent.UpdatedAt,
+	}
+
+	item, err := attributevalue.MarshalMap(dynamoAgent)
 	if err != nil {
 		return fmt.Errorf("failed to marshal agent record: %w", err)
 	}
@@ -74,20 +99,71 @@ func (r *DynamoDBAgentRepository) GetAgent(ctx context.Context, agentID string) 
 		return nil, fmt.Errorf("agent not found: %s", agentID)
 	}
 
-	var agent AgentRecord
-	err = attributevalue.UnmarshalMap(result.Item, &agent)
+	// Use DynamoDB-specific struct for unmarshaling
+	var dynamoAgent struct {
+		AgentID         string    `dynamodbav:"agent_id"`
+		AgentVersion    string    `dynamodbav:"agent_version"`
+		KnowledgeBaseID string    `dynamodbav:"knowledge_base_id"`
+		VectorStoreID   string    `dynamodbav:"vector_store_id"`
+		RepositoryURL   string    `dynamodbav:"repository_url"`
+		Branch          string    `dynamodbav:"branch,omitempty"`
+		AgentName       string    `dynamodbav:"agent_name,omitempty"`
+		Status          string    `dynamodbav:"status"`
+		CreatedAt       time.Time `dynamodbav:"created_at"`
+		UpdatedAt       time.Time `dynamodbav:"updated_at"`
+	}
+	err = attributevalue.UnmarshalMap(result.Item, &dynamoAgent)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal agent record: %w", err)
 	}
 
-	return &agent, nil
+	// Convert to AgentRecord
+	agent := &AgentRecord{
+		AgentID:         dynamoAgent.AgentID,
+		AgentVersion:    dynamoAgent.AgentVersion,
+		KnowledgeBaseID: dynamoAgent.KnowledgeBaseID,
+		VectorStoreID:   dynamoAgent.VectorStoreID,
+		RepositoryURL:   dynamoAgent.RepositoryURL,
+		Branch:          dynamoAgent.Branch,
+		AgentName:       dynamoAgent.AgentName,
+		Status:          dynamoAgent.Status,
+		CreatedAt:       dynamoAgent.CreatedAt,
+		UpdatedAt:       dynamoAgent.UpdatedAt,
+	}
+
+	return agent, nil
 }
 
 // UpdateAgent updates an existing agent record
 func (r *DynamoDBAgentRepository) UpdateAgent(ctx context.Context, agent *AgentRecord) error {
 	agent.UpdatedAt = time.Now().UTC()
 
-	item, err := attributevalue.MarshalMap(agent)
+	// Create a DynamoDB-specific struct with proper tags
+	dynamoAgent := struct {
+		AgentID         string    `dynamodbav:"agent_id"`
+		AgentVersion    string    `dynamodbav:"agent_version"`
+		KnowledgeBaseID string    `dynamodbav:"knowledge_base_id"`
+		VectorStoreID   string    `dynamodbav:"vector_store_id"`
+		RepositoryURL   string    `dynamodbav:"repository_url"`
+		Branch          string    `dynamodbav:"branch,omitempty"`
+		AgentName       string    `dynamodbav:"agent_name,omitempty"`
+		Status          string    `dynamodbav:"status"`
+		CreatedAt       time.Time `dynamodbav:"created_at"`
+		UpdatedAt       time.Time `dynamodbav:"updated_at"`
+	}{
+		AgentID:         agent.AgentID,
+		AgentVersion:    agent.AgentVersion,
+		KnowledgeBaseID: agent.KnowledgeBaseID,
+		VectorStoreID:   agent.VectorStoreID,
+		RepositoryURL:   agent.RepositoryURL,
+		Branch:          agent.Branch,
+		AgentName:       agent.AgentName,
+		Status:          agent.Status,
+		CreatedAt:       agent.CreatedAt,
+		UpdatedAt:       agent.UpdatedAt,
+	}
+
+	item, err := attributevalue.MarshalMap(dynamoAgent)
 	if err != nil {
 		return fmt.Errorf("failed to marshal agent record: %w", err)
 	}
@@ -129,12 +205,38 @@ func (r *DynamoDBAgentRepository) ListAgents(ctx context.Context) ([]*AgentRecor
 
 	agents := make([]*AgentRecord, 0, len(result.Items))
 	for _, item := range result.Items {
-		var agent AgentRecord
-		err = attributevalue.UnmarshalMap(item, &agent)
+		// Use DynamoDB-specific struct for unmarshaling
+		var dynamoAgent struct {
+			AgentID         string    `dynamodbav:"agent_id"`
+			AgentVersion    string    `dynamodbav:"agent_version"`
+			KnowledgeBaseID string    `dynamodbav:"knowledge_base_id"`
+			VectorStoreID   string    `dynamodbav:"vector_store_id"`
+			RepositoryURL   string    `dynamodbav:"repository_url"`
+			Branch          string    `dynamodbav:"branch,omitempty"`
+			AgentName       string    `dynamodbav:"agent_name,omitempty"`
+			Status          string    `dynamodbav:"status"`
+			CreatedAt       time.Time `dynamodbav:"created_at"`
+			UpdatedAt       time.Time `dynamodbav:"updated_at"`
+		}
+		err = attributevalue.UnmarshalMap(item, &dynamoAgent)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal agent record: %w", err)
 		}
-		agents = append(agents, &agent)
+
+		// Convert to AgentRecord
+		agent := &AgentRecord{
+			AgentID:         dynamoAgent.AgentID,
+			AgentVersion:    dynamoAgent.AgentVersion,
+			KnowledgeBaseID: dynamoAgent.KnowledgeBaseID,
+			VectorStoreID:   dynamoAgent.VectorStoreID,
+			RepositoryURL:   dynamoAgent.RepositoryURL,
+			Branch:          dynamoAgent.Branch,
+			AgentName:       dynamoAgent.AgentName,
+			Status:          dynamoAgent.Status,
+			CreatedAt:       dynamoAgent.CreatedAt,
+			UpdatedAt:       dynamoAgent.UpdatedAt,
+		}
+		agents = append(agents, agent)
 	}
 
 	return agents, nil
