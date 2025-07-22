@@ -15,6 +15,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"github.com/kazemisoroush/code-refactoring-tool/api/controllers"
+	"github.com/kazemisoroush/code-refactoring-tool/api/middleware"
 	"github.com/kazemisoroush/code-refactoring-tool/api/repository"
 	"github.com/kazemisoroush/code-refactoring-tool/api/services"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/builder"
@@ -90,11 +91,19 @@ func main() {
 	// Initialize controllers
 	agentController := controllers.NewAgentController(agentService)
 
+	// Initialize authentication middleware
+	authMiddleware := middleware.NewAuthMiddleware(middleware.CognitoConfig{
+		UserPoolID: cfg.Cognito.UserPoolID,
+		Region:     cfg.Cognito.Region,
+		ClientID:   cfg.Cognito.ClientID,
+	})
+
 	// Setup Gin router
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
+	router.Use(authMiddleware.RequireAuth())
 
 	// Setup API routes
 	v1 := router.Group("/api/v1")

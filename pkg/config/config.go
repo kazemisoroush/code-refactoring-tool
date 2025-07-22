@@ -79,10 +79,11 @@ var (
 
 // Config represents the configuration for the application
 type Config struct {
-	Git            GitConfig  `envconfig:"GIT"`
-	TimeoutSeconds int        `envconfig:"TIMEOUT_SECONDS" default:"180"`
-	LogLevel       string     `envconfig:"LOG_LEVEL" default:"info"`
-	AWSConfig      aws.Config // Loaded using AWS SDK, not from env
+	Git            GitConfig     `envconfig:"GIT"`
+	TimeoutSeconds int           `envconfig:"TIMEOUT_SECONDS" default:"180"`
+	LogLevel       string        `envconfig:"LOG_LEVEL" default:"info"`
+	AWSConfig      aws.Config    // Loaded using AWS SDK, not from env
+	Cognito        CognitoConfig `envconfig:"COGNITO"`
 
 	S3BucketName                string      `envconfig:"S3_BUCKET_NAME"`
 	KnowledgeBaseServiceRoleARN string      `envconfig:"KNOWLEDGE_BASE_SERVICE_ROLE_ARN"`
@@ -96,6 +97,13 @@ type RDSPostgres struct {
 	SchemaEnsureLambdaARN string `envconfig:"RDS_POSTGRES_SCHEMA_ENSURE_LAMBDA_ARN"`
 	InstanceARN           string `envconfig:"INSTANCE_ARN"`
 	DatabaseName          string `envconfig:"DATABASE_NAME" default:"code_refactoring_db"`
+}
+
+// CognitoConfig represents the configuration for AWS Cognito authentication
+type CognitoConfig struct {
+	UserPoolID string `envconfig:"USER_POOL_ID" required:"true"`
+	ClientID   string `envconfig:"CLIENT_ID" required:"true"`
+	Region     string `envconfig:"REGION" default:"us-east-1"`
 }
 
 // GitConfig represents the Git configuration
