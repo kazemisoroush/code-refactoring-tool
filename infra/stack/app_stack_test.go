@@ -34,17 +34,9 @@ func TestAppStack_CreatesExpectedResources(t *testing.T) {
 			template.ResourceCountIs(jsii.String("AWS::EC2::Subnet"), jsii.Number(2))
 		})
 
-		t.Run("creates VPC endpoint for Secrets Manager", func(_ *testing.T) {
-			template.ResourceCountIs(jsii.String("AWS::EC2::VPCEndpoint"), jsii.Number(1))
-			template.HasResourceProperties(jsii.String("AWS::EC2::VPCEndpoint"), map[string]interface{}{
-				"ServiceName":       "com.amazonaws.us-east-1.secretsmanager",
-				"PrivateDnsEnabled": true,
-			})
-		})
-
 		t.Run("creates appropriate security groups", func(_ *testing.T) {
-			// Should have: RDS default SG, Lambda migration SG, VPC default SG, and ALB SG
-			template.ResourceCountIs(jsii.String("AWS::EC2::SecurityGroup"), jsii.Number(4))
+			// Should have: RDS default SG, Lambda migration SG, VPC default SG
+			template.ResourceCountIs(jsii.String("AWS::EC2::SecurityGroup"), jsii.Number(3))
 		})
 	})
 

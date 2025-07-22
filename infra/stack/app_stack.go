@@ -25,58 +25,6 @@ import (
 	// NEW IMPORT for Custom Resources
 )
 
-const (
-	// RDSPostgresDatabaseName is the name of the RDS Postgres database.
-	RDSPostgresDatabaseName = "code_refactoring_db"
-
-	// RDSPostgresTableName table name.
-	RDSPostgresTableName = "vector_store" // Define your table name here
-
-	// DefaultResourceTagKey and DefaultResourceTagValue are used for tagging AWS resources
-	DefaultResourceTagKey = "project"
-
-	// DefaultResourceTagValue is the default value for the resource tag
-	DefaultResourceTagValue = "CodeRefactoring"
-
-	// SchemaVersion is a version string for the database schema.
-	// Increment this string to trigger new migrations.
-	SchemaVersion = "v1" // Change to "v2", "v3", etc., for future schema updates
-)
-
-var (
-	// FoundationModels is a list of foundation models to be used in the application.
-	FoundationModels = []string{
-		// Anthropic Claude
-		"anthropic.claude-instant-v1",
-		"anthropic.claude-v2",
-		"anthropic.claude-v2:1",
-		"anthropic.claude-3-sonnet-20240229-v1:0",
-		"anthropic.claude-3-5-sonnet-20240620-v1:0",
-
-		// Mistral
-		"mistral.mistral-7b-instruct-v0:2",
-		"mistral.mistral-large-2402-v1:0",
-
-		// Meta (Llama)
-		"meta.llama2-13b-chat-v1",
-		"meta.llama2-70b-chat-v1",
-
-		// Cohere
-		"cohere.command-r-v1",
-		"cohere.command-r-plus-v1",
-
-		// AI21 Labs
-		"ai21.j2-mid-v1",
-		"ai21.j2-ultra-v1",
-		"ai21.j2-light-v1",
-
-		// Amazon Titan (Text and Embeddings)
-		"amazon.titan-text-lite-v1",
-		"amazon.titan-text-express-v1",
-		"amazon.titan-embed-text-v1",
-	}
-)
-
 // AppStackProps defines the properties for the application stack.
 type AppStackProps struct {
 	awscdk.StackProps
@@ -174,7 +122,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 	database := createDatabaseResources(resources, networking)
 
 	// Create compute resources (ECS, Fargate, ECR)
-	compute := createComputeResources(resources, networking)
+	compute := createComputeResources(resources, networking, database)
 
 	// Create API Gateway and authentication resources
 	cognito := createCognitoResources(resources)
@@ -217,29 +165,9 @@ func createNetworkingResources(resources *Resources) *NetworkingResources {
 	// Apply removal policy to VPC for clean deletion
 	vpc.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
 
-	// Add VPC Endpoint for AWS Secrets Manager to allow private access from Lambda
-	secretsManagerEndpoint := awsec2.NewInterfaceVpcEndpoint(resources.Stack, jsii.String("SecretsManagerVpcEndpoint"), &awsec2.InterfaceVpcEndpointProps{
-		Vpc:     vpc,
-		Service: awsec2.InterfaceVpcEndpointAwsService_SECRETS_MANAGER(),
-		Subnets: &awsec2.SubnetSelection{
-			SubnetType: awsec2.SubnetType_PUBLIC,
-		},
-		PrivateDnsEnabled: jsii.Bool(true),
-	})
-
-	// Tag the VPC endpoint for visibility and management
-	awscdk.Tags_Of(secretsManagerEndpoint).Add(
-		jsii.String(DefaultResourceTagKey),
-		jsii.String(DefaultResourceTagValue),
-		nil,
-	)
-
-	// Apply removal policy to VPC endpoint to ensure clean deletion
-	secretsManagerEndpoint.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
-
 	return &NetworkingResources{
 		Vpc:                    vpc,
-		SecretsManagerEndpoint: secretsManagerEndpoint,
+		SecretsManagerEndpoint: nil, // Removed VPC endpoint to avoid deletion issues
 	}
 }
 
@@ -343,6 +271,9 @@ func createMigrationLambda(resources *Resources, networking *NetworkingResources
 	})
 	awscdk.Tags_Of(migrationLambdaRole).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
+	// Apply removal policy to IAM role for clean deletion
+	migrationLambdaRole.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
+
 	// Grant permissions
 	setupMigrationLambdaPermissions(migrationLambdaRole, credentialsSecret, cluster)
 
@@ -380,6 +311,8 @@ func createMigrationLambda(resources *Resources, networking *NetworkingResources
 		Timeout:           awscdk.Duration_Seconds(jsii.Number(10)),
 		Role:              migrationLambdaRole,
 		AllowPublicSubnet: jsii.Bool(true),
+		// Reserved concurrency to limit ENI creation
+		ReservedConcurrentExecutions: jsii.Number(1),
 	})
 	awscdk.Tags_Of(migrationLambda).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
@@ -487,6 +420,9 @@ func createBedrockKnowledgeBaseRole(resources *Resources, storage *StorageResour
 	})
 	awscdk.Tags_Of(role).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
+	// Apply removal policy to Bedrock Knowledge Base role for clean deletion
+	role.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
+
 	return role
 }
 
@@ -540,16 +476,22 @@ func createBedrockAgentRole(resources *Resources) awsiam.IRole {
 	})
 	awscdk.Tags_Of(role).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
+	// Apply removal policy to Bedrock Agent role for clean deletion
+	role.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
+
 	return role
 }
 
 // createComputeResources creates ECS, Fargate, and ECR resources
-func createComputeResources(resources *Resources, networking *NetworkingResources) *ComputeResources {
+func createComputeResources(resources *Resources, networking *NetworkingResources, database *DatabaseResources) *ComputeResources {
 	// ECS Cluster
 	cluster := awsecs.NewCluster(resources.Stack, jsii.String("RefactorCluster"), &awsecs.ClusterProps{
 		Vpc: networking.Vpc,
 	})
 	awscdk.Tags_Of(cluster).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	// Apply removal policy to ECS cluster for clean deletion
+	cluster.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
 
 	// CloudWatch Log Group
 	logGroup := awslogs.NewLogGroup(resources.Stack, jsii.String("FargateLogGroup"), &awslogs.LogGroupProps{
@@ -564,12 +506,21 @@ func createComputeResources(resources *Resources, networking *NetworkingResource
 	})
 	awscdk.Tags_Of(taskRole).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
+	// Grant the ECS task role permissions to read the database secret
+	database.CredentialsSecret.GrantRead(taskRole, nil)
+
+	// Apply removal policy to ECS task role for clean deletion
+	taskRole.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
+
 	taskDef := awsecs.NewFargateTaskDefinition(resources.Stack, jsii.String("RefactorTaskDef"), &awsecs.FargateTaskDefinitionProps{
 		Cpu:            jsii.Number(512),
 		MemoryLimitMiB: jsii.Number(1024),
 		TaskRole:       taskRole,
 	})
 	awscdk.Tags_Of(taskDef).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	// Apply removal policy to Fargate task definition for clean deletion
+	taskDef.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
 
 	// ECR Repository
 	ecrRepo := awsecr.NewRepository(resources.Stack, jsii.String("RefactorEcrRepo"), &awsecr.RepositoryProps{
@@ -623,6 +574,9 @@ func createCognitoResources(resources *Resources) *CognitoResources {
 	})
 	awscdk.Tags_Of(userPool).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
+	// Apply removal policy to User Pool for clean deletion
+	userPool.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
+
 	// Create User Pool Client
 	userPoolClient := awscognito.NewUserPoolClient(resources.Stack, jsii.String("CodeRefactorUserPoolClient"), &awscognito.UserPoolClientProps{
 		UserPool:           userPool,
@@ -655,6 +609,10 @@ func createCognitoResources(resources *Resources) *CognitoResources {
 		AccessTokenValidity:  awscdk.Duration_Hours(jsii.Number(24)),
 		RefreshTokenValidity: awscdk.Duration_Days(jsii.Number(30)),
 	})
+	awscdk.Tags_Of(userPoolClient).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	// Apply removal policy to User Pool Client for clean deletion
+	userPoolClient.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
 
 	return &CognitoResources{
 		UserPool:       userPool,
@@ -694,6 +652,7 @@ func createAPIGatewayResources(resources *Resources, networking *NetworkingResou
 			Interval:                awscdk.Duration_Seconds(jsii.Number(30)),
 		},
 	})
+	awscdk.Tags_Of(targetGroup).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	// Add Listener to Load Balancer
 	loadBalancer.AddListener(jsii.String("CodeRefactorListener"), &awselasticloadbalancingv2.BaseApplicationListenerProps{
@@ -718,6 +677,9 @@ func createAPIGatewayResources(resources *Resources, networking *NetworkingResou
 		},
 	})
 	awscdk.Tags_Of(api).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	// Apply removal policy to API Gateway for clean deletion
+	api.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
 
 	// Create Cognito Authorizer
 	cognitoAuthorizer := awsapigateway.NewCognitoUserPoolsAuthorizer(resources.Stack, jsii.String("CodeRefactorAuthorizer"), &awsapigateway.CognitoUserPoolsAuthorizerProps{
