@@ -79,6 +79,7 @@ type BedrockResources struct {
 type ComputeResources struct {
 	Cluster  awsecs.ICluster
 	TaskDef  awsecs.IFargateTaskDefinition
+	Service  awsecs.IFargateService
 	EcrRepo  awsecr.IRepository
 	LogGroup awslogs.ILogGroup
 }
@@ -126,7 +127,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 
 	// Create API Gateway and authentication resources
 	cognito := createCognitoResources(resources)
-	apigateway := createAPIGatewayResources(resources, networking, compute, cognito)
+	apigateway := createAPIGatewayResources(resources, networking, compute, cognito, database)
 
 	bedrock := createBedrockResources(resources, storage, database)
 
@@ -509,6 +510,29 @@ func createComputeResources(resources *Resources, networking *NetworkingResource
 	// Grant the ECS task role permissions to read the database secret
 	database.CredentialsSecret.GrantRead(taskRole, nil)
 
+	// Grant the ECS task role permissions to read CloudFormation stack outputs
+	taskRole.AddToPolicy(awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
+		Effect: awsiam.Effect_ALLOW,
+		Actions: jsii.Strings(
+			"cloudformation:DescribeStacks",
+			"cloudformation:DescribeStackResources",
+			"cloudformation:DescribeStackEvents",
+		),
+		Resources: jsii.Strings(
+			fmt.Sprintf("arn:aws:cloudformation:%s:%s:stack/CodeRefactorInfra/*", resources.Region, resources.Account),
+		),
+	}))
+
+	// Grant permissions to access Secrets Manager for database credentials
+	taskRole.AddToPolicy(awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
+		Effect: awsiam.Effect_ALLOW,
+		Actions: jsii.Strings(
+			"secretsmanager:GetSecretValue",
+			"secretsmanager:DescribeSecret",
+		),
+		Resources: jsii.Strings("*"), // Will be scoped to specific secrets in production
+	}))
+
 	// Apply removal policy to ECS task role for clean deletion
 	taskRole.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
 
@@ -536,15 +560,48 @@ func createComputeResources(resources *Resources, networking *NetworkingResource
 			StreamPrefix: jsii.String("refactor"),
 			LogGroup:     logGroup,
 		}),
+		Environment: &map[string]*string{
+			// Git configuration
+			"GIT_TOKEN":  jsii.String("placeholder-token"), // Should be overridden in production with actual GitHub token
+			"GIT_AUTHOR": jsii.String("CodeRefactorBot"),
+			"GIT_EMAIL":  jsii.String("bot@code-refactor.example.com"),
+
+			// AWS Resource ARNs (will be populated from CloudFormation outputs)
+			"KNOWLEDGE_BASE_SERVICE_ROLE_ARN":       jsii.String(""),
+			"AGENT_SERVICE_ROLE_ARN":                jsii.String(""),
+			"S3_BUCKET_NAME":                        jsii.String(""),
+			"RDS_POSTGRES_CREDENTIALS_SECRET_ARN":   database.CredentialsSecret.SecretArn(),
+			"RDS_POSTGRES_INSTANCE_ARN":             database.Cluster.ClusterArn(),
+			"RDS_POSTGRES_SCHEMA_ENSURE_LAMBDA_ARN": database.MigrationLambda.FunctionArn(),
+			"RDS_POSTGRES_DATABASE_NAME":            jsii.String(RDSPostgresDatabaseName),
+
+			// Cognito configuration (will be populated later)
+			"COGNITO_USER_POOL_ID": jsii.String(""),
+			"COGNITO_CLIENT_ID":    jsii.String(""),
+			"COGNITO_REGION":       jsii.String(resources.Region),
+
+			// Metrics configuration
+			"METRICS_NAMESPACE":    jsii.String("CodeRefactorTool/API"),
+			"METRICS_REGION":       jsii.String(resources.Region),
+			"METRICS_SERVICE_NAME": jsii.String("code-refactor-api"),
+			"METRICS_ENABLED":      jsii.String("true"),
+
+			// Application configuration
+			"TIMEOUT_SECONDS": jsii.String("180"),
+			"LOG_LEVEL":       jsii.String("info"),
+		},
 	})
 
 	container.AddPortMappings(&awsecs.PortMapping{
 		ContainerPort: jsii.Number(8080),
 	})
 
+	// Note: ECS Service will be created in createAPIGatewayResources
+	// to properly configure with load balancer target group
 	return &ComputeResources{
 		Cluster:  cluster,
 		TaskDef:  taskDef,
+		Service:  nil, // Will be set later in createAPIGatewayResources
 		EcrRepo:  ecrRepo,
 		LogGroup: logGroup,
 	}
@@ -623,7 +680,7 @@ func createCognitoResources(resources *Resources) *CognitoResources {
 }
 
 // createAPIGatewayResources creates API Gateway, Load Balancer, and VPC Link resources
-func createAPIGatewayResources(resources *Resources, networking *NetworkingResources, _ *ComputeResources, cognito *CognitoResources) *APIGatewayResources {
+func createAPIGatewayResources(resources *Resources, networking *NetworkingResources, compute *ComputeResources, cognito *CognitoResources, database *DatabaseResources) *APIGatewayResources {
 	// Create Application Load Balancer
 	loadBalancer := awselasticloadbalancingv2.NewApplicationLoadBalancer(resources.Stack, jsii.String("CodeRefactorALB"), &awselasticloadbalancingv2.ApplicationLoadBalancerProps{
 		Vpc:            networking.Vpc,
@@ -653,6 +710,42 @@ func createAPIGatewayResources(resources *Resources, networking *NetworkingResou
 		},
 	})
 	awscdk.Tags_Of(targetGroup).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	// Create Security Group for ECS Service
+	ecsServiceSG := awsec2.NewSecurityGroup(resources.Stack, jsii.String("EcsServiceSG"), &awsec2.SecurityGroupProps{
+		Vpc:              networking.Vpc,
+		Description:      jsii.String("Allow outbound connections from ECS service to RDS and other AWS services"),
+		AllowAllOutbound: jsii.Bool(true),
+	})
+	awscdk.Tags_Of(ecsServiceSG).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	// Apply removal policy for clean deletion
+	ecsServiceSG.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
+
+	// Create ECS Service
+	service := awsecs.NewFargateService(resources.Stack, jsii.String("CodeRefactorService"), &awsecs.FargateServiceProps{
+		Cluster:        compute.Cluster,
+		TaskDefinition: compute.TaskDef.(awsecs.TaskDefinition),
+		DesiredCount:   jsii.Number(1),
+		VpcSubnets: &awsec2.SubnetSelection{
+			SubnetType: awsec2.SubnetType_PUBLIC,
+		},
+		AssignPublicIp: jsii.Bool(true), // Required for tasks in public subnets without NAT Gateway
+		SecurityGroups: &[]awsec2.ISecurityGroup{ecsServiceSG},
+	})
+	awscdk.Tags_Of(service).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	// Apply removal policy for clean deletion
+	service.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
+
+	// Attach the ECS service to the target group
+	service.AttachToApplicationTargetGroup(targetGroup)
+
+	// Allow ECS service to connect to the RDS database
+	database.Cluster.Connections().AllowFrom(ecsServiceSG, awsec2.Port_Tcp(jsii.Number(5432)), jsii.String("Allow ECS service to connect to RDS"))
+
+	// Update compute resources with the service
+	compute.Service = service
 
 	// Add Listener to Load Balancer
 	loadBalancer.AddListener(jsii.String("CodeRefactorListener"), &awselasticloadbalancingv2.BaseApplicationListenerProps{

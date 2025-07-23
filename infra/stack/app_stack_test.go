@@ -35,8 +35,8 @@ func TestAppStack_CreatesExpectedResources(t *testing.T) {
 		})
 
 		t.Run("creates appropriate security groups", func(_ *testing.T) {
-			// Should have: RDS default SG, Lambda migration SG, VPC default SG
-			template.ResourceCountIs(jsii.String("AWS::EC2::SecurityGroup"), jsii.Number(3))
+			// Should have: RDS default SG, Lambda migration SG, VPC default SG, ECS service SG
+			template.ResourceCountIs(jsii.String("AWS::EC2::SecurityGroup"), jsii.Number(4))
 		})
 	})
 
