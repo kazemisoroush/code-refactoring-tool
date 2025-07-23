@@ -35,6 +35,7 @@ type AppStack struct {
 	awscdk.Stack
 	BedrockKnowledgeBaseRole         *string
 	BedrockAgentRole                 *string
+	GitHubActionsRoleARN             *string
 	BucketName                       string
 	Region                           string
 	Account                          string
@@ -131,10 +132,15 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 
 	bedrock := createBedrockResources(resources, storage, database)
 
+	// Create GitHub Actions IAM role for ECR access
+	createGitHubOIDCProvider(resources)
+	githubRole := createGitHubActionsRole(resources)
+
 	return &AppStack{
 		Stack:                            stack,
 		BedrockKnowledgeBaseRole:         bedrock.KnowledgeBaseRole.RoleArn(),
 		BedrockAgentRole:                 bedrock.AgentRole.RoleArn(),
+		GitHubActionsRoleARN:             githubRole.RoleArn(),
 		BucketName:                       storage.Name,
 		Account:                          resources.Account,
 		Region:                           resources.Region,
@@ -478,6 +484,65 @@ func createBedrockAgentRole(resources *Resources) awsiam.IRole {
 	awscdk.Tags_Of(role).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
 	// Apply removal policy to Bedrock Agent role for clean deletion
+	role.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
+
+	return role
+}
+
+// createGitHubOIDCProvider creates the OIDC provider for GitHub Actions
+func createGitHubOIDCProvider(resources *Resources) {
+	// OIDC provider for GitHub Actions
+	provider := awsiam.NewOpenIdConnectProvider(resources.Stack, jsii.String("GitHubOIDCProvider"), &awsiam.OpenIdConnectProviderProps{
+		Url: jsii.String("https://token.actions.githubusercontent.com"),
+		ClientIds: &[]*string{
+			jsii.String("sts.amazonaws.com"),
+		},
+		Thumbprints: &[]*string{
+			jsii.String("6938fd4d98bab03faadb97b34396831e3780aea1"),
+		},
+	})
+	awscdk.Tags_Of(provider).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+}
+
+// createGitHubActionsRole creates IAM role for GitHub Actions to push to ECR
+func createGitHubActionsRole(resources *Resources) awsiam.IRole {
+	role := awsiam.NewRole(resources.Stack, jsii.String("GitHubActionsECRRole"), &awsiam.RoleProps{
+		AssumedBy: awsiam.NewWebIdentityPrincipal(
+			jsii.String(fmt.Sprintf("arn:aws:iam::%s:oidc-provider/token.actions.githubusercontent.com", resources.Account)),
+			&map[string]interface{}{
+				"StringEquals": map[string]interface{}{
+					"token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+				},
+				"StringLike": map[string]interface{}{
+					"token.actions.githubusercontent.com:sub": "repo:kazemisoroush/code-refactor-tool:*",
+				},
+			},
+		),
+		InlinePolicies: &map[string]awsiam.PolicyDocument{
+			"ECRAccessPolicy": awsiam.NewPolicyDocument(&awsiam.PolicyDocumentProps{
+				Statements: &[]awsiam.PolicyStatement{
+					awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
+						Actions: &[]*string{
+							jsii.String("ecr:GetAuthorizationToken"),
+							jsii.String("ecr:BatchCheckLayerAvailability"),
+							jsii.String("ecr:GetDownloadUrlForLayer"),
+							jsii.String("ecr:BatchGetImage"),
+							jsii.String("ecr:PutImage"),
+							jsii.String("ecr:InitiateLayerUpload"),
+							jsii.String("ecr:UploadLayerPart"),
+							jsii.String("ecr:CompleteLayerUpload"),
+						},
+						Resources: &[]*string{
+							jsii.String("*"),
+						},
+					}),
+				},
+			}),
+		},
+	})
+	awscdk.Tags_Of(role).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
+
+	// Apply removal policy for clean deletion
 	role.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
 
 	return role

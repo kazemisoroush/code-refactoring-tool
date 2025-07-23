@@ -28,6 +28,11 @@ func main() {
 		Value: infrastructureStack.BedrockAgentRole,
 	})
 
+	// Output GitHubActionsRoleARN
+	awscdk.NewCfnOutput(infrastructureStack.Stack, jsii.String("GitHubActionsRoleARN"), &awscdk.CfnOutputProps{
+		Value: infrastructureStack.GitHubActionsRoleARN,
+	})
+
 	// Output BucketName
 	awscdk.NewCfnOutput(infrastructureStack.Stack, jsii.String("BucketName"), &awscdk.CfnOutputProps{
 		Value: &infrastructureStack.BucketName,

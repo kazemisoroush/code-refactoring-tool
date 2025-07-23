@@ -227,8 +227,8 @@ func TestAppStack_CreatesExpectedResources(t *testing.T) {
 	// Test IAM and security
 	t.Run("IAM and Security", func(t *testing.T) {
 		t.Run("creates appropriate number of IAM roles", func(_ *testing.T) {
-			// Expected roles: Bedrock KB, Bedrock Agent, Lambda execution, ECS task execution, ECS task role, Lambda migration role
-			template.ResourceCountIs(jsii.String("AWS::IAM::Role"), jsii.Number(7))
+			// Expected roles: Bedrock KB, Bedrock Agent, Lambda execution, ECS task execution, ECS task role, Lambda migration role, GitHub Actions role
+			template.ResourceCountIs(jsii.String("AWS::IAM::Role"), jsii.Number(9))
 		})
 
 		t.Run("creates Bedrock Knowledge Base role with correct trust policy", func(_ *testing.T) {
@@ -257,6 +257,20 @@ func TestAppStack_CreatesExpectedResources(t *testing.T) {
 							"Principal": map[string]interface{}{
 								"Service": "lambda.amazonaws.com",
 							},
+						},
+					},
+				},
+			})
+		})
+
+		t.Run("creates GitHub Actions role with OIDC authentication", func(_ *testing.T) {
+			// Verify a role exists with AssumeRoleWithWebIdentity action (GitHub Actions OIDC)
+			template.HasResourceProperties(jsii.String("AWS::IAM::Role"), map[string]interface{}{
+				"AssumeRolePolicyDocument": map[string]interface{}{
+					"Statement": []interface{}{
+						map[string]interface{}{
+							"Action": "sts:AssumeRoleWithWebIdentity",
+							"Effect": "Allow",
 						},
 					},
 				},
@@ -311,6 +325,9 @@ func TestAppStack_ExposesCorrectOutputs(t *testing.T) {
 		}
 		if stack.BedrockAgentRole == nil {
 			t.Error("BedrockAgentRole should not be nil")
+		}
+		if stack.GitHubActionsRoleARN == nil {
+			t.Error("GitHubActionsRoleARN should not be nil")
 		}
 		if stack.BucketName == "" {
 			t.Error("BucketName should not be empty")
