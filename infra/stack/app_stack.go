@@ -514,7 +514,7 @@ func createGitHubActionsRole(resources *Resources) awsiam.IRole {
 					"token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
 				},
 				"StringLike": map[string]interface{}{
-					"token.actions.githubusercontent.com:sub": "repo:kazemisoroush/code-refactor-tool:*",
+					"token.actions.githubusercontent.com:sub": "repo:kazemisoroush/code-refactoring-tool:*",
 				},
 			},
 		),
