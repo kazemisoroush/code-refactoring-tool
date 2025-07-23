@@ -4,12 +4,13 @@ on:
   push:
     branches:
       - main
+      - '**'  # All branches
   pull_request:
     branches:
       - main
 
 jobs:
-  test:
+  lint-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -49,6 +50,10 @@ jobs:
           golangci-lint -v run
           cd infra/stack && golangci-lint -v run
 
+      - name: Run Python Linting
+        run: |
+          cd infra/rds_schema_lambda && pylint --rcfile=../../.pylintrc *.py
+
       - name: Run Tests
         run: |
           go test -v ./...
@@ -61,6 +66,71 @@ jobs:
         run: |
           cd infra/rds_schema_lambda && pytest .
 
-      - name: Run Python Linting
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24.1'
+          cache: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Application
         run: |
-          cd infra/rds_schema_lambda && pylint --rcfile=../../.pylintrc *.py
+          go mod tidy
+          CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/api
+
+      - name: Build, tag, and push Docker image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: refactor-ecr-repo
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+  build-only:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    if: github.ref != 'refs/heads/main' || github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24.1'
+          cache: false
+
+      - name: Build Application
+        run: |
+          go mod tidy
+          CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/api
+
+      - name: Build Docker image (no push)
+        run: |
+          docker build -t code-refactor-tool:${{ github.sha }} .
