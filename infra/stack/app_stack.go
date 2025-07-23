@@ -136,6 +136,13 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 	createGitHubOIDCProvider(resources)
 	githubRole := createGitHubActionsRole(resources)
 
+	// Create CloudFormation outputs
+	awscdk.NewCfnOutput(resources.Stack, jsii.String("ECRRepositoryURI"), &awscdk.CfnOutputProps{
+		Value:       compute.EcrRepo.RepositoryUri(),
+		Description: jsii.String("ECR Repository URI for the application container image"),
+		ExportName:  jsii.String("CodeRefactor-ECR-Repository-URI"),
+	})
+
 	return &AppStack{
 		Stack:                            stack,
 		BedrockKnowledgeBaseRole:         bedrock.KnowledgeBaseRole.RoleArn(),
@@ -790,10 +797,12 @@ func createAPIGatewayResources(resources *Resources, networking *NetworkingResou
 	ecsServiceSG.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
 
 	// Create ECS Service
+	// Start with 0 desired count to avoid chicken-and-egg problem with ECR image
+	// This will be scaled up after the first image is pushed via GitHub Actions
 	service := awsecs.NewFargateService(resources.Stack, jsii.String("CodeRefactorService"), &awsecs.FargateServiceProps{
 		Cluster:        compute.Cluster,
 		TaskDefinition: compute.TaskDef.(awsecs.TaskDefinition),
-		DesiredCount:   jsii.Number(1),
+		DesiredCount:   jsii.Number(0), // Start with 0 to avoid image pull errors
 		VpcSubnets: &awsec2.SubnetSelection{
 			SubnetType: awsec2.SubnetType_PUBLIC,
 		},

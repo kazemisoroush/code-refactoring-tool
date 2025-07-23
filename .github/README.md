@@ -24,8 +24,21 @@ Add these two secrets:
 
 | Secret Name | Value |
 |-------------|-------|
-| `AWS_ROLE_ARN` | `arn:aws:iam::698315877107:role/CodeRefactorInfra-GitHubActionsECRRole9AA9BEF6-iiIFITW4L575` |
+| `AWS_ROLE_ARN` | `arn:aws:iam::698315877107:role/CodeRefactor-GitHubActions-ECR-Role` |
 | `AWS_REGION` | `us-east-1` |
+
+## 🏗️ Initial Deployment Strategy
+
+To avoid the chicken-and-egg problem with ECS Fargate and ECR, the infrastructure is deployed with the following approach:
+
+1. **Infrastructure Deployment**: Creates all resources including ECR repository and ECS service with **0 desired tasks**
+2. **First GitHub Actions Run**: Builds and pushes your actual application image to ECR  
+3. **ECS Service Scale-Up**: After successful image push, manually scale the ECS service to 1 task or use GitHub Actions to update the service
+
+### Manual Scale-Up After First Deployment:
+```bash
+aws ecs update-service --cluster <cluster-name> --service CodeRefactorService --desired-count 1
+```
 
 ## 🚀 How It Works
 
