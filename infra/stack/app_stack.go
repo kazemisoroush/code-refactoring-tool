@@ -507,6 +507,7 @@ func createGitHubOIDCProvider(resources *Resources) {
 // createGitHubActionsRole creates IAM role for GitHub Actions to push to ECR
 func createGitHubActionsRole(resources *Resources) awsiam.IRole {
 	role := awsiam.NewRole(resources.Stack, jsii.String("GitHubActionsECRRole"), &awsiam.RoleProps{
+		RoleName: jsii.String("CodeRefactor-GitHubActions-ECR-Role"), // Fixed role name
 		AssumedBy: awsiam.NewWebIdentityPrincipal(
 			jsii.String(fmt.Sprintf("arn:aws:iam::%s:oidc-provider/token.actions.githubusercontent.com", resources.Account)),
 			&map[string]interface{}{
@@ -615,6 +616,7 @@ func createComputeResources(resources *Resources, networking *NetworkingResource
 	ecrRepo := awsecr.NewRepository(resources.Stack, jsii.String("RefactorEcrRepo"), &awsecr.RepositoryProps{
 		RepositoryName: jsii.String("refactor-ecr-repo"),
 		RemovalPolicy:  awscdk.RemovalPolicy_DESTROY,
+		EmptyOnDelete:  jsii.Bool(true), // Automatically delete images when destroying the stack
 	})
 	awscdk.Tags_Of(ecrRepo).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 
