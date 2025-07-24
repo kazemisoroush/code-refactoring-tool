@@ -227,8 +227,9 @@ func TestAppStack_CreatesExpectedResources(t *testing.T) {
 	// Test IAM and security
 	t.Run("IAM and Security", func(t *testing.T) {
 		t.Run("creates appropriate number of IAM roles", func(_ *testing.T) {
-			// Expected roles: Bedrock KB, Bedrock Agent, Lambda execution, ECS task execution, ECS task role, Lambda migration role, GitHub Actions role
-			template.ResourceCountIs(jsii.String("AWS::IAM::Role"), jsii.Number(9))
+			// Expected roles: Bedrock KB, Bedrock Agent, Lambda execution, ECS task execution, ECS task role, Lambda migration role, GitHub Actions role, ALB/ECS service role
+			// Note: OIDC provider is created manually outside CDK, so no role for that
+			template.ResourceCountIs(jsii.String("AWS::IAM::Role"), jsii.Number(8))
 		})
 
 		t.Run("creates Bedrock Knowledge Base role with correct trust policy", func(_ *testing.T) {
