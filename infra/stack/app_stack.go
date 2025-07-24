@@ -133,7 +133,7 @@ func NewAppStack(scope constructs.Construct, id string, props *AppStackProps) *A
 	bedrock := createBedrockResources(resources, storage, database)
 
 	// Create GitHub Actions IAM role for ECR access
-	createGitHubOIDCProvider(resources)
+	// Note: OIDC provider is created manually and exists in the account
 	githubRole := createGitHubActionsRole(resources)
 
 	// Create CloudFormation outputs
@@ -494,21 +494,6 @@ func createBedrockAgentRole(resources *Resources) awsiam.IRole {
 	role.ApplyRemovalPolicy(awscdk.RemovalPolicy_DESTROY)
 
 	return role
-}
-
-// createGitHubOIDCProvider creates the OIDC provider for GitHub Actions
-func createGitHubOIDCProvider(resources *Resources) {
-	// OIDC provider for GitHub Actions
-	provider := awsiam.NewOpenIdConnectProvider(resources.Stack, jsii.String("GitHubOIDCProvider"), &awsiam.OpenIdConnectProviderProps{
-		Url: jsii.String("https://token.actions.githubusercontent.com"),
-		ClientIds: &[]*string{
-			jsii.String("sts.amazonaws.com"),
-		},
-		Thumbprints: &[]*string{
-			jsii.String("6938fd4d98bab03faadb97b34396831e3780aea1"),
-		},
-	})
-	awscdk.Tags_Of(provider).Add(jsii.String(DefaultResourceTagKey), jsii.String(DefaultResourceTagValue), nil)
 }
 
 // createGitHubActionsRole creates IAM role for GitHub Actions to push to ECR
