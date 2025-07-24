@@ -787,7 +787,7 @@ func createAPIGatewayResources(resources *Resources, networking *NetworkingResou
 	service := awsecs.NewFargateService(resources.Stack, jsii.String("CodeRefactorService"), &awsecs.FargateServiceProps{
 		Cluster:        compute.Cluster,
 		TaskDefinition: compute.TaskDef.(awsecs.TaskDefinition),
-		DesiredCount:   jsii.Number(0), // Start with 0 to avoid image pull errors
+		DesiredCount:   jsii.Number(1), // Start with 0 to avoid image pull errors
 		VpcSubnets: &awsec2.SubnetSelection{
 			SubnetType: awsec2.SubnetType_PUBLIC,
 		},
