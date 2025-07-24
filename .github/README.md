@@ -5,10 +5,12 @@ Your infrastructure has been successfully deployed with complete GitHub Actions 
 ## 🎯 Pipeline Behavior
 
 **Main Branch (`main`):**
-- ✅ Lint → ✅ Test → ✅ Build → ✅ Push to ECR
+- ✅ Lint → ✅ Test → ✅ Build
+- ✅ Build & Push to ECR (parallel)
+- ✅ Deploy Infrastructure (parallel)
 
 **Feature Branches:**
-- ✅ Lint → ✅ Test → ✅ Build (no ECR push)
+- ✅ Lint → ✅ Test → ✅ Build (no ECR push or infrastructure deployment)
 
 ## 🔑 Required GitHub Secrets
 
@@ -20,12 +22,13 @@ You need to configure these secrets in your GitHub repository:
 3. Click **New repository secret**
 
 ### Step 2: Add Required Secrets
-Add these two secrets:
+Add these three secrets:
 
-| Secret Name | Value |
-|-------------|-------|
-| `AWS_ROLE_ARN` | `arn:aws:iam::698315877107:role/CodeRefactor-GitHubActions-ECR-Role` |
-| `AWS_REGION` | `us-east-1` |
+| Secret Name | Purpose | Value |
+|-------------|---------|-------|
+| `AWS_ROLE_ARN` | ECR operations only | `arn:aws:iam::698315877107:role/CodeRefactor-GitHubActions-ECR-Role` |
+| `AWS_INFRA_ROLE_ARN` | Infrastructure deployment | `arn:aws:iam::698315877107:role/CodeRefactor-GitHubActions-Infrastructure-Role` |
+| `AWS_REGION` | AWS region | `us-east-1` |
 
 ## 🏗️ Initial Deployment Strategy
 
@@ -43,25 +46,32 @@ aws ecs update-service --cluster <cluster-name> --service CodeRefactorService --
 ## 🚀 How It Works
 
 1. **GitHub Actions OIDC**: Your infrastructure includes a GitHub Actions OIDC provider that allows secure authentication without long-lived credentials
-2. **IAM Role**: The deployed IAM role has permissions to push Docker images to your ECR repository
-3. **Conditional Pipeline**: The workflow automatically detects if you're on `main` branch and pushes to ECR only then
+2. **Dual IAM Roles**: 
+   - **ECR Role**: Limited permissions for Docker image operations
+   - **Infrastructure Role**: Full permissions for CDK/CloudFormation deployments
+3. **Parallel Execution**: On main branch, ECR push and infrastructure deployment run simultaneously for faster deployments
+4. **Conditional Pipeline**: The workflow automatically detects if you're on `main` branch and runs deployment jobs only then
 
 ## 🧪 Testing the Pipeline
 
 1. **Feature Branch Test**: Create a new branch, make changes, and push - should run lint/test/build only
-2. **Main Branch Test**: Merge to main - should run lint/test/build/push to ECR
+2. **Main Branch Test**: Merge to main - should run lint/test/build, then ECR push + infrastructure deployment in parallel
 
 ## 📋 Infrastructure Outputs
 
 Your deployed infrastructure provides these resources:
 - **ECR Repository**: For Docker images
-- **GitHub Actions Role**: For secure CI/CD access
+- **GitHub Actions Roles**: For secure CI/CD access (ECR + Infrastructure)
 - **OIDC Provider**: For passwordless authentication
 - **Complete Application Stack**: Including RDS, S3, ECS, API Gateway, etc.
 
 ## ✨ Next Steps
 
-Once you set the GitHub secrets, your CI/CD pipeline will be fully operational. Every push to main will automatically build and deploy your Docker image to ECR!
+Once you set the GitHub secrets, your CI/CD pipeline will be fully operational. Every push to main will automatically:
+1. Build and deploy your Docker image to ECR
+2. Deploy any infrastructure changes via CDK
+
+Both operations run in parallel for faster deployments!
 
 ```json
 {
