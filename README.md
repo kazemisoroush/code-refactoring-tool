@@ -1,5 +1,12 @@
 # Code Refactor Tool
 
+A Go-based API service for automated code refactoring using AI.
+
+## Infrastructure
+
+The AWS infrastructure for this project is maintained in a separate repository:
+[code-refactoring-infra](https://github.com/kazemisoroush/code-refactoring-infra)
+
 ## How to Run
 
 ### Prerequisites
@@ -42,5 +49,10 @@ export GIT_TOKEN="your_github_token"
 ### Testing
 Run unit tests with:
 ```sh
-make ci
+make test
+```
+
+Run linting with:
+```sh
+make lint
 ```

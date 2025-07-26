@@ -3,4 +3,3 @@ cdk.out
 *.pyc
 __pycache__/
 node_modules
-infra/

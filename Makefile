@@ -1,17 +1,12 @@
-# also run tests under ./infra/stack
+# Run tests for the main application
 test:
 	@echo "Running tests..."
-	@cd infra/rds_schema_lambda && pytest .
 	@go test -v ./...
-	@cd infra && go test -v ./...
 	@echo "Tests passed."
 
 lint:
 	@echo "Running linter..."
 	@golangci-lint -v run
-	@cd infra/stack && golangci-lint -v run
-	@echo "Running Python linter..."
-	@cd infra/rds_schema_lambda && pylint --rcfile=../../.pylintrc *.py
 	@echo "Linter passed."
 
 mock:
@@ -21,6 +16,7 @@ mock:
 
 swagger:
 	@echo "Generating Swagger documentation..."
+	@which swag > /dev/null 2>&1 || (echo "Installing swag..." && go install github.com/swaggo/swag/cmd/swag@latest)
 	@swag init -g cmd/api/main.go -o docs/
 	@echo "Swagger documentation generated."
 
@@ -39,23 +35,6 @@ clean:
 	@rm -rf docs/
 	@echo "Clean completed."
 
-deploy:
-	@echo "Deploying infra..."
-	@cd infra && cdk bootstrap
-	@cd infra && cdk deploy --require-approval never
-	@echo "Infra deploy done."
-
-destroy:
-	@echo "Destroying infra..."
-	@cd infra && cdk destroy --all --force
-	@aws secretsmanager delete-secret \
-		--secret-id code-refactor-db-secret \
-		--force-delete-without-recovery || true
-	@echo "Cleaning up any remaining ENIs..."
-	@aws ec2 describe-network-interfaces \
-		--filters "Name=tag:project,Values=CodeRefactoring" \
-		--query "NetworkInterfaces[?Status=='available'].NetworkInterfaceId" \
-		--output text | xargs -r -n1 aws ec2 delete-network-interface --network-interface-id || true
-	@echo "Infra destroy done."
+.PHONY: test lint mock swagger build-api run-api clean ci
 
 ci: mock test lint clean swagger

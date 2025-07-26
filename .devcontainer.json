@@ -12,5 +12,5 @@
     "ghcr.io/devcontainers-extra/features/aws-cdk:2.0.16": {}
   },
   "onCreateCommand": "sudo usermod -aG docker ${USER}",
-  "postCreateCommand": "go install github.com/golang/mock/mockgen@v1.6.0 && go mod tidy && pip install -r ./infra/rds_schema_lambda/requirements.txt && pip install -r ./infra/rds_schema_lambda/requirements_test.txt && pip install pylint"
+  "postCreateCommand": "go install github.com/golang/mock/mockgen@v1.6.0 && go mod tidy"
 }
