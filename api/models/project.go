@@ -4,13 +4,13 @@ package models
 // CreateProjectRequest represents the request to create a new project
 type CreateProjectRequest struct {
 	// Human-readable project name
-	Name string `json:"name" binding:"required" example:"my-project"`
+	Name string `json:"name" validate:"required,min=1,max=100" example:"my-project"`
 	// Optional project summary
-	Description *string `json:"description,omitempty" example:"A sample project for code analysis"`
+	Description *string `json:"description,omitempty" validate:"omitempty,max=500" example:"A sample project for code analysis"`
 	// Optional programming language
-	Language *string `json:"language,omitempty" example:"go"`
+	Language *string `json:"language,omitempty" validate:"omitempty,oneof=go javascript typescript python java csharp rust cpp c ruby php kotlin swift scala other" example:"go"`
 	// Optional user-defined key-value tags
-	Tags map[string]string `json:"tags,omitempty" example:"env:prod,team:backend"`
+	Tags map[string]string `json:"tags,omitempty" validate:"omitempty,max=10,dive,keys,min=1,max=50,endkeys,min=1,max=100" example:"env:prod,team:backend"`
 } //@name CreateProjectRequest
 
 // CreateProjectResponse represents the response when creating a project
@@ -24,7 +24,7 @@ type CreateProjectResponse struct {
 // GetProjectRequest represents the request to get a project
 type GetProjectRequest struct {
 	// Unique identifier for the project
-	ProjectID string `uri:"id" binding:"required" example:"proj-12345-abcde"`
+	ProjectID string `uri:"id" validate:"required,project_id" example:"proj-12345-abcde"`
 } //@name GetProjectRequest
 
 // GetProjectResponse represents the response when getting a project
@@ -50,17 +50,17 @@ type GetProjectResponse struct {
 // UpdateProjectRequest represents the request to update a project
 type UpdateProjectRequest struct {
 	// Unique identifier for the project
-	ProjectID string `uri:"id" binding:"required" example:"proj-12345-abcde"`
+	ProjectID string `uri:"id" validate:"required,project_id" example:"proj-12345-abcde"`
 	// Optional human-readable project name
-	Name *string `json:"name,omitempty" example:"updated-project"`
+	Name *string `json:"name,omitempty" validate:"omitempty,min=1,max=100" example:"updated-project"`
 	// Optional project summary
-	Description *string `json:"description,omitempty" example:"Updated project description"`
+	Description *string `json:"description,omitempty" validate:"omitempty,max=500" example:"Updated project description"`
 	// Optional programming language
-	Language *string `json:"language,omitempty" example:"python"`
+	Language *string `json:"language,omitempty" validate:"omitempty,oneof=go javascript typescript python java csharp rust cpp c ruby php kotlin swift scala other" example:"python"`
 	// Optional user-defined key-value tags
-	Tags map[string]string `json:"tags,omitempty" example:"env:staging,team:frontend"`
+	Tags map[string]string `json:"tags,omitempty" validate:"omitempty,max=10,dive,keys,min=1,max=50,endkeys,min=1,max=100" example:"env:staging,team:frontend"`
 	// Optional metadata
-	Metadata map[string]string `json:"metadata,omitempty" example:"version:1.1.0"`
+	Metadata map[string]string `json:"metadata,omitempty" validate:"omitempty,max=20,dive,keys,min=1,max=100,endkeys,min=1,max=500" example:"version:1.1.0"`
 } //@name UpdateProjectRequest
 
 // UpdateProjectResponse represents the response when updating a project
@@ -74,7 +74,7 @@ type UpdateProjectResponse struct {
 // DeleteProjectRequest represents the request to delete a project
 type DeleteProjectRequest struct {
 	// Unique identifier for the project
-	ProjectID string `uri:"id" binding:"required" example:"proj-12345-abcde"`
+	ProjectID string `uri:"id" validate:"required,project_id" example:"proj-12345-abcde"`
 } //@name DeleteProjectRequest
 
 // DeleteProjectResponse represents the response when deleting a project
@@ -86,11 +86,11 @@ type DeleteProjectResponse struct {
 // ListProjectsRequest represents the request to list projects
 type ListProjectsRequest struct {
 	// Token for pagination
-	NextToken *string `form:"next_token,omitempty" example:"eyJpZCI6InByb2otMTIzNDUifQ=="`
+	NextToken *string `form:"next_token,omitempty" validate:"omitempty,min=1" example:"eyJpZCI6InByb2otMTIzNDUifQ=="`
 	// Maximum number of results to return
-	MaxResults *int `form:"max_results,omitempty" example:"50"`
+	MaxResults *int `form:"max_results,omitempty" validate:"omitempty,min=1,max=100" example:"50"`
 	// Optional tag filter - projects must match all provided tags
-	TagFilter map[string]string `form:"tag_filter,omitempty" example:"env:prod"`
+	TagFilter map[string]string `form:"tag_filter,omitempty" validate:"omitempty,max=10,dive,keys,min=1,max=50,endkeys,min=1,max=100" example:"env:prod"`
 } //@name ListProjectsRequest
 
 // ListProjectsResponse represents the response when listing projects

@@ -512,16 +512,36 @@ const docTemplate = `{
                 "description": {
                     "description": "Optional project summary",
                     "type": "string",
+                    "maxLength": 500,
                     "example": "A sample project for code analysis"
                 },
                 "language": {
                     "description": "Optional programming language",
                     "type": "string",
+                    "enum": [
+                        "go",
+                        "javascript",
+                        "typescript",
+                        "python",
+                        "java",
+                        "csharp",
+                        "rust",
+                        "cpp",
+                        "c",
+                        "ruby",
+                        "php",
+                        "kotlin",
+                        "swift",
+                        "scala",
+                        "other"
+                    ],
                     "example": "go"
                 },
                 "name": {
                     "description": "Human-readable project name",
                     "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1,
                     "example": "my-project"
                 },
                 "tags": {
@@ -695,11 +715,29 @@ const docTemplate = `{
                 "description": {
                     "description": "Optional project summary",
                     "type": "string",
+                    "maxLength": 500,
                     "example": "Updated project description"
                 },
                 "language": {
                     "description": "Optional programming language",
                     "type": "string",
+                    "enum": [
+                        "go",
+                        "javascript",
+                        "typescript",
+                        "python",
+                        "java",
+                        "csharp",
+                        "rust",
+                        "cpp",
+                        "c",
+                        "ruby",
+                        "php",
+                        "kotlin",
+                        "swift",
+                        "scala",
+                        "other"
+                    ],
                     "example": "python"
                 },
                 "metadata": {
@@ -715,6 +753,8 @@ const docTemplate = `{
                 "name": {
                     "description": "Optional human-readable project name",
                     "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1,
                     "example": "updated-project"
                 },
                 "projectID": {

@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/kazemisoroush/code-refactoring-tool/api/middleware"
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
 	servicesMocks "github.com/kazemisoroush/code-refactoring-tool/api/services/mocks"
 )
@@ -58,13 +59,15 @@ func TestProjectController_CreateProject_Success(t *testing.T) {
 		Return(expectedResponse, nil).
 		Times(1)
 
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+
+	// Use validation middleware with the controller
+	router.POST("/projects", middleware.ValidateJSON[models.CreateProjectRequest](), controller.CreateProject)
+
 	// Create HTTP request
 	reqBody, err := json.Marshal(request)
 	require.NoError(t, err)
-
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-	router.POST("/projects", controller.CreateProject)
 
 	req := httptest.NewRequest(http.MethodPost, "/projects", bytes.NewReader(reqBody))
 	req.Header.Set("Content-Type", "application/json")
@@ -94,7 +97,9 @@ func TestProjectController_CreateProject_InvalidRequest(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.POST("/projects", controller.CreateProject)
+
+	// Use validation middleware with the controller
+	router.POST("/projects", middleware.ValidateJSON[models.CreateProjectRequest](), controller.CreateProject)
 
 	req := httptest.NewRequest(http.MethodPost, "/projects", bytes.NewReader([]byte(invalidJSON)))
 	req.Header.Set("Content-Type", "application/json")
@@ -109,7 +114,8 @@ func TestProjectController_CreateProject_InvalidRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, http.StatusBadRequest, errorResponse.Code)
-	assert.Equal(t, "Invalid request body", errorResponse.Message)
+	assert.Equal(t, "Validation failed", errorResponse.Message)
+	assert.Contains(t, errorResponse.Details, "Name is required")
 }
 
 func TestProjectController_CreateProject_ServiceError(t *testing.T) {
@@ -129,12 +135,14 @@ func TestProjectController_CreateProject_ServiceError(t *testing.T) {
 		Return(nil, serviceError).
 		Times(1)
 
-	reqBody, err := json.Marshal(request)
-	require.NoError(t, err)
-
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.POST("/projects", controller.CreateProject)
+
+	// Use validation middleware with the controller
+	router.POST("/projects", middleware.ValidateJSON[models.CreateProjectRequest](), controller.CreateProject)
+
+	reqBody, err := json.Marshal(request)
+	require.NoError(t, err)
 
 	req := httptest.NewRequest(http.MethodPost, "/projects", bytes.NewReader(reqBody))
 	req.Header.Set("Content-Type", "application/json")
@@ -184,7 +192,9 @@ func TestProjectController_GetProject_Success(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.GET("/projects/:id", controller.GetProject)
+
+	// Use validation middleware with the controller
+	router.GET("/projects/:id", middleware.ValidateURI[models.GetProjectRequest](), controller.GetProject)
 
 	req := httptest.NewRequest(http.MethodGet, "/projects/"+projectID, nil)
 	w := httptest.NewRecorder()
@@ -208,7 +218,39 @@ func TestProjectController_GetProject_NotFound(t *testing.T) {
 	mockService := servicesMocks.NewMockProjectService(ctrl)
 	controller := NewProjectController(mockService)
 
-	projectID := "nonexistent-project"
+	// Use an invalid project ID that will fail validation
+	projectID := "invalid-id"
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+
+	// Use validation middleware with the controller
+	router.GET("/projects/:id", middleware.ValidateURI[models.GetProjectRequest](), controller.GetProject)
+
+	req := httptest.NewRequest(http.MethodGet, "/projects/"+projectID, nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var errorResponse models.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &errorResponse)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, errorResponse.Code)
+	assert.Equal(t, "Validation failed", errorResponse.Message)
+	assert.Contains(t, errorResponse.Details, "ID must start with 'proj-'")
+}
+
+func TestProjectController_GetProject_ServiceError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockService := servicesMocks.NewMockProjectService(ctrl)
+	controller := NewProjectController(mockService)
+
+	projectID := "proj-12345-abcde"
 	notFoundError := errors.New("project not found")
 
 	mockService.EXPECT().
@@ -218,7 +260,9 @@ func TestProjectController_GetProject_NotFound(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.GET("/projects/:id", controller.GetProject)
+
+	// Use validation middleware with the controller
+	router.GET("/projects/:id", middleware.ValidateURI[models.GetProjectRequest](), controller.GetProject)
 
 	req := httptest.NewRequest(http.MethodGet, "/projects/"+projectID, nil)
 	w := httptest.NewRecorder()
@@ -262,12 +306,14 @@ func TestProjectController_UpdateProject_Success(t *testing.T) {
 		Return(expectedResponse, nil).
 		Times(1)
 
-	reqBody, err := json.Marshal(request)
-	require.NoError(t, err)
-
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.PUT("/projects/:id", controller.UpdateProject)
+
+	// Use validation middleware with the controller
+	router.PUT("/projects/:id", middleware.ValidateCombined[models.UpdateProjectRequest](), controller.UpdateProject)
+
+	reqBody, err := json.Marshal(request)
+	require.NoError(t, err)
 
 	req := httptest.NewRequest(http.MethodPut, "/projects/"+projectID, bytes.NewReader(reqBody))
 	req.Header.Set("Content-Type", "application/json")
@@ -304,7 +350,9 @@ func TestProjectController_DeleteProject_Success(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.DELETE("/projects/:id", controller.DeleteProject)
+
+	// Use validation middleware with the controller
+	router.DELETE("/projects/:id", middleware.ValidateURI[models.DeleteProjectRequest](), controller.DeleteProject)
 
 	req := httptest.NewRequest(http.MethodDelete, "/projects/"+projectID, nil)
 	w := httptest.NewRecorder()
@@ -364,7 +412,9 @@ func TestProjectController_ListProjects_Success(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.GET("/projects", controller.ListProjects)
+
+	// Use validation middleware with the controller
+	router.GET("/projects", middleware.ValidateQuery[models.ListProjectsRequest](), controller.ListProjects)
 
 	req := httptest.NewRequest(http.MethodGet, "/projects?max_results=10", nil)
 	w := httptest.NewRecorder()
@@ -405,7 +455,9 @@ func TestProjectController_ListProjects_EmptyResult(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.GET("/projects", controller.ListProjects)
+
+	// Use validation middleware with the controller
+	router.GET("/projects", middleware.ValidateQuery[models.ListProjectsRequest](), controller.ListProjects)
 
 	req := httptest.NewRequest(http.MethodGet, "/projects", nil)
 	w := httptest.NewRecorder()

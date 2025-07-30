@@ -49,14 +49,33 @@ definitions:
       description:
         description: Optional project summary
         example: A sample project for code analysis
+        maxLength: 500
         type: string
       language:
         description: Optional programming language
+        enum:
+        - go
+        - javascript
+        - typescript
+        - python
+        - java
+        - csharp
+        - rust
+        - cpp
+        - c
+        - ruby
+        - php
+        - kotlin
+        - swift
+        - scala
+        - other
         example: go
         type: string
       name:
         description: Human-readable project name
         example: my-project
+        maxLength: 100
+        minLength: 1
         type: string
       tags:
         additionalProperties:
@@ -184,9 +203,26 @@ definitions:
       description:
         description: Optional project summary
         example: Updated project description
+        maxLength: 500
         type: string
       language:
         description: Optional programming language
+        enum:
+        - go
+        - javascript
+        - typescript
+        - python
+        - java
+        - csharp
+        - rust
+        - cpp
+        - c
+        - ruby
+        - php
+        - kotlin
+        - swift
+        - scala
+        - other
         example: python
         type: string
       metadata:
@@ -199,6 +235,8 @@ definitions:
       name:
         description: Optional human-readable project name
         example: updated-project
+        maxLength: 100
+        minLength: 1
         type: string
       projectID:
         description: Unique identifier for the project

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kazemisoroush/code-refactoring-tool/api/middleware"
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
 	"github.com/kazemisoroush/code-refactoring-tool/api/services"
 )
@@ -33,14 +34,13 @@ func NewProjectController(projectService services.ProjectService) *ProjectContro
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
 // @Router /projects [post]
 func (c *ProjectController) CreateProject(ctx *gin.Context) {
-	var request models.CreateProjectRequest
-
-	// Bind and validate the request
-	if err := ctx.ShouldBindJSON(&request); err != nil {
+	// Get the validated request from context (set by validation middleware)
+	request, exists := middleware.GetValidatedRequest[models.CreateProjectRequest](ctx)
+	if !exists {
 		errorResponse := models.ErrorResponse{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid request body",
-			Details: err.Error(),
+			Message: "Missing validated request",
+			Details: "Validation middleware must be applied before this controller",
 		}
 		ctx.JSON(http.StatusBadRequest, errorResponse)
 		return
@@ -73,14 +73,13 @@ func (c *ProjectController) CreateProject(ctx *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
 // @Router /projects/{id} [get]
 func (c *ProjectController) GetProject(ctx *gin.Context) {
-	var request models.GetProjectRequest
-
-	// Bind and validate the URI parameters
-	if err := ctx.ShouldBindUri(&request); err != nil {
+	// Get the validated request from context (set by validation middleware)
+	request, exists := middleware.GetValidatedRequest[models.GetProjectRequest](ctx)
+	if !exists {
 		errorResponse := models.ErrorResponse{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid project ID",
-			Details: err.Error(),
+			Message: "Missing validated request",
+			Details: "Validation middleware must be applied before this controller",
 		}
 		ctx.JSON(http.StatusBadRequest, errorResponse)
 		return
@@ -127,25 +126,13 @@ func (c *ProjectController) GetProject(ctx *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
 // @Router /projects/{id} [put]
 func (c *ProjectController) UpdateProject(ctx *gin.Context) {
-	var request models.UpdateProjectRequest
-
-	// Bind and validate the URI parameters
-	if err := ctx.ShouldBindUri(&request); err != nil {
+	// Get the validated request from context (set by validation middleware)
+	request, exists := middleware.GetValidatedRequest[models.UpdateProjectRequest](ctx)
+	if !exists {
 		errorResponse := models.ErrorResponse{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid project ID",
-			Details: err.Error(),
-		}
-		ctx.JSON(http.StatusBadRequest, errorResponse)
-		return
-	}
-
-	// Bind and validate the JSON body
-	if err := ctx.ShouldBindJSON(&request); err != nil {
-		errorResponse := models.ErrorResponse{
-			Code:    http.StatusBadRequest,
-			Message: "Invalid request body",
-			Details: err.Error(),
+			Message: "Missing validated request",
+			Details: "Validation middleware must be applied before this controller",
 		}
 		ctx.JSON(http.StatusBadRequest, errorResponse)
 		return
@@ -190,14 +177,13 @@ func (c *ProjectController) UpdateProject(ctx *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
 // @Router /projects/{id} [delete]
 func (c *ProjectController) DeleteProject(ctx *gin.Context) {
-	var request models.DeleteProjectRequest
-
-	// Bind and validate the URI parameters
-	if err := ctx.ShouldBindUri(&request); err != nil {
+	// Get the validated request from context (set by validation middleware)
+	request, exists := middleware.GetValidatedRequest[models.DeleteProjectRequest](ctx)
+	if !exists {
 		errorResponse := models.ErrorResponse{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid project ID",
-			Details: err.Error(),
+			Message: "Missing validated request",
+			Details: "Validation middleware must be applied before this controller",
 		}
 		ctx.JSON(http.StatusBadRequest, errorResponse)
 		return
@@ -243,14 +229,13 @@ func (c *ProjectController) DeleteProject(ctx *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
 // @Router /projects [get]
 func (c *ProjectController) ListProjects(ctx *gin.Context) {
-	var request models.ListProjectsRequest
-
-	// Bind and validate query parameters
-	if err := ctx.ShouldBindQuery(&request); err != nil {
+	// Get the validated request from context (set by validation middleware)
+	request, exists := middleware.GetValidatedRequest[models.ListProjectsRequest](ctx)
+	if !exists {
 		errorResponse := models.ErrorResponse{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid query parameters",
-			Details: err.Error(),
+			Message: "Missing validated request",
+			Details: "Validation middleware must be applied before this controller",
 		}
 		ctx.JSON(http.StatusBadRequest, errorResponse)
 		return

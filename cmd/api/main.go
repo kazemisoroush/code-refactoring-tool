@@ -17,6 +17,7 @@ import (
 	"github.com/kazemisoroush/code-refactoring-tool/api/controllers"
 	"github.com/kazemisoroush/code-refactoring-tool/api/middleware"
 	"github.com/kazemisoroush/code-refactoring-tool/api/repository"
+	"github.com/kazemisoroush/code-refactoring-tool/api/routes"
 	"github.com/kazemisoroush/code-refactoring-tool/api/services"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/builder"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/rag"
@@ -66,6 +67,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize project repository
+	projectRepository, err := repository.NewPostgresProjectRepository(repository.PostgresConfig{
+		Host:     cfg.Postgres.Host,
+		Port:     cfg.Postgres.Port,
+		Database: cfg.Postgres.Database,
+		Username: cfg.Postgres.Username,
+		Password: cfg.Postgres.Password,
+		SSLMode:  cfg.Postgres.SSLMode,
+	}, "projects")
+	if err != nil {
+		slog.Error("failed to initialize project repository", "error", err)
+		os.Exit(1)
+	}
+
 	// Initialize git repository (this will be used as a template)
 	gitRepo := pkgRepo.NewGitHubRepo(cfg.Git)
 
@@ -95,9 +110,11 @@ func main() {
 
 	// Initialize service layer
 	agentService := services.NewAgentService(cfg.Git, ragBuilder, agentBuilder, gitRepo, agentRepository)
+	projectService := services.NewDefaultProjectService(projectRepository)
 
 	// Initialize controllers
 	agentController := controllers.NewAgentController(agentService)
+	projectController := controllers.NewProjectController(projectService)
 	healthController := controllers.NewHealthController("code-refactor-tool-api", "1.0.0")
 
 	// Initialize authentication middleware
@@ -141,6 +158,9 @@ func main() {
 		v1.DELETE("/agent/:id", agentController.DeleteAgent)
 		v1.GET("/agents", agentController.ListAgents)
 	}
+
+	// Setup project routes with validation middleware
+	routes.SetupProjectRoutes(router, projectController)
 
 	// Setup Swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
