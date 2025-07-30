@@ -52,6 +52,21 @@ func init() {
 	})
 }
 
+// ValidationMiddleware provides validation middleware for request data
+// TODO: This validation middleware should implement the Middleware interface just like other middlewares
+type ValidationMiddleware struct{}
+
+// NewValidationMiddleware creates a new validation middleware
+func NewValidationMiddleware() Middleware {
+	return &ValidationMiddleware{}
+}
+
+// Handle is the middleware function that validates request data
+// TODO: Implement Middleware interface
+func (m *ValidationMiddleware) Handle() gin.HandlerFunc {
+	return func(_ *gin.Context) {}
+}
+
 // ValidateJSON validates JSON request body using struct tags
 func ValidateJSON[T any]() gin.HandlerFunc {
 	return func(c *gin.Context) {

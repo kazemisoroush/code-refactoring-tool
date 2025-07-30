@@ -14,14 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 )
-
-// CognitoConfig holds configuration for Cognito authentication
-type CognitoConfig struct {
-	UserPoolID string
-	Region     string
-	ClientID   string
-}
 
 // JWK represents a JSON Web Key
 type JWK struct {
@@ -48,13 +42,13 @@ type CognitoClaims struct {
 
 // AuthMiddleware provides authentication middleware for Cognito JWT tokens
 type AuthMiddleware struct {
-	config  CognitoConfig
+	config  config.CognitoConfig
 	jwkSet  *JWKSet
 	jwksURL string
 }
 
 // NewAuthMiddleware creates a new authentication middleware
-func NewAuthMiddleware(config CognitoConfig) *AuthMiddleware {
+func NewAuthMiddleware(config config.CognitoConfig) Middleware {
 	jwksURL := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s/.well-known/jwks.json",
 		config.Region, config.UserPoolID)
 
@@ -64,8 +58,8 @@ func NewAuthMiddleware(config CognitoConfig) *AuthMiddleware {
 	}
 }
 
-// RequireAuth is the middleware function that validates JWT tokens
-func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
+// Handle is the middleware function that validates JWT tokens
+func (m *AuthMiddleware) Handle() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Skip authentication for health check and swagger endpoints
 		if m.isPublicEndpoint(c.Request.URL.Path) {

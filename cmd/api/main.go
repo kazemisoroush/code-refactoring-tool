@@ -135,14 +135,14 @@ func main() {
 	healthController := controllers.NewHealthController(healthService)
 
 	// Initialize authentication middleware
-	authMiddleware := middleware.NewAuthMiddleware(middleware.CognitoConfig{
+	authMiddleware := middleware.NewAuthMiddleware(config.CognitoConfig{
 		UserPoolID: cfg.Cognito.UserPoolID,
 		Region:     cfg.Cognito.Region,
 		ClientID:   cfg.Cognito.ClientID,
 	})
 
 	// Initialize metrics middleware
-	metricsMiddleware, err := middleware.NewMetricsMiddleware(middleware.MetricsConfig{
+	metricsMiddleware, err := middleware.NewMetricsMiddleware(config.MetricsConfig{
 		Namespace:   cfg.Metrics.Namespace,
 		Region:      cfg.Metrics.Region,
 		ServiceName: cfg.Metrics.ServiceName,
@@ -160,11 +160,11 @@ func main() {
 	router.Use(gin.Recovery())
 
 	// Add metrics middleware (before auth to capture all requests)
-	router.Use(metricsMiddleware.RequestMetrics())
+	router.Use(metricsMiddleware.Layer())
 	router.Use(metricsMiddleware.SetMetricsInContext())
 
 	// Add authentication middleware
-	router.Use(authMiddleware.RequireAuth())
+	router.Use(authMiddleware.Handle())
 
 	// Setup API routes
 	v1 := router.Group("/api/v1")

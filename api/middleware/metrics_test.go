@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/gin-gonic/gin"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -18,6 +19,7 @@ type MockCloudWatch struct {
 	mock.Mock
 }
 
+// PutMetricData is a mock method for PutMetricData
 func (m *MockCloudWatch) PutMetricData(input *cloudwatch.PutMetricDataInput) (*cloudwatch.PutMetricDataOutput, error) {
 	args := m.Called(input)
 	return args.Get(0).(*cloudwatch.PutMetricDataOutput), args.Error(1)
@@ -26,13 +28,13 @@ func (m *MockCloudWatch) PutMetricData(input *cloudwatch.PutMetricDataInput) (*c
 func TestNewMetricsMiddleware(t *testing.T) {
 	tests := []struct {
 		name          string
-		config        MetricsConfig
+		config        config.MetricsConfig
 		expectError   bool
 		expectEnabled bool
 	}{
 		{
 			name: "enabled_middleware_with_valid_config",
-			config: MetricsConfig{
+			config: config.MetricsConfig{
 				Namespace:   "TestApp/API",
 				Region:      "us-west-2",
 				ServiceName: "test-service",
@@ -43,7 +45,7 @@ func TestNewMetricsMiddleware(t *testing.T) {
 		},
 		{
 			name: "disabled_middleware",
-			config: MetricsConfig{
+			config: config.MetricsConfig{
 				Namespace:   "TestApp/API",
 				Region:      "us-west-2",
 				ServiceName: "test-service",
@@ -77,7 +79,7 @@ func TestNewMetricsMiddleware(t *testing.T) {
 }
 
 func TestMetricsMiddleware_RequestMetrics_Disabled(t *testing.T) {
-	config := MetricsConfig{
+	config := config.MetricsConfig{
 		Namespace:   "TestApp/API",
 		Region:      "us-west-2",
 		ServiceName: "test-service",
@@ -90,7 +92,7 @@ func TestMetricsMiddleware_RequestMetrics_Disabled(t *testing.T) {
 	// Setup test route
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.Use(middleware.RequestMetrics())
+	router.Use(middleware.Layer())
 	router.GET("/test", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "success"})
 	})
@@ -110,7 +112,7 @@ func TestMetricsMiddleware_RequestMetrics_Disabled(t *testing.T) {
 }
 
 func TestMetricsMiddleware_RequestMetrics_Success(t *testing.T) {
-	config := MetricsConfig{
+	config := config.MetricsConfig{
 		Namespace:   "TestApp/API",
 		Region:      "us-west-2",
 		ServiceName: "test-service",
@@ -126,7 +128,7 @@ func TestMetricsMiddleware_RequestMetrics_Success(t *testing.T) {
 	// Setup test route
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.Use(middleware.RequestMetrics())
+	router.Use(middleware.Layer())
 	router.GET("/test", func(c *gin.Context) {
 		time.Sleep(10 * time.Millisecond) // Simulate some processing time
 		c.JSON(http.StatusOK, gin.H{"message": "success"})
@@ -147,7 +149,7 @@ func TestMetricsMiddleware_RequestMetrics_Success(t *testing.T) {
 }
 
 func TestMetricsMiddleware_RequestMetrics_ErrorResponse(t *testing.T) {
-	config := MetricsConfig{
+	config := config.MetricsConfig{
 		Namespace:   "TestApp/API",
 		Region:      "us-west-2",
 		ServiceName: "test-service",
@@ -163,7 +165,7 @@ func TestMetricsMiddleware_RequestMetrics_ErrorResponse(t *testing.T) {
 	// Setup test route that returns an error
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.Use(middleware.RequestMetrics())
+	router.Use(middleware.Layer())
 	router.GET("/error", func(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
 	})
@@ -183,7 +185,7 @@ func TestMetricsMiddleware_RequestMetrics_ErrorResponse(t *testing.T) {
 }
 
 func TestMetricsMiddleware_SendCustomMetric_Disabled(t *testing.T) {
-	config := MetricsConfig{
+	config := config.MetricsConfig{
 		Namespace:   "TestApp/API",
 		Region:      "us-west-2",
 		ServiceName: "test-service",
@@ -203,7 +205,7 @@ func TestMetricsMiddleware_SendCustomMetric_Disabled(t *testing.T) {
 }
 
 func TestMetricsMiddleware_SendCustomMetric_Enabled(t *testing.T) {
-	config := MetricsConfig{
+	config := config.MetricsConfig{
 		Namespace:   "TestApp/API",
 		Region:      "us-west-2",
 		ServiceName: "test-service",
@@ -226,7 +228,7 @@ func TestMetricsMiddleware_SendCustomMetric_Enabled(t *testing.T) {
 }
 
 func TestGetMetricsFromContext(t *testing.T) {
-	config := MetricsConfig{
+	config := config.MetricsConfig{
 		Namespace:   "TestApp/API",
 		Region:      "us-west-2",
 		ServiceName: "test-service",
@@ -305,7 +307,7 @@ func TestGetMetricsFromContext_WrongType(t *testing.T) {
 }
 
 func TestMetricsMiddleware_SetMetricsInContext(t *testing.T) {
-	config := MetricsConfig{
+	config := config.MetricsConfig{
 		Namespace:   "TestApp/API",
 		Region:      "us-west-2",
 		ServiceName: "test-service",

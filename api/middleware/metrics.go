@@ -9,24 +9,17 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/gin-gonic/gin"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 )
-
-// MetricsConfig holds configuration for metrics collection
-type MetricsConfig struct {
-	Namespace   string // CloudWatch namespace (e.g., "CodeRefactorTool/API")
-	Region      string // AWS region
-	ServiceName string // Service name for tagging
-	Enabled     bool   // Whether metrics collection is enabled
-}
 
 // MetricsMiddleware provides middleware for collecting and sending metrics to CloudWatch
 type MetricsMiddleware struct {
-	config     MetricsConfig
+	config     config.MetricsConfig
 	cloudWatch *cloudwatch.CloudWatch
 }
 
 // NewMetricsMiddleware creates a new metrics middleware
-func NewMetricsMiddleware(config MetricsConfig) (*MetricsMiddleware, error) {
+func NewMetricsMiddleware(config config.MetricsConfig) (*MetricsMiddleware, error) {
 	if !config.Enabled {
 		return &MetricsMiddleware{config: config}, nil
 	}
@@ -48,8 +41,8 @@ func NewMetricsMiddleware(config MetricsConfig) (*MetricsMiddleware, error) {
 	}, nil
 }
 
-// RequestMetrics is the middleware function that collects HTTP request metrics
-func (m *MetricsMiddleware) RequestMetrics() gin.HandlerFunc {
+// Layer is the middleware function that collects HTTP request metrics
+func (m *MetricsMiddleware) Layer() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !m.config.Enabled {
 			c.Next()

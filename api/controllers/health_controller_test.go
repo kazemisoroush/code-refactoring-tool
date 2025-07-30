@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kazemisoroush/code-refactoring-tool/api/middleware"
 	"github.com/kazemisoroush/code-refactoring-tool/api/services"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -66,7 +67,7 @@ func TestHealthController_HealthCheck_WithMetrics(t *testing.T) {
 	controller := NewHealthController(healthService)
 
 	// Create metrics middleware (disabled for testing)
-	metricsMiddleware, err := middleware.NewMetricsMiddleware(middleware.MetricsConfig{
+	metricsMiddleware, err := middleware.NewMetricsMiddleware(config.MetricsConfig{
 		Namespace:   "TestApp/API",
 		Region:      "us-west-2",
 		ServiceName: "test-service",
