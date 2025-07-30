@@ -126,12 +126,13 @@ func main() {
 	agentService := services.NewAgentService(cfg.Git, ragBuilder, agentBuilder, gitRepo, agentRepository)
 	projectService := services.NewDefaultProjectService(projectRepository)
 	codebaseService := services.NewDefaultCodebaseService(codebaseRepository)
+	healthService := services.NewDefaultHealthService("code-refactor-tool-api", "1.0.0")
 
 	// Initialize controllers
 	agentController := controllers.NewAgentController(agentService)
 	projectController := controllers.NewProjectController(projectService)
 	codebaseController := controllers.NewCodebaseController(codebaseService)
-	healthController := controllers.NewHealthController("code-refactor-tool-api", "1.0.0")
+	healthController := controllers.NewHealthController(healthService)
 
 	// Initialize authentication middleware
 	authMiddleware := middleware.NewAuthMiddleware(middleware.CognitoConfig{
@@ -184,11 +185,14 @@ func main() {
 	// Setup codebase routes with validation middleware
 	routes.SetupCodebaseRoutes(router, codebaseController)
 
+	// Setup health routes with validation middleware
+	routes.SetupHealthRoutes(router, healthController)
+
 	// Setup Swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// Health check
-	router.GET("/health", healthController.HealthCheck)
+	// Health check (keep old route for backward compatibility)
+	// router.GET("/health", healthController.HealthCheck)
 
 	// Create HTTP server
 	srv := &http.Server{

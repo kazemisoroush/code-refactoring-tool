@@ -6,19 +6,19 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kazemisoroush/code-refactoring-tool/api/middleware"
+	"github.com/kazemisoroush/code-refactoring-tool/api/models"
+	"github.com/kazemisoroush/code-refactoring-tool/api/services"
 )
 
 // HealthController handles health check requests
 type HealthController struct {
-	serviceName string
-	version     string
+	healthService services.HealthService
 }
 
 // NewHealthController creates a new HealthController
-func NewHealthController(serviceName, version string) *HealthController {
+func NewHealthController(healthService services.HealthService) *HealthController {
 	return &HealthController{
-		serviceName: serviceName,
-		version:     version,
+		healthService: healthService,
 	}
 }
 
@@ -27,19 +27,35 @@ func NewHealthController(serviceName, version string) *HealthController {
 // @Description Returns the health status of the service
 // @Tags health
 // @Produce json
-// @Success 200 {object} map[string]string "Service is healthy"
+// @Success 200 {object} models.HealthCheckResponse "Service is healthy"
+// @Failure 500 {object} models.ErrorResponse "Service is unhealthy"
 // @Router /health [get]
-func (h *HealthController) HealthCheck(c *gin.Context) {
+func (h *HealthController) HealthCheck(ctx *gin.Context) {
+	// Try to get the validated request from context first (new pattern)
+	request, exists := middleware.GetValidatedRequest[models.HealthCheckRequest](ctx)
+	if !exists {
+		// Fall back to empty request for backward compatibility
+		request = models.HealthCheckRequest{}
+	}
+
 	// Send custom metric for health check
-	if metrics := middleware.GetMetricsFromContext(c); metrics != nil {
+	if metrics := middleware.GetMetricsFromContext(ctx); metrics != nil {
 		_ = metrics.SendCustomMetric("HealthCheck", 1, "Count", map[string]string{
-			"Status": "healthy",
+			"Status": string(models.HealthStatusHealthy),
 		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "healthy",
-		"service": h.serviceName,
-		"version": h.version,
-	})
+	// Call the service to get health status
+	response, err := h.healthService.GetHealthStatus(ctx.Request.Context(), request)
+	if err != nil {
+		errorResponse := models.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get health status",
+			Details: err.Error(),
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, response)
 }

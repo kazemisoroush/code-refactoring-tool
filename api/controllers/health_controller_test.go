@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kazemisoroush/code-refactoring-tool/api/middleware"
+	"github.com/kazemisoroush/code-refactoring-tool/api/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,11 +17,10 @@ func TestNewHealthController(t *testing.T) {
 	serviceName := "test-service"
 	version := "1.0.0"
 
-	controller := NewHealthController(serviceName, version)
+	healthService := services.NewDefaultHealthService(serviceName, version)
+	controller := NewHealthController(healthService)
 
 	assert.NotNil(t, controller)
-	assert.Equal(t, serviceName, controller.serviceName)
-	assert.Equal(t, version, controller.version)
 }
 
 func TestHealthController_HealthCheck(t *testing.T) {
@@ -29,7 +29,8 @@ func TestHealthController_HealthCheck(t *testing.T) {
 	serviceName := "code-refactor-tool-api"
 	version := "1.0.0"
 
-	controller := NewHealthController(serviceName, version)
+	healthService := services.NewDefaultHealthService(serviceName, version)
+	controller := NewHealthController(healthService)
 
 	// Create a test router
 	router := gin.New()
@@ -45,13 +46,14 @@ func TestHealthController_HealthCheck(t *testing.T) {
 	// Assert response
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response map[string]string
+	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
 
 	assert.Equal(t, "healthy", response["status"])
 	assert.Equal(t, serviceName, response["service"])
 	assert.Equal(t, version, response["version"])
+	assert.Contains(t, response, "uptime")
 }
 
 func TestHealthController_HealthCheck_WithMetrics(t *testing.T) {
@@ -60,7 +62,8 @@ func TestHealthController_HealthCheck_WithMetrics(t *testing.T) {
 	serviceName := "code-refactor-tool-api"
 	version := "1.0.0"
 
-	controller := NewHealthController(serviceName, version)
+	healthService := services.NewDefaultHealthService(serviceName, version)
+	controller := NewHealthController(healthService)
 
 	// Create metrics middleware (disabled for testing)
 	metricsMiddleware, err := middleware.NewMetricsMiddleware(middleware.MetricsConfig{
@@ -86,11 +89,12 @@ func TestHealthController_HealthCheck_WithMetrics(t *testing.T) {
 	// Assert response
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response map[string]string
+	var response map[string]interface{}
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
 
 	assert.Equal(t, "healthy", response["status"])
 	assert.Equal(t, serviceName, response["service"])
 	assert.Equal(t, version, response["version"])
+	assert.Contains(t, response, "uptime")
 }

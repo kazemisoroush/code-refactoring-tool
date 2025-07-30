@@ -122,3 +122,12 @@ func SetupAgentRoutes(router *gin.Engine, controller *controllers.AgentControlle
 		)
 	}
 }
+
+// SetupHealthRoutes configures the health routes with generic validation middleware
+func SetupHealthRoutes(router *gin.Engine, controller *controllers.HealthController) {
+	// Health check endpoint - no validation needed but follows the pattern
+	router.GET("/health",
+		middleware.ValidateQuery[models.HealthCheckRequest](),
+		controller.HealthCheck,
+	)
+}

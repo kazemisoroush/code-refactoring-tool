@@ -242,6 +242,29 @@ definitions:
         example: "2024-01-15T10:30:00Z"
         type: string
     type: object
+  HealthCheckResponse:
+    properties:
+      service:
+        description: Service name
+        example: code-refactor-tool-api
+        type: string
+      status:
+        description: Service status
+        example: healthy
+        type: string
+      timestamp:
+        description: Current timestamp
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      uptime:
+        description: Uptime in seconds (optional)
+        example: 3600
+        type: integer
+      version:
+        description: Service version
+        example: 1.0.0
+        type: string
+    type: object
   ListAgentsResponse:
     properties:
       agents:
@@ -788,9 +811,11 @@ paths:
         "200":
           description: Service is healthy
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/HealthCheckResponse'
+        "500":
+          description: Service is unhealthy
+          schema:
+            $ref: '#/definitions/ErrorResponse'
       summary: Health check endpoint
       tags:
       - health

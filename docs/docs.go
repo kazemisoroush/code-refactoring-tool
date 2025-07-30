@@ -431,10 +431,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Service is healthy",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/HealthCheckResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Service is unhealthy",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     }
                 }
@@ -1054,6 +1057,36 @@ const docTemplate = `{
                     "description": "Timestamp when the project was last updated",
                     "type": "string",
                     "example": "2024-01-15T10:30:00Z"
+                }
+            }
+        },
+        "HealthCheckResponse": {
+            "type": "object",
+            "properties": {
+                "service": {
+                    "description": "Service name",
+                    "type": "string",
+                    "example": "code-refactor-tool-api"
+                },
+                "status": {
+                    "description": "Service status",
+                    "type": "string",
+                    "example": "healthy"
+                },
+                "timestamp": {
+                    "description": "Current timestamp",
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "uptime": {
+                    "description": "Uptime in seconds (optional)",
+                    "type": "integer",
+                    "example": 3600
+                },
+                "version": {
+                    "description": "Service version",
+                    "type": "string",
+                    "example": "1.0.0"
                 }
             }
         },
