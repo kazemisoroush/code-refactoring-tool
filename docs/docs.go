@@ -195,6 +195,253 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/projects": {
+            "get": {
+                "description": "Retrieve a list of projects with optional pagination and filtering",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "List projects",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token for pagination",
+                        "name": "next_token",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Maximum number of results to return",
+                        "name": "max_results",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Tag filter in format key:value",
+                        "name": "tag_filter",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Projects retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/ListProjectsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new project for organizing codebases and agents",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Create a new project",
+                "parameters": [
+                    {
+                        "description": "Project creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateProjectRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Project created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/CreateProjectResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/projects/{id}": {
+            "get": {
+                "description": "Retrieve a project by its unique identifier",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Get a project by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Project retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/GetProjectResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid project ID",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Project not found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update an existing project's details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Update a project",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Project update request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateProjectRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Project updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/UpdateProjectResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Project not found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a project by its unique identifier",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Delete a project",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Project deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/DeleteProjectResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid project ID",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Project not found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -256,6 +503,65 @@ const docTemplate = `{
                 }
             }
         },
+        "CreateProjectRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "description": "Optional project summary",
+                    "type": "string",
+                    "example": "A sample project for code analysis"
+                },
+                "language": {
+                    "description": "Optional programming language",
+                    "type": "string",
+                    "example": "go"
+                },
+                "name": {
+                    "description": "Human-readable project name",
+                    "type": "string",
+                    "example": "my-project"
+                },
+                "tags": {
+                    "description": "Optional user-defined key-value tags",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "env": "prod",
+                        "team": "backend"
+                    }
+                }
+            }
+        },
+        "CreateProjectResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Timestamp when the project was created",
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "project_id": {
+                    "description": "Unique identifier for the project",
+                    "type": "string",
+                    "example": "proj-12345-abcde"
+                }
+            }
+        },
+        "DeleteProjectResponse": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "description": "Indicates whether the deletion was successful",
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
         "ErrorResponse": {
             "type": "object",
             "properties": {
@@ -273,6 +579,174 @@ const docTemplate = `{
                     "description": "Error message",
                     "type": "string",
                     "example": "Invalid request parameters"
+                }
+            }
+        },
+        "GetProjectResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Timestamp when the project was created",
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "description": {
+                    "description": "Optional project summary",
+                    "type": "string",
+                    "example": "A sample project for code analysis"
+                },
+                "language": {
+                    "description": "Optional programming language",
+                    "type": "string",
+                    "example": "go"
+                },
+                "metadata": {
+                    "description": "Optional metadata",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "version": "1.0.0"
+                    }
+                },
+                "name": {
+                    "description": "Human-readable project name",
+                    "type": "string",
+                    "example": "my-project"
+                },
+                "project_id": {
+                    "description": "Unique identifier for the project",
+                    "type": "string",
+                    "example": "proj-12345-abcde"
+                },
+                "tags": {
+                    "description": "Optional user-defined key-value tags",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "env": "prod",
+                        "team": "backend"
+                    }
+                },
+                "updated_at": {
+                    "description": "Timestamp when the project was last updated",
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                }
+            }
+        },
+        "ListProjectsResponse": {
+            "type": "object",
+            "properties": {
+                "next_token": {
+                    "description": "Token for next page of results",
+                    "type": "string",
+                    "example": "eyJpZCI6InByb2otNjc4OTAifQ=="
+                },
+                "projects": {
+                    "description": "List of project summaries",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProjectSummary"
+                    }
+                }
+            }
+        },
+        "ProjectSummary": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Timestamp when the project was created",
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "name": {
+                    "description": "Human-readable project name",
+                    "type": "string",
+                    "example": "my-project"
+                },
+                "project_id": {
+                    "description": "Unique identifier for the project",
+                    "type": "string",
+                    "example": "proj-12345-abcde"
+                },
+                "tags": {
+                    "description": "Optional user-defined key-value tags",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "env": "prod",
+                        "team": "backend"
+                    }
+                }
+            }
+        },
+        "UpdateProjectRequest": {
+            "type": "object",
+            "required": [
+                "projectID"
+            ],
+            "properties": {
+                "description": {
+                    "description": "Optional project summary",
+                    "type": "string",
+                    "example": "Updated project description"
+                },
+                "language": {
+                    "description": "Optional programming language",
+                    "type": "string",
+                    "example": "python"
+                },
+                "metadata": {
+                    "description": "Optional metadata",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "version": "1.1.0"
+                    }
+                },
+                "name": {
+                    "description": "Optional human-readable project name",
+                    "type": "string",
+                    "example": "updated-project"
+                },
+                "projectID": {
+                    "description": "Unique identifier for the project",
+                    "type": "string",
+                    "example": "proj-12345-abcde"
+                },
+                "tags": {
+                    "description": "Optional user-defined key-value tags",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "env": "staging",
+                        "team": "frontend"
+                    }
+                }
+            }
+        },
+        "UpdateProjectResponse": {
+            "type": "object",
+            "properties": {
+                "project_id": {
+                    "description": "Unique identifier for the project",
+                    "type": "string",
+                    "example": "proj-12345-abcde"
+                },
+                "updated_at": {
+                    "description": "Timestamp when the project was last updated",
+                    "type": "string",
+                    "example": "2024-01-15T11:30:00Z"
                 }
             }
         }
