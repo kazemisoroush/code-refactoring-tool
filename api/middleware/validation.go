@@ -21,6 +21,8 @@ func init() {
 
 	// Register custom validations
 	_ = validate.RegisterValidation("project_id", validateProjectID)
+	_ = validate.RegisterValidation("provider", validateProvider)
+	_ = validate.RegisterValidation("tag_filter", validateTagFilter)
 
 	// Register custom tag name function for better error messages
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
@@ -229,6 +231,24 @@ func validateProjectID(fl validator.FieldLevel) bool {
 	return matched
 }
 
+// validateProvider validates that the provider is one of the supported types
+func validateProvider(fl validator.FieldLevel) bool {
+	provider := models.Provider(fl.Field().String())
+	return provider.IsValid()
+}
+
+// validateTagFilter validates tag filter format (key:value)
+func validateTagFilter(fl validator.FieldLevel) bool {
+	tagFilter := fl.Field().String()
+	if tagFilter == "" {
+		return true // optional field
+	}
+
+	// Check format: key:value
+	parts := strings.SplitN(tagFilter, ":", 2)
+	return len(parts) == 2 && parts[0] != "" && parts[1] != ""
+}
+
 // formatValidationError formats validation errors into human-readable messages
 func formatValidationError(err error) string {
 	var messages []string
@@ -279,6 +299,10 @@ func formatFieldError(fe validator.FieldError) string {
 		return fmt.Sprintf("%s must be one of %v", field, options)
 	case "project_id":
 		return fmt.Sprintf("%s must start with 'proj-' followed by alphanumeric characters", field)
+	case "provider":
+		return fmt.Sprintf("%s must be one of: github, gitlab, bitbucket, custom", field)
+	case "tag_filter":
+		return fmt.Sprintf("%s must be in format key:value", field)
 	case "dive":
 		return fmt.Sprintf("%s contains invalid values", field)
 	case "keys":

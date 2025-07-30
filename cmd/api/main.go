@@ -81,6 +81,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize codebase repository
+	codebaseRepository, err := repository.NewPostgresCodebaseRepository(repository.PostgresConfig{
+		Host:     cfg.Postgres.Host,
+		Port:     cfg.Postgres.Port,
+		Database: cfg.Postgres.Database,
+		Username: cfg.Postgres.Username,
+		Password: cfg.Postgres.Password,
+		SSLMode:  cfg.Postgres.SSLMode,
+	}, "codebases")
+	if err != nil {
+		slog.Error("failed to initialize codebase repository", "error", err)
+		os.Exit(1)
+	}
+
 	// Initialize git repository (this will be used as a template)
 	gitRepo := pkgRepo.NewGitHubRepo(cfg.Git)
 
@@ -111,10 +125,12 @@ func main() {
 	// Initialize service layer
 	agentService := services.NewAgentService(cfg.Git, ragBuilder, agentBuilder, gitRepo, agentRepository)
 	projectService := services.NewDefaultProjectService(projectRepository)
+	codebaseService := services.NewDefaultCodebaseService(codebaseRepository)
 
 	// Initialize controllers
 	agentController := controllers.NewAgentController(agentService)
 	projectController := controllers.NewProjectController(projectService)
+	codebaseController := controllers.NewCodebaseController(codebaseService)
 	healthController := controllers.NewHealthController("code-refactor-tool-api", "1.0.0")
 
 	// Initialize authentication middleware
@@ -161,6 +177,9 @@ func main() {
 
 	// Setup project routes with validation middleware
 	routes.SetupProjectRoutes(router, projectController)
+
+	// Setup codebase routes with validation middleware
+	routes.SetupCodebaseRoutes(router, codebaseController)
 
 	// Setup Swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

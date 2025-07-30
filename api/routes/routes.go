@@ -51,6 +51,48 @@ func SetupProjectRoutes(router *gin.Engine, controller *controllers.ProjectContr
 
 // Example of how the same validation middleware can be extended for other entities
 // Just create your models with appropriate validation tags and use the generic middleware
+
+// SetupCodebaseRoutes configures the codebase routes with generic validation middleware
+func SetupCodebaseRoutes(router *gin.Engine, controller *controllers.CodebaseController) {
+	// Codebase routes nested under projects
+	projectCodebaseGroup := router.Group("/api/v1/projects/:project_id/codebases")
+	{
+		// CREATE - validate combined URI (project_id) and JSON body using struct tags
+		projectCodebaseGroup.POST("",
+			middleware.ValidateCombined[models.CreateCodebaseRequest](),
+			controller.CreateCodebase,
+		)
+	}
+
+	// Direct codebase routes
+	codebaseGroup := router.Group("/api/v1/codebases")
+	{
+		// LIST - validate query parameters using struct tags
+		codebaseGroup.GET("",
+			middleware.ValidateQuery[models.ListCodebasesRequest](),
+			controller.ListCodebases,
+		)
+
+		// GET by ID - validate URI parameters using struct tags
+		codebaseGroup.GET("/:id",
+			middleware.ValidateURI[models.GetCodebaseRequest](),
+			controller.GetCodebase,
+		)
+
+		// UPDATE - validate both URI and JSON using struct tags
+		codebaseGroup.PUT("/:id",
+			middleware.ValidateCombined[models.UpdateCodebaseRequest](),
+			controller.UpdateCodebase,
+		)
+
+		// DELETE - validate URI parameters using struct tags
+		codebaseGroup.DELETE("/:id",
+			middleware.ValidateURI[models.DeleteCodebaseRequest](),
+			controller.DeleteCodebase,
+		)
+	}
+}
+
 /*
 func SetupAgentRoutes(router *gin.Engine, controller *controllers.AgentController) {
 	agentGroup := router.Group("/api/v1/agents")

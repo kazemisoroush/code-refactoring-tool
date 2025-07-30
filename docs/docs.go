@@ -173,6 +173,215 @@ const docTemplate = `{
                 }
             }
         },
+        "/codebases": {
+            "get": {
+                "description": "Retrieve a list of codebases with optional pagination and filtering",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "codebases"
+                ],
+                "summary": "List codebases",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by project ID",
+                        "name": "project_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Tag filter in format key:value",
+                        "name": "tag_filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Token for pagination",
+                        "name": "next_token",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Maximum number of results to return",
+                        "name": "max_results",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Codebases retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.ListCodebasesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/codebases/{id}": {
+            "get": {
+                "description": "Retrieve a codebase by its unique identifier",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "codebases"
+                ],
+                "summary": "Get a codebase by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Codebase ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Codebase retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.GetCodebaseResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid codebase ID",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Codebase not found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update an existing codebase's details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "codebases"
+                ],
+                "summary": "Update a codebase",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Codebase ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Codebase update request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdateCodebaseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Codebase updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdateCodebaseResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Codebase not found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a codebase by its unique identifier",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "codebases"
+                ],
+                "summary": "Delete a codebase",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Codebase ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Codebase deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.DeleteCodebaseResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid codebase ID",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Codebase not found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Returns the health status of the service",
@@ -430,6 +639,59 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Project not found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/projects/{project_id}/codebases": {
+            "post": {
+                "description": "Create a new codebase attached to a project",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "codebases"
+                ],
+                "summary": "Create a new codebase",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Codebase creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateCodebaseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Codebase created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateCodebaseResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         }
@@ -787,6 +1049,221 @@ const docTemplate = `{
                     "description": "Timestamp when the project was last updated",
                     "type": "string",
                     "example": "2024-01-15T11:30:00Z"
+                }
+            }
+        },
+        "models.CodebaseSummary": {
+            "type": "object",
+            "properties": {
+                "codebaseId": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "defaultBranch": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "projectId": {
+                    "type": "string"
+                },
+                "provider": {
+                    "$ref": "#/definitions/models.Provider"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CreateCodebaseRequest": {
+            "type": "object",
+            "required": [
+                "defaultBranch",
+                "name",
+                "projectId",
+                "provider",
+                "url"
+            ],
+            "properties": {
+                "defaultBranch": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
+                "projectId": {
+                    "type": "string"
+                },
+                "provider": {
+                    "$ref": "#/definitions/models.Provider"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "url": {
+                    "type": "string",
+                    "maxLength": 2048
+                }
+            }
+        },
+        "models.CreateCodebaseResponse": {
+            "type": "object",
+            "properties": {
+                "codebaseId": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.DeleteCodebaseResponse": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.GetCodebaseResponse": {
+            "type": "object",
+            "properties": {
+                "codebaseId": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "defaultBranch": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "projectId": {
+                    "type": "string"
+                },
+                "provider": {
+                    "$ref": "#/definitions/models.Provider"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ListCodebasesResponse": {
+            "type": "object",
+            "properties": {
+                "codebases": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.CodebaseSummary"
+                    }
+                },
+                "nextToken": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Provider": {
+            "type": "string",
+            "enum": [
+                "github",
+                "gitlab",
+                "bitbucket",
+                "custom"
+            ],
+            "x-enum-comments": {
+                "ProviderBitbucket": "Bitbucket repository provider",
+                "ProviderCustom": "Custom repository provider",
+                "ProviderGitHub": "GitHub repository provider",
+                "ProviderGitLab": "GitLab repository provider"
+            },
+            "x-enum-descriptions": [
+                "GitHub repository provider",
+                "GitLab repository provider",
+                "Bitbucket repository provider",
+                "Custom repository provider"
+            ],
+            "x-enum-varnames": [
+                "ProviderGitHub",
+                "ProviderGitLab",
+                "ProviderBitbucket",
+                "ProviderCustom"
+            ]
+        },
+        "models.UpdateCodebaseRequest": {
+            "type": "object",
+            "required": [
+                "codebaseId"
+            ],
+            "properties": {
+                "codebaseId": {
+                    "type": "string"
+                },
+                "defaultBranch": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "models.UpdateCodebaseResponse": {
+            "type": "object",
+            "properties": {
+                "codebaseId": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
                 }
             }
         }

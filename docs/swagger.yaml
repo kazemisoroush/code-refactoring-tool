@@ -264,6 +264,155 @@ definitions:
         example: "2024-01-15T11:30:00Z"
         type: string
     type: object
+  models.CodebaseSummary:
+    properties:
+      codebaseId:
+        type: string
+      createdAt:
+        type: string
+      defaultBranch:
+        type: string
+      name:
+        type: string
+      projectId:
+        type: string
+      provider:
+        $ref: '#/definitions/models.Provider'
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      url:
+        type: string
+    type: object
+  models.CreateCodebaseRequest:
+    properties:
+      defaultBranch:
+        maxLength: 255
+        minLength: 1
+        type: string
+      name:
+        maxLength: 255
+        minLength: 1
+        type: string
+      projectId:
+        type: string
+      provider:
+        $ref: '#/definitions/models.Provider'
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      url:
+        maxLength: 2048
+        type: string
+    required:
+    - defaultBranch
+    - name
+    - projectId
+    - provider
+    - url
+    type: object
+  models.CreateCodebaseResponse:
+    properties:
+      codebaseId:
+        type: string
+      createdAt:
+        type: string
+    type: object
+  models.DeleteCodebaseResponse:
+    properties:
+      success:
+        type: boolean
+    type: object
+  models.GetCodebaseResponse:
+    properties:
+      codebaseId:
+        type: string
+      createdAt:
+        type: string
+      defaultBranch:
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+      projectId:
+        type: string
+      provider:
+        $ref: '#/definitions/models.Provider'
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      updatedAt:
+        type: string
+      url:
+        type: string
+    type: object
+  models.ListCodebasesResponse:
+    properties:
+      codebases:
+        items:
+          $ref: '#/definitions/models.CodebaseSummary'
+        type: array
+      nextToken:
+        type: string
+    type: object
+  models.Provider:
+    enum:
+    - github
+    - gitlab
+    - bitbucket
+    - custom
+    type: string
+    x-enum-comments:
+      ProviderBitbucket: Bitbucket repository provider
+      ProviderCustom: Custom repository provider
+      ProviderGitHub: GitHub repository provider
+      ProviderGitLab: GitLab repository provider
+    x-enum-descriptions:
+    - GitHub repository provider
+    - GitLab repository provider
+    - Bitbucket repository provider
+    - Custom repository provider
+    x-enum-varnames:
+    - ProviderGitHub
+    - ProviderGitLab
+    - ProviderBitbucket
+    - ProviderCustom
+  models.UpdateCodebaseRequest:
+    properties:
+      codebaseId:
+        type: string
+      defaultBranch:
+        maxLength: 255
+        minLength: 1
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        maxLength: 255
+        minLength: 1
+        type: string
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+    required:
+    - codebaseId
+    type: object
+  models.UpdateCodebaseResponse:
+    properties:
+      codebaseId:
+        type: string
+      updatedAt:
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact:
@@ -376,6 +525,145 @@ paths:
       summary: List all agents
       tags:
       - agents
+  /codebases:
+    get:
+      description: Retrieve a list of codebases with optional pagination and filtering
+      parameters:
+      - description: Filter by project ID
+        in: query
+        name: project_id
+        type: string
+      - description: Tag filter in format key:value
+        in: query
+        name: tag_filter
+        type: string
+      - description: Token for pagination
+        in: query
+        name: next_token
+        type: string
+      - description: Maximum number of results to return
+        in: query
+        maximum: 100
+        minimum: 1
+        name: max_results
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Codebases retrieved successfully
+          schema:
+            $ref: '#/definitions/models.ListCodebasesResponse'
+        "400":
+          description: Invalid request parameters
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: List codebases
+      tags:
+      - codebases
+  /codebases/{id}:
+    delete:
+      description: Delete a codebase by its unique identifier
+      parameters:
+      - description: Codebase ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Codebase deleted successfully
+          schema:
+            $ref: '#/definitions/models.DeleteCodebaseResponse'
+        "400":
+          description: Invalid codebase ID
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Codebase not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Delete a codebase
+      tags:
+      - codebases
+    get:
+      description: Retrieve a codebase by its unique identifier
+      parameters:
+      - description: Codebase ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Codebase retrieved successfully
+          schema:
+            $ref: '#/definitions/models.GetCodebaseResponse'
+        "400":
+          description: Invalid codebase ID
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Codebase not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get a codebase by ID
+      tags:
+      - codebases
+    put:
+      consumes:
+      - application/json
+      description: Update an existing codebase's details
+      parameters:
+      - description: Codebase ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Codebase update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateCodebaseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Codebase updated successfully
+          schema:
+            $ref: '#/definitions/models.UpdateCodebaseResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Codebase not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Update a codebase
+      tags:
+      - codebases
   /health:
     get:
       description: Returns the health status of the service
@@ -555,4 +843,39 @@ paths:
       summary: Update a project
       tags:
       - projects
+  /projects/{project_id}/codebases:
+    post:
+      consumes:
+      - application/json
+      description: Create a new codebase attached to a project
+      parameters:
+      - description: Project ID
+        in: path
+        name: project_id
+        required: true
+        type: string
+      - description: Codebase creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateCodebaseRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Codebase created successfully
+          schema:
+            $ref: '#/definitions/models.CreateCodebaseResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Create a new codebase
+      tags:
+      - codebases
 swagger: "2.0"
