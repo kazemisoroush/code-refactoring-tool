@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kazemisoroush/code-refactoring-tool/api/middleware"
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
 	"github.com/kazemisoroush/code-refactoring-tool/api/services"
 )
@@ -21,7 +22,7 @@ func NewAgentController(agentService services.AgentService) *AgentController {
 	}
 }
 
-// CreateAgent handles POST /agent/create
+// CreateAgent handles POST /agents
 // @Summary Create a new agent
 // @Description Create a new agent for code analysis with the specified repository
 // @Tags agents
@@ -31,19 +32,23 @@ func NewAgentController(agentService services.AgentService) *AgentController {
 // @Success 201 {object} models.CreateAgentResponse "Agent created successfully"
 // @Failure 400 {object} models.ErrorResponse "Invalid request"
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
-// @Router /agent/create [post]
+// @Router /agents [post]
 func (c *AgentController) CreateAgent(ctx *gin.Context) {
-	var request models.CreateAgentRequest
-
-	// Bind and validate the request
-	if err := ctx.ShouldBindJSON(&request); err != nil {
-		errorResponse := models.ErrorResponse{
-			Code:    http.StatusBadRequest,
-			Message: "Invalid request body",
-			Details: err.Error(),
+	// Try to get the validated request from context first (new pattern)
+	request, exists := middleware.GetValidatedRequest[models.CreateAgentRequest](ctx)
+	if !exists {
+		// Fall back to manual binding for backward compatibility
+		var requestData models.CreateAgentRequest
+		if err := ctx.ShouldBindJSON(&requestData); err != nil {
+			errorResponse := models.ErrorResponse{
+				Code:    http.StatusBadRequest,
+				Message: "Invalid request body",
+				Details: err.Error(),
+			}
+			ctx.JSON(http.StatusBadRequest, errorResponse)
+			return
 		}
-		ctx.JSON(http.StatusBadRequest, errorResponse)
-		return
+		request = requestData
 	}
 
 	// Call the service to create the agent
@@ -61,85 +66,148 @@ func (c *AgentController) CreateAgent(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, response)
 }
 
-// GetAgent handles GET /agent/:id
+// GetAgent handles GET /agents/:id
 // @Summary Get an agent by ID
 // @Description Retrieve agent information by agent ID
 // @Tags agents
 // @Produce json
 // @Param id path string true "Agent ID"
-// @Success 200 {object} models.CreateAgentResponse "Agent found"
+// @Success 200 {object} models.GetAgentResponse "Agent found"
+// @Failure 400 {object} models.ErrorResponse "Invalid agent ID"
 // @Failure 404 {object} models.ErrorResponse "Agent not found"
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
-// @Router /agent/{id} [get]
+// @Router /agents/{id} [get]
 func (c *AgentController) GetAgent(ctx *gin.Context) {
-	agentID := ctx.Param("id")
-	if agentID == "" {
-		errorResponse := models.ErrorResponse{
-			Code:    http.StatusBadRequest,
-			Message: "Agent ID is required",
+	// Try to get the validated request from context first (new pattern)
+	request, exists := middleware.GetValidatedRequest[models.GetAgentRequest](ctx)
+	var agentID string
+	if !exists {
+		// Fall back to manual parameter extraction for backward compatibility
+		agentID = ctx.Param("id")
+		if agentID == "" {
+			errorResponse := models.ErrorResponse{
+				Code:    http.StatusBadRequest,
+				Message: "Agent ID is required",
+			}
+			ctx.JSON(http.StatusBadRequest, errorResponse)
+			return
 		}
-		ctx.JSON(http.StatusBadRequest, errorResponse)
-		return
+	} else {
+		agentID = request.AgentID
 	}
 
 	response, err := c.agentService.GetAgent(ctx.Request.Context(), agentID)
 	if err != nil {
+		var statusCode int
+		var message string
+
+		// Check if it's a "not found" error
+		if err.Error() == "agent not found" {
+			statusCode = http.StatusNotFound
+			message = "Agent not found"
+		} else {
+			statusCode = http.StatusInternalServerError
+			message = "Failed to get agent"
+		}
+
 		errorResponse := models.ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "Failed to get agent",
+			Code:    statusCode,
+			Message: message,
 			Details: err.Error(),
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse)
+		ctx.JSON(statusCode, errorResponse)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, response)
 }
 
-// DeleteAgent handles DELETE /agent/:id
+// DeleteAgent handles DELETE /agents/:id
 // @Summary Delete an agent by ID
 // @Description Delete an agent and its associated resources
 // @Tags agents
+// @Produce json
 // @Param id path string true "Agent ID"
-// @Success 204 "Agent deleted successfully"
+// @Success 200 {object} models.DeleteAgentResponse "Agent deleted successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid agent ID"
 // @Failure 404 {object} models.ErrorResponse "Agent not found"
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
-// @Router /agent/{id} [delete]
+// @Router /agents/{id} [delete]
 func (c *AgentController) DeleteAgent(ctx *gin.Context) {
-	agentID := ctx.Param("id")
-	if agentID == "" {
-		errorResponse := models.ErrorResponse{
-			Code:    http.StatusBadRequest,
-			Message: "Agent ID is required",
+	// Try to get the validated request from context first (new pattern)
+	request, exists := middleware.GetValidatedRequest[models.DeleteAgentRequest](ctx)
+	var agentID string
+	if !exists {
+		// Fall back to manual parameter extraction for backward compatibility
+		agentID = ctx.Param("id")
+		if agentID == "" {
+			errorResponse := models.ErrorResponse{
+				Code:    http.StatusBadRequest,
+				Message: "Agent ID is required",
+			}
+			ctx.JSON(http.StatusBadRequest, errorResponse)
+			return
 		}
-		ctx.JSON(http.StatusBadRequest, errorResponse)
-		return
+	} else {
+		agentID = request.AgentID
 	}
 
-	err := c.agentService.DeleteAgent(ctx.Request.Context(), agentID)
+	response, err := c.agentService.DeleteAgent(ctx.Request.Context(), agentID)
 	if err != nil {
+		var statusCode int
+		var message string
+
+		// Check if it's a "not found" error
+		if err.Error() == "agent not found" {
+			statusCode = http.StatusNotFound
+			message = "Agent not found"
+		} else {
+			statusCode = http.StatusInternalServerError
+			message = "Failed to delete agent"
+		}
+
 		errorResponse := models.ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "Failed to delete agent",
+			Code:    statusCode,
+			Message: message,
 			Details: err.Error(),
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse)
+		ctx.JSON(statusCode, errorResponse)
 		return
 	}
 
-	ctx.Status(http.StatusNoContent)
+	ctx.JSON(http.StatusOK, response)
 }
 
 // ListAgents handles GET /agents
 // @Summary List all agents
-// @Description Get a list of all agents
+// @Description Get a list of agents with optional pagination
 // @Tags agents
 // @Produce json
-// @Success 200 {array} models.CreateAgentResponse "List of agents"
+// @Param next_token query string false "Token for pagination"
+// @Param max_results query int false "Maximum number of results to return" minimum(1) maximum(100)
+// @Success 200 {object} models.ListAgentsResponse "List of agents"
+// @Failure 400 {object} models.ErrorResponse "Invalid request parameters"
 // @Failure 500 {object} models.ErrorResponse "Internal server error"
 // @Router /agents [get]
 func (c *AgentController) ListAgents(ctx *gin.Context) {
-	responses, err := c.agentService.ListAgents(ctx.Request.Context())
+	// Try to get the validated request from context first (new pattern)
+	request, exists := middleware.GetValidatedRequest[models.ListAgentsRequest](ctx)
+	if !exists {
+		// Fall back to manual binding for backward compatibility
+		var requestData models.ListAgentsRequest
+		if err := ctx.ShouldBindQuery(&requestData); err != nil {
+			errorResponse := models.ErrorResponse{
+				Code:    http.StatusBadRequest,
+				Message: "Invalid query parameters",
+				Details: err.Error(),
+			}
+			ctx.JSON(http.StatusBadRequest, errorResponse)
+			return
+		}
+		request = requestData
+	}
+
+	response, err := c.agentService.ListAgents(ctx.Request.Context(), request)
 	if err != nil {
 		errorResponse := models.ErrorResponse{
 			Code:    http.StatusInternalServerError,
@@ -150,5 +218,5 @@ func (c *AgentController) ListAgents(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, responses)
+	ctx.JSON(http.StatusOK, response)
 }

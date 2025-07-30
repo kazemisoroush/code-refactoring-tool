@@ -15,11 +15,11 @@ type AgentService interface {
 	CreateAgent(ctx context.Context, request models.CreateAgentRequest) (*models.CreateAgentResponse, error)
 
 	// GetAgent retrieves an agent by ID
-	GetAgent(ctx context.Context, agentID string) (*models.CreateAgentResponse, error)
+	GetAgent(ctx context.Context, agentID string) (*models.GetAgentResponse, error)
 
 	// DeleteAgent deletes an agent by ID
-	DeleteAgent(ctx context.Context, agentID string) error
+	DeleteAgent(ctx context.Context, agentID string) (*models.DeleteAgentResponse, error)
 
-	// ListAgents lists all agents
-	ListAgents(ctx context.Context) ([]*models.CreateAgentResponse, error)
+	// ListAgents lists all agents with optional pagination
+	ListAgents(ctx context.Context, request models.ListAgentsRequest) (*models.ListAgentsResponse, error)
 }

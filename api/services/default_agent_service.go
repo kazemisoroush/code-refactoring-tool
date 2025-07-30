@@ -92,21 +92,34 @@ func (s *DefaultAgentService) CreateAgent(ctx context.Context, request models.Cr
 }
 
 // GetAgent retrieves an agent by ID
-func (s *DefaultAgentService) GetAgent(ctx context.Context, agentID string) (*models.CreateAgentResponse, error) {
+func (s *DefaultAgentService) GetAgent(ctx context.Context, agentID string) (*models.GetAgentResponse, error) {
 	agentRecord, err := s.agentRepository.GetAgent(ctx, agentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get agent: %w", err)
 	}
 
-	return agentRecord.ToResponse(), nil
+	response := &models.GetAgentResponse{
+		AgentID:         agentRecord.AgentID,
+		AgentVersion:    agentRecord.AgentVersion,
+		KnowledgeBaseID: agentRecord.KnowledgeBaseID,
+		VectorStoreID:   agentRecord.VectorStoreID,
+		RepositoryURL:   agentRecord.RepositoryURL,
+		Branch:          agentRecord.Branch,
+		AgentName:       agentRecord.AgentName,
+		Status:          agentRecord.Status,
+		CreatedAt:       agentRecord.CreatedAt,
+		UpdatedAt:       agentRecord.UpdatedAt,
+	}
+
+	return response, nil
 }
 
 // DeleteAgent deletes an agent by ID
-func (s *DefaultAgentService) DeleteAgent(ctx context.Context, agentID string) error {
+func (s *DefaultAgentService) DeleteAgent(ctx context.Context, agentID string) (*models.DeleteAgentResponse, error) {
 	// First get the agent to retrieve resource IDs for cleanup
 	agentRecord, err := s.agentRepository.GetAgent(ctx, agentID)
 	if err != nil {
-		return fmt.Errorf("failed to get agent for deletion: %w", err)
+		return nil, fmt.Errorf("failed to get agent for deletion: %w", err)
 	}
 
 	// Update status to deleting
@@ -127,7 +140,7 @@ func (s *DefaultAgentService) DeleteAgent(ctx context.Context, agentID string) e
 		agentRecord.AgentVersion,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create teardown workflow: %w", err)
+		return nil, fmt.Errorf("failed to create teardown workflow: %w", err)
 	}
 
 	// Run teardown workflow
@@ -140,24 +153,53 @@ func (s *DefaultAgentService) DeleteAgent(ctx context.Context, agentID string) e
 	// Remove from database
 	err = s.agentRepository.DeleteAgent(ctx, agentID)
 	if err != nil {
-		return fmt.Errorf("failed to delete agent from database: %w", err)
+		return nil, fmt.Errorf("failed to delete agent from database: %w", err)
+	}
+
+	response := &models.DeleteAgentResponse{
+		AgentID: agentID,
+		Success: true,
 	}
 
 	slog.Info("Agent deleted successfully", "agent_id", agentID)
-	return nil
+	return response, nil
 }
 
-// ListAgents lists all agents
-func (s *DefaultAgentService) ListAgents(ctx context.Context) ([]*models.CreateAgentResponse, error) {
+// ListAgents lists all agents with optional pagination
+func (s *DefaultAgentService) ListAgents(ctx context.Context, request models.ListAgentsRequest) (*models.ListAgentsResponse, error) {
 	agentRecords, err := s.agentRepository.ListAgents(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list agents: %w", err)
 	}
 
-	responses := make([]*models.CreateAgentResponse, len(agentRecords))
+	// Convert to summary format
+	summaries := make([]models.AgentSummary, len(agentRecords))
 	for i, record := range agentRecords {
-		responses[i] = record.ToResponse()
+		summaries[i] = models.AgentSummary{
+			AgentID:       record.AgentID,
+			AgentName:     record.AgentName,
+			RepositoryURL: record.RepositoryURL,
+			Status:        record.Status,
+			CreatedAt:     record.CreatedAt,
+		}
 	}
 
-	return responses, nil
+	// For now, we'll implement basic pagination logic (can be enhanced later)
+	maxResults := 50 // default
+	if request.MaxResults != nil {
+		maxResults = *request.MaxResults
+	}
+
+	// Simple pagination: return all for now, but structure for future enhancement
+	response := &models.ListAgentsResponse{
+		Agents: summaries,
+	}
+
+	// If we have more results than max, we'd set NextToken here
+	if len(summaries) > maxResults {
+		response.Agents = summaries[:maxResults]
+		response.NextToken = "next_page_token" // Placeholder
+	}
+
+	return response, nil
 }

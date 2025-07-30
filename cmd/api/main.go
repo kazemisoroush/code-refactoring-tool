@@ -168,12 +168,15 @@ func main() {
 	// Setup API routes
 	v1 := router.Group("/api/v1")
 	{
-		// Agent routes
+		// Health check (keep the old agent routes temporarily for backward compatibility)
 		v1.POST("/agent/create", agentController.CreateAgent)
 		v1.GET("/agent/:id", agentController.GetAgent)
 		v1.DELETE("/agent/:id", agentController.DeleteAgent)
 		v1.GET("/agents", agentController.ListAgents)
 	}
+
+	// Setup agent routes with validation middleware (new standardized routes)
+	routes.SetupAgentRoutes(router, agentController)
 
 	// Setup project routes with validation middleware
 	routes.SetupProjectRoutes(router, projectController)

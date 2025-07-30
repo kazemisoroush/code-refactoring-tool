@@ -24,7 +24,53 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/agent/create": {
+        "/agents": {
+            "get": {
+                "description": "Get a list of agents with optional pagination",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "agents"
+                ],
+                "summary": "List all agents",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token for pagination",
+                        "name": "next_token",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Maximum number of results to return",
+                        "name": "max_results",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of agents",
+                        "schema": {
+                            "$ref": "#/definitions/ListAgentsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Create a new agent for code analysis with the specified repository",
                 "consumes": [
@@ -70,7 +116,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/agent/{id}": {
+        "/agents/{id}": {
             "get": {
                 "description": "Retrieve agent information by agent ID",
                 "produces": [
@@ -93,7 +139,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Agent found",
                         "schema": {
-                            "$ref": "#/definitions/CreateAgentResponse"
+                            "$ref": "#/definitions/GetAgentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid agent ID",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "404": {
@@ -112,6 +164,9 @@ const docTemplate = `{
             },
             "delete": {
                 "description": "Delete an agent and its associated resources",
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "agents"
                 ],
@@ -126,42 +181,22 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "Agent deleted successfully"
+                    "200": {
+                        "description": "Agent deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/DeleteAgentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid agent ID",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
                     },
                     "404": {
                         "description": "Agent not found",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/agents": {
-            "get": {
-                "description": "Get a list of all agents",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "agents"
-                ],
-                "summary": "List all agents",
-                "responses": {
-                    "200": {
-                        "description": "List of agents",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/CreateAgentResponse"
-                            }
                         }
                     },
                     "500": {
@@ -707,6 +742,36 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "AgentSummary": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "description": "Unique identifier for the agent",
+                    "type": "string",
+                    "example": "agent-12345"
+                },
+                "agent_name": {
+                    "description": "Agent name",
+                    "type": "string",
+                    "example": "my-code-analyzer"
+                },
+                "created_at": {
+                    "description": "Timestamp when the agent was created",
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "repository_url": {
+                    "description": "Repository URL",
+                    "type": "string",
+                    "example": "https://github.com/user/repo"
+                },
+                "status": {
+                    "description": "Agent status",
+                    "type": "string",
+                    "example": "ready"
+                }
+            }
+        },
         "CreateAgentRequest": {
             "type": "object",
             "required": [
@@ -716,11 +781,13 @@ const docTemplate = `{
                 "agent_name": {
                     "description": "Optional custom agent name",
                     "type": "string",
+                    "minLength": 1,
                     "example": "my-code-analyzer"
                 },
                 "branch": {
                     "description": "Optional branch name, defaults to main",
                     "type": "string",
+                    "minLength": 1,
                     "example": "main"
                 },
                 "repository_url": {
@@ -834,6 +901,21 @@ const docTemplate = `{
                 }
             }
         },
+        "DeleteAgentResponse": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "description": "Agent ID that was deleted",
+                    "type": "string",
+                    "example": "agent-12345"
+                },
+                "success": {
+                    "description": "Success indicator",
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
         "DeleteProjectResponse": {
             "type": "object",
             "properties": {
@@ -861,6 +943,61 @@ const docTemplate = `{
                     "description": "Error message",
                     "type": "string",
                     "example": "Invalid request parameters"
+                }
+            }
+        },
+        "GetAgentResponse": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "description": "Unique identifier for the agent",
+                    "type": "string",
+                    "example": "agent-12345"
+                },
+                "agent_name": {
+                    "description": "Agent name",
+                    "type": "string",
+                    "example": "my-code-analyzer"
+                },
+                "agent_version": {
+                    "description": "Agent version",
+                    "type": "string",
+                    "example": "v1.0.0"
+                },
+                "branch": {
+                    "description": "Branch name",
+                    "type": "string",
+                    "example": "main"
+                },
+                "created_at": {
+                    "description": "Timestamp when the agent was created",
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "knowledge_base_id": {
+                    "description": "Knowledge base ID associated with the agent",
+                    "type": "string",
+                    "example": "kb-67890"
+                },
+                "repository_url": {
+                    "description": "Repository URL",
+                    "type": "string",
+                    "example": "https://github.com/user/repo"
+                },
+                "status": {
+                    "description": "Agent status",
+                    "type": "string",
+                    "example": "ready"
+                },
+                "updated_at": {
+                    "description": "Timestamp when the agent was last updated",
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "vector_store_id": {
+                    "description": "Vector store ID for the knowledge base",
+                    "type": "string",
+                    "example": "vs-abcde"
                 }
             }
         },
@@ -917,6 +1054,23 @@ const docTemplate = `{
                     "description": "Timestamp when the project was last updated",
                     "type": "string",
                     "example": "2024-01-15T10:30:00Z"
+                }
+            }
+        },
+        "ListAgentsResponse": {
+            "type": "object",
+            "properties": {
+                "agents": {
+                    "description": "List of agent summaries",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AgentSummary"
+                    }
+                },
+                "next_token": {
+                    "description": "Token for next page",
+                    "type": "string",
+                    "example": "eyJ0aW1lc3RhbXAiOiIyMDI0LTAxLTE1VDEwOjMwOjAwWiJ9"
                 }
             }
         },

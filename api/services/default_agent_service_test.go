@@ -150,14 +150,15 @@ func TestDefaultAgentService_ListAgents_Success(t *testing.T) {
 	service := NewAgentService(gitConfig, mockRAGBuilder, mockAgentBuilder, mockGitRepo, mockAgentRepo)
 
 	// Act
-	response, err := service.ListAgents(context.Background())
+	request := models.ListAgentsRequest{}
+	response, err := service.ListAgents(context.Background(), request)
 
 	// Assert
 	require.NoError(t, err)
 	assert.NotNil(t, response)
-	assert.Len(t, response, 2)
-	assert.Equal(t, "agent-123", response[0].AgentID)
-	assert.Equal(t, "agent-456", response[1].AgentID)
+	assert.Len(t, response.Agents, 2)
+	assert.Equal(t, "agent-123", response.Agents[0].AgentID)
+	assert.Equal(t, "agent-456", response.Agents[1].AgentID)
 }
 
 func TestDefaultAgentService_ListAgents_RepositoryError(t *testing.T) {
@@ -181,7 +182,8 @@ func TestDefaultAgentService_ListAgents_RepositoryError(t *testing.T) {
 	service := NewAgentService(gitConfig, mockRAGBuilder, mockAgentBuilder, mockGitRepo, mockAgentRepo)
 
 	// Act
-	response, err := service.ListAgents(context.Background())
+	request := models.ListAgentsRequest{}
+	response, err := service.ListAgents(context.Background(), request)
 
 	// Assert
 	assert.Error(t, err)

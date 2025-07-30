@@ -160,13 +160,17 @@ func TestAgentController_GetAgent_Success(t *testing.T) {
 	controller := NewAgentController(mockService)
 
 	agentID := "agent-123"
-	expectedResponse := &models.CreateAgentResponse{
+	expectedResponse := &models.GetAgentResponse{
 		AgentID:         agentID,
 		AgentVersion:    "v1.0.0",
 		KnowledgeBaseID: "kb-456",
 		VectorStoreID:   "vs-789",
+		RepositoryURL:   "https://github.com/test/repo",
+		Branch:          "main",
+		AgentName:       "test-agent",
 		Status:          string(models.AgentStatusReady),
 		CreatedAt:       time.Now().UTC(),
+		UpdatedAt:       time.Now().UTC(),
 	}
 
 	mockService.EXPECT().
@@ -185,7 +189,7 @@ func TestAgentController_GetAgent_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response models.CreateAgentResponse
+	var response models.GetAgentResponse
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
 
@@ -200,10 +204,14 @@ func TestAgentController_DeleteAgent_Success(t *testing.T) {
 	controller := NewAgentController(mockService)
 
 	agentID := "agent-123"
+	expectedResponse := &models.DeleteAgentResponse{
+		AgentID: agentID,
+		Success: true,
+	}
 
 	mockService.EXPECT().
 		DeleteAgent(gomock.Any(), agentID).
-		Return(nil).
+		Return(expectedResponse, nil).
 		Times(1)
 
 	gin.SetMode(gin.TestMode)
@@ -215,7 +223,14 @@ func TestAgentController_DeleteAgent_Success(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusNoContent, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response models.DeleteAgentResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, expectedResponse.AgentID, response.AgentID)
+	assert.Equal(t, expectedResponse.Success, response.Success)
 }
 
 func TestAgentController_ListAgents_Success(t *testing.T) {
@@ -225,20 +240,21 @@ func TestAgentController_ListAgents_Success(t *testing.T) {
 	mockService := servicesMocks.NewMockAgentService(ctrl)
 	controller := NewAgentController(mockService)
 
-	expectedAgents := []*models.CreateAgentResponse{
-		{
-			AgentID:         "agent-123",
-			AgentVersion:    "v1.0.0",
-			KnowledgeBaseID: "kb-456",
-			VectorStoreID:   "vs-789",
-			Status:          string(models.AgentStatusReady),
-			CreatedAt:       time.Now().UTC(),
+	expectedResponse := &models.ListAgentsResponse{
+		Agents: []models.AgentSummary{
+			{
+				AgentID:       "agent-123",
+				AgentName:     "test-agent",
+				RepositoryURL: "https://github.com/test/repo",
+				Status:        string(models.AgentStatusReady),
+				CreatedAt:     time.Now().UTC(),
+			},
 		},
 	}
 
 	mockService.EXPECT().
-		ListAgents(gomock.Any()).
-		Return(expectedAgents, nil).
+		ListAgents(gomock.Any(), gomock.Any()).
+		Return(expectedResponse, nil).
 		Times(1)
 
 	gin.SetMode(gin.TestMode)
@@ -252,10 +268,10 @@ func TestAgentController_ListAgents_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response []*models.CreateAgentResponse
+	var response models.ListAgentsResponse
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
 
-	assert.Len(t, response, 1)
-	assert.Equal(t, expectedAgents[0].AgentID, response[0].AgentID)
+	assert.Len(t, response.Agents, 1)
+	assert.Equal(t, expectedResponse.Agents[0].AgentID, response.Agents[0].AgentID)
 }

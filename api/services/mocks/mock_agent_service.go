@@ -51,11 +51,12 @@ func (mr *MockAgentServiceMockRecorder) CreateAgent(arg0, arg1 interface{}) *gom
 }
 
 // DeleteAgent mocks base method.
-func (m *MockAgentService) DeleteAgent(arg0 context.Context, arg1 string) error {
+func (m *MockAgentService) DeleteAgent(arg0 context.Context, arg1 string) (*models.DeleteAgentResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteAgent", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*models.DeleteAgentResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // DeleteAgent indicates an expected call of DeleteAgent.
@@ -65,10 +66,10 @@ func (mr *MockAgentServiceMockRecorder) DeleteAgent(arg0, arg1 interface{}) *gom
 }
 
 // GetAgent mocks base method.
-func (m *MockAgentService) GetAgent(arg0 context.Context, arg1 string) (*models.CreateAgentResponse, error) {
+func (m *MockAgentService) GetAgent(arg0 context.Context, arg1 string) (*models.GetAgentResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAgent", arg0, arg1)
-	ret0, _ := ret[0].(*models.CreateAgentResponse)
+	ret0, _ := ret[0].(*models.GetAgentResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -80,16 +81,16 @@ func (mr *MockAgentServiceMockRecorder) GetAgent(arg0, arg1 interface{}) *gomock
 }
 
 // ListAgents mocks base method.
-func (m *MockAgentService) ListAgents(arg0 context.Context) ([]*models.CreateAgentResponse, error) {
+func (m *MockAgentService) ListAgents(arg0 context.Context, arg1 models.ListAgentsRequest) (*models.ListAgentsResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListAgents", arg0)
-	ret0, _ := ret[0].([]*models.CreateAgentResponse)
+	ret := m.ctrl.Call(m, "ListAgents", arg0, arg1)
+	ret0, _ := ret[0].(*models.ListAgentsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListAgents indicates an expected call of ListAgents.
-func (mr *MockAgentServiceMockRecorder) ListAgents(arg0 interface{}) *gomock.Call {
+func (mr *MockAgentServiceMockRecorder) ListAgents(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAgents", reflect.TypeOf((*MockAgentService)(nil).ListAgents), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAgents", reflect.TypeOf((*MockAgentService)(nil).ListAgents), arg0, arg1)
 }

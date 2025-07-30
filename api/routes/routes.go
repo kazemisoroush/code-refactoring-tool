@@ -93,7 +93,7 @@ func SetupCodebaseRoutes(router *gin.Engine, controller *controllers.CodebaseCon
 	}
 }
 
-/*
+// SetupAgentRoutes configures the agent routes with generic validation middleware
 func SetupAgentRoutes(router *gin.Engine, controller *controllers.AgentController) {
 	agentGroup := router.Group("/api/v1/agents")
 	{
@@ -114,6 +114,11 @@ func SetupAgentRoutes(router *gin.Engine, controller *controllers.AgentControlle
 			middleware.ValidateURI[models.GetAgentRequest](),
 			controller.GetAgent,
 		)
+
+		// DELETE - validate URI parameters using struct tags
+		agentGroup.DELETE("/:id",
+			middleware.ValidateURI[models.DeleteAgentRequest](),
+			controller.DeleteAgent,
+		)
 	}
 }
-*/

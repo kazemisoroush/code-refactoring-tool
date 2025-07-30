@@ -1,14 +1,39 @@
 basePath: /api/v1
 definitions:
+  AgentSummary:
+    properties:
+      agent_id:
+        description: Unique identifier for the agent
+        example: agent-12345
+        type: string
+      agent_name:
+        description: Agent name
+        example: my-code-analyzer
+        type: string
+      created_at:
+        description: Timestamp when the agent was created
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      repository_url:
+        description: Repository URL
+        example: https://github.com/user/repo
+        type: string
+      status:
+        description: Agent status
+        example: ready
+        type: string
+    type: object
   CreateAgentRequest:
     properties:
       agent_name:
         description: Optional custom agent name
         example: my-code-analyzer
+        minLength: 1
         type: string
       branch:
         description: Optional branch name, defaults to main
         example: main
+        minLength: 1
         type: string
       repository_url:
         description: Repository URL to analyze
@@ -99,6 +124,17 @@ definitions:
         example: proj-12345-abcde
         type: string
     type: object
+  DeleteAgentResponse:
+    properties:
+      agent_id:
+        description: Agent ID that was deleted
+        example: agent-12345
+        type: string
+      success:
+        description: Success indicator
+        example: true
+        type: boolean
+    type: object
   DeleteProjectResponse:
     properties:
       success:
@@ -119,6 +155,49 @@ definitions:
       message:
         description: Error message
         example: Invalid request parameters
+        type: string
+    type: object
+  GetAgentResponse:
+    properties:
+      agent_id:
+        description: Unique identifier for the agent
+        example: agent-12345
+        type: string
+      agent_name:
+        description: Agent name
+        example: my-code-analyzer
+        type: string
+      agent_version:
+        description: Agent version
+        example: v1.0.0
+        type: string
+      branch:
+        description: Branch name
+        example: main
+        type: string
+      created_at:
+        description: Timestamp when the agent was created
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      knowledge_base_id:
+        description: Knowledge base ID associated with the agent
+        example: kb-67890
+        type: string
+      repository_url:
+        description: Repository URL
+        example: https://github.com/user/repo
+        type: string
+      status:
+        description: Agent status
+        example: ready
+        type: string
+      updated_at:
+        description: Timestamp when the agent was last updated
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      vector_store_id:
+        description: Vector store ID for the knowledge base
+        example: vs-abcde
         type: string
     type: object
   GetProjectResponse:
@@ -161,6 +240,18 @@ definitions:
       updated_at:
         description: Timestamp when the project was last updated
         example: "2024-01-15T10:30:00Z"
+        type: string
+    type: object
+  ListAgentsResponse:
+    properties:
+      agents:
+        description: List of agent summaries
+        items:
+          $ref: '#/definitions/AgentSummary'
+        type: array
+      next_token:
+        description: Token for next page
+        example: eyJ0aW1lc3RhbXAiOiIyMDI0LTAxLTE1VDEwOjMwOjAwWiJ9
         type: string
     type: object
   ListProjectsResponse:
@@ -427,56 +518,38 @@ info:
   title: Code Refactor Tool API
   version: "1.0"
 paths:
-  /agent/{id}:
-    delete:
-      description: Delete an agent and its associated resources
-      parameters:
-      - description: Agent ID
-        in: path
-        name: id
-        required: true
-        type: string
-      responses:
-        "204":
-          description: Agent deleted successfully
-        "404":
-          description: Agent not found
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      summary: Delete an agent by ID
-      tags:
-      - agents
+  /agents:
     get:
-      description: Retrieve agent information by agent ID
+      description: Get a list of agents with optional pagination
       parameters:
-      - description: Agent ID
-        in: path
-        name: id
-        required: true
+      - description: Token for pagination
+        in: query
+        name: next_token
         type: string
+      - description: Maximum number of results to return
+        in: query
+        maximum: 100
+        minimum: 1
+        name: max_results
+        type: integer
       produces:
       - application/json
       responses:
         "200":
-          description: Agent found
+          description: List of agents
           schema:
-            $ref: '#/definitions/CreateAgentResponse'
-        "404":
-          description: Agent not found
+            $ref: '#/definitions/ListAgentsResponse'
+        "400":
+          description: Invalid request parameters
           schema:
             $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/ErrorResponse'
-      summary: Get an agent by ID
+      summary: List all agents
       tags:
       - agents
-  /agent/create:
     post:
       consumes:
       - application/json
@@ -506,23 +579,65 @@ paths:
       summary: Create a new agent
       tags:
       - agents
-  /agents:
-    get:
-      description: Get a list of all agents
+  /agents/{id}:
+    delete:
+      description: Delete an agent and its associated resources
+      parameters:
+      - description: Agent ID
+        in: path
+        name: id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: List of agents
+          description: Agent deleted successfully
           schema:
-            items:
-              $ref: '#/definitions/CreateAgentResponse'
-            type: array
+            $ref: '#/definitions/DeleteAgentResponse'
+        "400":
+          description: Invalid agent ID
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Agent not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/ErrorResponse'
-      summary: List all agents
+      summary: Delete an agent by ID
+      tags:
+      - agents
+    get:
+      description: Retrieve agent information by agent ID
+      parameters:
+      - description: Agent ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Agent found
+          schema:
+            $ref: '#/definitions/GetAgentResponse'
+        "400":
+          description: Invalid agent ID
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Agent not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get an agent by ID
       tags:
       - agents
   /codebases:
