@@ -4,12 +4,14 @@ import (
 	"context"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDynamoDBCodebaseRepository_NotImplemented(t *testing.T) {
-	repo := NewDynamoDBCodebaseRepository("dummy-table")
+	// Use zero-value aws.Config for testing
+	repo := NewDynamoDBCodebaseRepository(aws.Config{}, "dummy-table")
 	ctx := context.Background()
 
 	_, err := repo.GetCodebase(ctx, "id")
