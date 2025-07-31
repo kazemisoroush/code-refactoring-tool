@@ -33,7 +33,7 @@ func TestCodebaseValidation(t *testing.T) {
 		}
 
 		router := gin.New()
-		router.POST("/projects/:project_id/codebases", ValidateCombined[models.CreateCodebaseRequest](), func(c *gin.Context) {
+		router.POST("/projects/:project_id/codebases", NewCombinedValidationMiddleware[models.CreateCodebaseRequest]().Handle(), func(c *gin.Context) {
 			validatedRequest, exists := GetValidatedRequest[models.CreateCodebaseRequest](c)
 			if !exists {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "validation failed"})
@@ -65,7 +65,7 @@ func TestCodebaseValidation(t *testing.T) {
 		}
 
 		router := gin.New()
-		router.POST("/projects/:project_id/codebases", ValidateCombined[models.CreateCodebaseRequest](), func(c *gin.Context) {
+		router.POST("/projects/:project_id/codebases", NewCombinedValidationMiddleware[models.CreateCodebaseRequest]().Handle(), func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"message": "should not reach here"})
 		})
 
@@ -99,7 +99,7 @@ func TestCodebaseValidation(t *testing.T) {
 		}
 
 		router := gin.New()
-		router.POST("/projects/:project_id/codebases", ValidateCombined[models.CreateCodebaseRequest](), func(c *gin.Context) {
+		router.POST("/projects/:project_id/codebases", NewCombinedValidationMiddleware[models.CreateCodebaseRequest]().Handle(), func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"message": "should not reach here"})
 		})
 
@@ -125,7 +125,7 @@ func TestCodebaseValidation(t *testing.T) {
 	t.Run("GetCodebaseRequest_ValidUUID", func(t *testing.T) {
 		// Valid UUID should pass validation
 		router := gin.New()
-		router.GET("/codebases/:id", ValidateURI[models.GetCodebaseRequest](), func(c *gin.Context) {
+		router.GET("/codebases/:id", NewURIValidationMiddleware[models.GetCodebaseRequest]().Handle(), func(c *gin.Context) {
 			validatedRequest, exists := GetValidatedRequest[models.GetCodebaseRequest](c)
 			if !exists {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "validation failed"})
@@ -145,7 +145,7 @@ func TestCodebaseValidation(t *testing.T) {
 	t.Run("GetCodebaseRequest_InvalidUUID", func(t *testing.T) {
 		// Invalid UUID should fail validation
 		router := gin.New()
-		router.GET("/codebases/:id", ValidateURI[models.GetCodebaseRequest](), func(c *gin.Context) {
+		router.GET("/codebases/:id", NewURIValidationMiddleware[models.GetCodebaseRequest]().Handle(), func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"message": "should not reach here"})
 		})
 
@@ -167,7 +167,7 @@ func TestCodebaseValidation(t *testing.T) {
 	t.Run("ListCodebasesRequest_ValidQuery", func(t *testing.T) {
 		// Valid query parameters should pass validation
 		router := gin.New()
-		router.GET("/codebases", ValidateQuery[models.ListCodebasesRequest](), func(c *gin.Context) {
+		router.GET("/codebases", NewQueryValidationMiddleware[models.ListCodebasesRequest]().Handle(), func(c *gin.Context) {
 			validatedRequest, exists := GetValidatedRequest[models.ListCodebasesRequest](c)
 			if !exists {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "validation failed"})
@@ -187,7 +187,7 @@ func TestCodebaseValidation(t *testing.T) {
 	t.Run("ListCodebasesRequest_InvalidMaxResults", func(t *testing.T) {
 		// Invalid max_results should fail validation
 		router := gin.New()
-		router.GET("/codebases", ValidateQuery[models.ListCodebasesRequest](), func(c *gin.Context) {
+		router.GET("/codebases", NewQueryValidationMiddleware[models.ListCodebasesRequest]().Handle(), func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"message": "should not reach here"})
 		})
 

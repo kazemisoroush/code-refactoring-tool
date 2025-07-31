@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"fmt"
-	"net/http"
 	"reflect"
 	"regexp"
 	"strings"
@@ -53,177 +52,179 @@ func init() {
 }
 
 // ValidationMiddleware provides validation middleware for request data
-// TODO: This validation middleware should implement the Middleware interface just like other middlewares
-type ValidationMiddleware struct{}
-
-// NewValidationMiddleware creates a new validation middleware
-func NewValidationMiddleware() Middleware {
-	return &ValidationMiddleware{}
+type ValidationMiddleware struct {
+	validationType string
+	validatorFunc  gin.HandlerFunc
 }
 
-// Handle is the middleware function that validates request data
-// TODO: Implement Middleware interface
+// ValidationConfig defines the configuration for validation middleware
+type ValidationConfig struct {
+	Type          string // "json", "uri", "query", "combined"
+	ValidatorFunc gin.HandlerFunc
+}
+
+// NewValidationMiddleware creates a new validation middleware with the specified config
+func NewValidationMiddleware(config ValidationConfig) Middleware {
+	return &ValidationMiddleware{
+		validationType: config.Type,
+		validatorFunc:  config.ValidatorFunc,
+	}
+}
+
+// Handle implements the Middleware interface and returns the validation handler
 func (m *ValidationMiddleware) Handle() gin.HandlerFunc {
-	return func(_ *gin.Context) {}
+	return m.validatorFunc
 }
 
-// ValidateJSON validates JSON request body using struct tags
-func ValidateJSON[T any]() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var request T
+// Factory methods for creating specific validation middlewares
 
-		// Use ShouldBind instead of ShouldBindJSON to skip Gin's validation
-		if err := c.ShouldBind(&request); err != nil {
-			errorResponse := models.ErrorResponse{
-				Code:    http.StatusBadRequest,
-				Message: "Invalid request body",
-				Details: err.Error(),
+// NewJSONValidationMiddleware creates a JSON validation middleware for type T
+func NewJSONValidationMiddleware[T any]() Middleware {
+	return NewValidationMiddleware(ValidationConfig{
+		Type: "json",
+		ValidatorFunc: func(c *gin.Context) {
+			var request T
+			if err := c.ShouldBind(&request); err != nil {
+				errorResponse := models.ErrorResponse{
+					Code:    400,
+					Message: "Invalid request body",
+					Details: err.Error(),
+				}
+				c.JSON(400, errorResponse)
+				c.Abort()
+				return
 			}
-			c.JSON(http.StatusBadRequest, errorResponse)
-			c.Abort()
-			return
-		}
-
-		if err := validate.Struct(request); err != nil {
-			errorResponse := models.ErrorResponse{
-				Code:    http.StatusBadRequest,
-				Message: "Validation failed",
-				Details: formatValidationError(err),
+			if err := validate.Struct(request); err != nil {
+				errorResponse := models.ErrorResponse{
+					Code:    400,
+					Message: "Validation failed",
+					Details: formatValidationError(err),
+				}
+				c.JSON(400, errorResponse)
+				c.Abort()
+				return
 			}
-			c.JSON(http.StatusBadRequest, errorResponse)
-			c.Abort()
-			return
-		}
-
-		// Store validated request in context
-		c.Set("validatedRequest", request)
-		c.Next()
-	}
+			c.Set("validatedRequest", request)
+			c.Next()
+		},
+	})
 }
 
-// ValidateURI validates URI parameters using struct tags
-func ValidateURI[T any]() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var request T
-
-		if err := c.ShouldBindUri(&request); err != nil {
-			errorResponse := models.ErrorResponse{
-				Code:    http.StatusBadRequest,
-				Message: "Invalid URI parameters",
-				Details: err.Error(),
+// NewURIValidationMiddleware creates a URI validation middleware for type T
+func NewURIValidationMiddleware[T any]() Middleware {
+	return NewValidationMiddleware(ValidationConfig{
+		Type: "uri",
+		ValidatorFunc: func(c *gin.Context) {
+			var request T
+			if err := c.ShouldBindUri(&request); err != nil {
+				errorResponse := models.ErrorResponse{
+					Code:    400,
+					Message: "Invalid URI parameters",
+					Details: err.Error(),
+				}
+				c.JSON(400, errorResponse)
+				c.Abort()
+				return
 			}
-			c.JSON(http.StatusBadRequest, errorResponse)
-			c.Abort()
-			return
-		}
-
-		if err := validate.Struct(request); err != nil {
-			errorResponse := models.ErrorResponse{
-				Code:    http.StatusBadRequest,
-				Message: "Validation failed",
-				Details: formatValidationError(err),
+			if err := validate.Struct(request); err != nil {
+				errorResponse := models.ErrorResponse{
+					Code:    400,
+					Message: "Validation failed",
+					Details: formatValidationError(err),
+				}
+				c.JSON(400, errorResponse)
+				c.Abort()
+				return
 			}
-			c.JSON(http.StatusBadRequest, errorResponse)
-			c.Abort()
-			return
-		}
-
-		// Store validated request in context
-		c.Set("validatedRequest", request)
-		c.Next()
-	}
+			c.Set("validatedRequest", request)
+			c.Next()
+		},
+	})
 }
 
-// ValidateQuery validates query parameters using struct tags
-func ValidateQuery[T any]() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var request T
-
-		if err := c.ShouldBindQuery(&request); err != nil {
-			errorResponse := models.ErrorResponse{
-				Code:    http.StatusBadRequest,
-				Message: "Invalid query parameters",
-				Details: err.Error(),
+// NewQueryValidationMiddleware creates a query validation middleware for type T
+func NewQueryValidationMiddleware[T any]() Middleware {
+	return NewValidationMiddleware(ValidationConfig{
+		Type: "query",
+		ValidatorFunc: func(c *gin.Context) {
+			var request T
+			if err := c.ShouldBindQuery(&request); err != nil {
+				errorResponse := models.ErrorResponse{
+					Code:    400,
+					Message: "Invalid query parameters",
+					Details: err.Error(),
+				}
+				c.JSON(400, errorResponse)
+				c.Abort()
+				return
 			}
-			c.JSON(http.StatusBadRequest, errorResponse)
-			c.Abort()
-			return
-		}
-
-		if err := validate.Struct(request); err != nil {
-			errorResponse := models.ErrorResponse{
-				Code:    http.StatusBadRequest,
-				Message: "Validation failed",
-				Details: formatValidationError(err),
+			if err := validate.Struct(request); err != nil {
+				errorResponse := models.ErrorResponse{
+					Code:    400,
+					Message: "Validation failed",
+					Details: formatValidationError(err),
+				}
+				c.JSON(400, errorResponse)
+				c.Abort()
+				return
 			}
-			c.JSON(http.StatusBadRequest, errorResponse)
-			c.Abort()
-			return
-		}
-
-		// Store validated request in context
-		c.Set("validatedRequest", request)
-		c.Next()
-	}
+			c.Set("validatedRequest", request)
+			c.Next()
+		},
+	})
 }
 
-// ValidateCombined validates both URI parameters and JSON body
-func ValidateCombined[T any]() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var request T
-
-		// Bind URI parameters first
-		if err := c.ShouldBindUri(&request); err != nil {
-			errorResponse := models.ErrorResponse{
-				Code:    http.StatusBadRequest,
-				Message: "Invalid URI parameters",
-				Details: err.Error(),
+// NewCombinedValidationMiddleware creates a combined validation middleware for type T
+func NewCombinedValidationMiddleware[T any]() Middleware {
+	return NewValidationMiddleware(ValidationConfig{
+		Type: "combined",
+		ValidatorFunc: func(c *gin.Context) {
+			var request T
+			if err := c.ShouldBindUri(&request); err != nil {
+				errorResponse := models.ErrorResponse{
+					Code:    400,
+					Message: "Invalid URI parameters",
+					Details: err.Error(),
+				}
+				c.JSON(400, errorResponse)
+				c.Abort()
+				return
 			}
-			c.JSON(http.StatusBadRequest, errorResponse)
-			c.Abort()
-			return
-		}
-
-		// Create a temporary struct for JSON to preserve URI fields
-		var jsonRequest T
-		if err := c.ShouldBindJSON(&jsonRequest); err != nil {
-			errorResponse := models.ErrorResponse{
-				Code:    http.StatusBadRequest,
-				Message: "Invalid request body",
-				Details: err.Error(),
+			var jsonRequest T
+			if err := c.ShouldBindJSON(&jsonRequest); err != nil {
+				errorResponse := models.ErrorResponse{
+					Code:    400,
+					Message: "Invalid request body",
+					Details: err.Error(),
+				}
+				c.JSON(400, errorResponse)
+				c.Abort()
+				return
 			}
-			c.JSON(http.StatusBadRequest, errorResponse)
-			c.Abort()
-			return
-		}
-
-		// Merge the two structs - URI fields take precedence
-		if err := mergeStructs(&request, jsonRequest); err != nil {
-			errorResponse := models.ErrorResponse{
-				Code:    http.StatusBadRequest,
-				Message: "Failed to merge request data",
-				Details: err.Error(),
+			if err := mergeStructs(&request, jsonRequest); err != nil {
+				errorResponse := models.ErrorResponse{
+					Code:    400,
+					Message: "Failed to merge request data",
+					Details: err.Error(),
+				}
+				c.JSON(400, errorResponse)
+				c.Abort()
+				return
 			}
-			c.JSON(http.StatusBadRequest, errorResponse)
-			c.Abort()
-			return
-		}
-
-		if err := validate.Struct(request); err != nil {
-			errorResponse := models.ErrorResponse{
-				Code:    http.StatusBadRequest,
-				Message: "Validation failed",
-				Details: formatValidationError(err),
+			if err := validate.Struct(request); err != nil {
+				errorResponse := models.ErrorResponse{
+					Code:    400,
+					Message: "Validation failed",
+					Details: formatValidationError(err),
+				}
+				c.JSON(400, errorResponse)
+				c.Abort()
+				return
 			}
-			c.JSON(http.StatusBadRequest, errorResponse)
-			c.Abort()
-			return
-		}
-
-		// Store validated request in context
-		c.Set("validatedRequest", request)
-		c.Next()
-	}
+			c.Set("validatedRequest", request)
+			c.Next()
+		},
+	})
 }
 
 // Custom validation functions

@@ -201,7 +201,7 @@ func TestValidationMiddlewareExtensibility(t *testing.T) {
 		// Test that our custom project_id validation rule works
 		router := gin.New()
 
-		router.GET("/test/:id", middleware.ValidateURI[models.GetProjectRequest](), func(c *gin.Context) {
+		router.GET("/test/:id", middleware.NewURIValidationMiddleware[models.GetProjectRequest]().Handle(), func(c *gin.Context) {
 			c.JSON(200, gin.H{"status": "ok"})
 		})
 
@@ -227,7 +227,7 @@ func TestValidationMiddlewareExtensibility(t *testing.T) {
 
 		router := gin.New()
 
-		router.PUT("/entities/:id", middleware.ValidateCombined[TestEntityRequest](), func(c *gin.Context) {
+		router.PUT("/entities/:id", middleware.NewCombinedValidationMiddleware[TestEntityRequest]().Handle(), func(c *gin.Context) {
 			validated, exists := middleware.GetValidatedRequest[TestEntityRequest](c)
 			assert.True(t, exists)
 			c.JSON(200, gin.H{"id": validated.ID, "name": validated.Name})

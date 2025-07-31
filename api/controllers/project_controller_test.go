@@ -63,7 +63,7 @@ func TestProjectController_CreateProject_Success(t *testing.T) {
 	router := gin.New()
 
 	// Use validation middleware with the controller
-	router.POST("/projects", middleware.ValidateJSON[models.CreateProjectRequest](), controller.CreateProject)
+	router.POST("/projects", middleware.NewJSONValidationMiddleware[models.CreateProjectRequest]().Handle(), controller.CreateProject)
 
 	// Create HTTP request
 	reqBody, err := json.Marshal(request)
@@ -99,7 +99,7 @@ func TestProjectController_CreateProject_InvalidRequest(t *testing.T) {
 	router := gin.New()
 
 	// Use validation middleware with the controller
-	router.POST("/projects", middleware.ValidateJSON[models.CreateProjectRequest](), controller.CreateProject)
+	router.POST("/projects", middleware.NewJSONValidationMiddleware[models.CreateProjectRequest]().Handle(), controller.CreateProject)
 
 	req := httptest.NewRequest(http.MethodPost, "/projects", bytes.NewReader([]byte(invalidJSON)))
 	req.Header.Set("Content-Type", "application/json")
@@ -139,7 +139,7 @@ func TestProjectController_CreateProject_ServiceError(t *testing.T) {
 	router := gin.New()
 
 	// Use validation middleware with the controller
-	router.POST("/projects", middleware.ValidateJSON[models.CreateProjectRequest](), controller.CreateProject)
+	router.POST("/projects", middleware.NewJSONValidationMiddleware[models.CreateProjectRequest]().Handle(), controller.CreateProject)
 
 	reqBody, err := json.Marshal(request)
 	require.NoError(t, err)
@@ -194,7 +194,7 @@ func TestProjectController_GetProject_Success(t *testing.T) {
 	router := gin.New()
 
 	// Use validation middleware with the controller
-	router.GET("/projects/:id", middleware.ValidateURI[models.GetProjectRequest](), controller.GetProject)
+	router.GET("/projects/:id", middleware.NewURIValidationMiddleware[models.GetProjectRequest]().Handle(), controller.GetProject)
 
 	req := httptest.NewRequest(http.MethodGet, "/projects/"+projectID, nil)
 	w := httptest.NewRecorder()
@@ -225,7 +225,7 @@ func TestProjectController_GetProject_NotFound(t *testing.T) {
 	router := gin.New()
 
 	// Use validation middleware with the controller
-	router.GET("/projects/:id", middleware.ValidateURI[models.GetProjectRequest](), controller.GetProject)
+	router.GET("/projects/:id", middleware.NewURIValidationMiddleware[models.GetProjectRequest]().Handle(), controller.GetProject)
 
 	req := httptest.NewRequest(http.MethodGet, "/projects/"+projectID, nil)
 	w := httptest.NewRecorder()
@@ -262,7 +262,7 @@ func TestProjectController_GetProject_ServiceError(t *testing.T) {
 	router := gin.New()
 
 	// Use validation middleware with the controller
-	router.GET("/projects/:id", middleware.ValidateURI[models.GetProjectRequest](), controller.GetProject)
+	router.GET("/projects/:id", middleware.NewURIValidationMiddleware[models.GetProjectRequest]().Handle(), controller.GetProject)
 
 	req := httptest.NewRequest(http.MethodGet, "/projects/"+projectID, nil)
 	w := httptest.NewRecorder()
@@ -310,7 +310,7 @@ func TestProjectController_UpdateProject_Success(t *testing.T) {
 	router := gin.New()
 
 	// Use validation middleware with the controller
-	router.PUT("/projects/:id", middleware.ValidateCombined[models.UpdateProjectRequest](), controller.UpdateProject)
+	router.PUT("/projects/:id", middleware.NewCombinedValidationMiddleware[models.UpdateProjectRequest]().Handle(), controller.UpdateProject)
 
 	reqBody, err := json.Marshal(request)
 	require.NoError(t, err)
@@ -352,7 +352,7 @@ func TestProjectController_DeleteProject_Success(t *testing.T) {
 	router := gin.New()
 
 	// Use validation middleware with the controller
-	router.DELETE("/projects/:id", middleware.ValidateURI[models.DeleteProjectRequest](), controller.DeleteProject)
+	router.DELETE("/projects/:id", middleware.NewURIValidationMiddleware[models.DeleteProjectRequest]().Handle(), controller.DeleteProject)
 
 	req := httptest.NewRequest(http.MethodDelete, "/projects/"+projectID, nil)
 	w := httptest.NewRecorder()
@@ -414,7 +414,7 @@ func TestProjectController_ListProjects_Success(t *testing.T) {
 	router := gin.New()
 
 	// Use validation middleware with the controller
-	router.GET("/projects", middleware.ValidateQuery[models.ListProjectsRequest](), controller.ListProjects)
+	router.GET("/projects", middleware.NewQueryValidationMiddleware[models.ListProjectsRequest]().Handle(), controller.ListProjects)
 
 	req := httptest.NewRequest(http.MethodGet, "/projects?max_results=10", nil)
 	w := httptest.NewRecorder()
@@ -457,7 +457,7 @@ func TestProjectController_ListProjects_EmptyResult(t *testing.T) {
 	router := gin.New()
 
 	// Use validation middleware with the controller
-	router.GET("/projects", middleware.ValidateQuery[models.ListProjectsRequest](), controller.ListProjects)
+	router.GET("/projects", middleware.NewQueryValidationMiddleware[models.ListProjectsRequest]().Handle(), controller.ListProjects)
 
 	req := httptest.NewRequest(http.MethodGet, "/projects", nil)
 	w := httptest.NewRecorder()

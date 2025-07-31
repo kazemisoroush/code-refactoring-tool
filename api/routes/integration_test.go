@@ -22,7 +22,7 @@ func TestValidationIntegration(t *testing.T) {
 	t.Run("DirectValidationWorks", func(t *testing.T) {
 		router := gin.New()
 
-		router.POST("/test", middleware.ValidateJSON[models.CreateProjectRequest](), func(c *gin.Context) {
+		router.POST("/test", middleware.NewJSONValidationMiddleware[models.CreateProjectRequest]().Handle(), func(c *gin.Context) {
 			validated, exists := middleware.GetValidatedRequest[models.CreateProjectRequest](c)
 			require.True(t, exists)
 			c.JSON(200, gin.H{"name": validated.Name})
@@ -56,7 +56,7 @@ func TestValidationIntegration(t *testing.T) {
 	t.Run("ValidationCatchesErrors", func(t *testing.T) {
 		router := gin.New()
 
-		router.POST("/test", middleware.ValidateJSON[models.CreateProjectRequest](), func(c *gin.Context) {
+		router.POST("/test", middleware.NewJSONValidationMiddleware[models.CreateProjectRequest]().Handle(), func(c *gin.Context) {
 			c.JSON(200, gin.H{"status": "should not reach here"})
 		})
 

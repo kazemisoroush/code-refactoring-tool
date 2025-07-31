@@ -15,35 +15,35 @@ func SetupProjectRoutes(router *gin.Engine, controller *controllers.ProjectContr
 		// CREATE - validate JSON body using struct tags
 		// The middleware automatically validates based on the struct tags in CreateProjectRequest
 		projectGroup.POST("",
-			middleware.ValidateJSON[models.CreateProjectRequest](),
+			middleware.NewJSONValidationMiddleware[models.CreateProjectRequest]().Handle(),
 			controller.CreateProject,
 		)
 
 		// LIST - validate query parameters using struct tags
 		// The middleware automatically validates based on the struct tags in ListProjectsRequest
 		projectGroup.GET("",
-			middleware.ValidateQuery[models.ListProjectsRequest](),
+			middleware.NewQueryValidationMiddleware[models.ListProjectsRequest]().Handle(),
 			controller.ListProjects,
 		)
 
 		// GET by ID - validate URI parameters using struct tags
 		// The middleware automatically validates based on the struct tags in GetProjectRequest
 		projectGroup.GET("/:id",
-			middleware.ValidateURI[models.GetProjectRequest](),
+			middleware.NewURIValidationMiddleware[models.GetProjectRequest]().Handle(),
 			controller.GetProject,
 		)
 
 		// UPDATE - validate both URI and JSON using struct tags
 		// The middleware automatically validates based on the struct tags in UpdateProjectRequest
 		projectGroup.PUT("/:id",
-			middleware.ValidateCombined[models.UpdateProjectRequest](),
+			middleware.NewCombinedValidationMiddleware[models.UpdateProjectRequest]().Handle(),
 			controller.UpdateProject,
 		)
 
 		// DELETE - validate URI parameters using struct tags
 		// The middleware automatically validates based on the struct tags in DeleteProjectRequest
 		projectGroup.DELETE("/:id",
-			middleware.ValidateURI[models.DeleteProjectRequest](),
+			middleware.NewURIValidationMiddleware[models.DeleteProjectRequest]().Handle(),
 			controller.DeleteProject,
 		)
 	}
@@ -59,7 +59,7 @@ func SetupCodebaseRoutes(router *gin.Engine, controller *controllers.CodebaseCon
 	{
 		// CREATE - validate combined URI (project_id) and JSON body using struct tags
 		projectCodebaseGroup.POST("",
-			middleware.ValidateCombined[models.CreateCodebaseRequest](),
+			middleware.NewCombinedValidationMiddleware[models.CreateCodebaseRequest]().Handle(),
 			controller.CreateCodebase,
 		)
 	}
@@ -69,25 +69,25 @@ func SetupCodebaseRoutes(router *gin.Engine, controller *controllers.CodebaseCon
 	{
 		// LIST - validate query parameters using struct tags
 		codebaseGroup.GET("",
-			middleware.ValidateQuery[models.ListCodebasesRequest](),
+			middleware.NewQueryValidationMiddleware[models.ListCodebasesRequest]().Handle(),
 			controller.ListCodebases,
 		)
 
 		// GET by ID - validate URI parameters using struct tags
 		codebaseGroup.GET("/:id",
-			middleware.ValidateURI[models.GetCodebaseRequest](),
+			middleware.NewURIValidationMiddleware[models.GetCodebaseRequest]().Handle(),
 			controller.GetCodebase,
 		)
 
 		// UPDATE - validate both URI and JSON using struct tags
 		codebaseGroup.PUT("/:id",
-			middleware.ValidateCombined[models.UpdateCodebaseRequest](),
+			middleware.NewCombinedValidationMiddleware[models.UpdateCodebaseRequest]().Handle(),
 			controller.UpdateCodebase,
 		)
 
 		// DELETE - validate URI parameters using struct tags
 		codebaseGroup.DELETE("/:id",
-			middleware.ValidateURI[models.DeleteCodebaseRequest](),
+			middleware.NewURIValidationMiddleware[models.DeleteCodebaseRequest]().Handle(),
 			controller.DeleteCodebase,
 		)
 	}
@@ -99,25 +99,25 @@ func SetupAgentRoutes(router *gin.Engine, controller *controllers.AgentControlle
 	{
 		// CREATE - validate JSON body using struct tags
 		agentGroup.POST("",
-			middleware.ValidateJSON[models.CreateAgentRequest](),
+			middleware.NewJSONValidationMiddleware[models.CreateAgentRequest]().Handle(),
 			controller.CreateAgent,
 		)
 
 		// LIST - validate query parameters using struct tags
 		agentGroup.GET("",
-			middleware.ValidateQuery[models.ListAgentsRequest](),
+			middleware.NewQueryValidationMiddleware[models.ListAgentsRequest]().Handle(),
 			controller.ListAgents,
 		)
 
 		// GET by ID - validate URI parameters using struct tags
 		agentGroup.GET("/:id",
-			middleware.ValidateURI[models.GetAgentRequest](),
+			middleware.NewURIValidationMiddleware[models.GetAgentRequest]().Handle(),
 			controller.GetAgent,
 		)
 
 		// DELETE - validate URI parameters using struct tags
 		agentGroup.DELETE("/:id",
-			middleware.ValidateURI[models.DeleteAgentRequest](),
+			middleware.NewURIValidationMiddleware[models.DeleteAgentRequest]().Handle(),
 			controller.DeleteAgent,
 		)
 	}
@@ -127,7 +127,7 @@ func SetupAgentRoutes(router *gin.Engine, controller *controllers.AgentControlle
 func SetupHealthRoutes(router *gin.Engine, controller *controllers.HealthController) {
 	// Health check endpoint - no validation needed but follows the pattern
 	router.GET("/health",
-		middleware.ValidateQuery[models.HealthCheckRequest](),
+		middleware.NewQueryValidationMiddleware[models.HealthCheckRequest]().Handle(),
 		controller.HealthCheck,
 	)
 }

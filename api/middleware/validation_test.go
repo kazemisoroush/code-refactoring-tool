@@ -78,7 +78,7 @@ func TestValidateJSON_Success(t *testing.T) {
 			c.Request.Header.Set("Content-Type", "application/json")
 
 			// Execute
-			middleware := ValidateJSON[TestCreateRequest]()
+			middleware := NewJSONValidationMiddleware[TestCreateRequest]().Handle()
 			middleware(c)
 
 			// Assert
@@ -173,7 +173,7 @@ func TestValidateJSON_ValidationErrors(t *testing.T) {
 			c.Request.Header.Set("Content-Type", "application/json")
 
 			// Execute
-			middleware := ValidateJSON[TestCreateRequest]()
+			middleware := NewJSONValidationMiddleware[TestCreateRequest]().Handle()
 			middleware(c)
 
 			// Assert
@@ -209,7 +209,7 @@ func TestValidateURI_Success(t *testing.T) {
 	c.Params = []gin.Param{{Key: "id", Value: "proj-12345"}}
 
 	// Execute
-	middleware := ValidateURI[TestUpdateRequest]()
+	middleware := NewURIValidationMiddleware[TestUpdateRequest]().Handle()
 	middleware(c)
 
 	// Assert
@@ -256,7 +256,7 @@ func TestValidateURI_InvalidProjectID(t *testing.T) {
 			c.Params = []gin.Param{{Key: "id", Value: tt.projectID}}
 
 			// Execute
-			middleware := ValidateURI[TestUpdateRequest]()
+			middleware := NewURIValidationMiddleware[TestUpdateRequest]().Handle()
 			middleware(c)
 
 			// Assert
@@ -322,7 +322,7 @@ func TestValidateQuery_Success(t *testing.T) {
 			c.Request = httptest.NewRequest("GET", "/test?"+values.Encode(), nil)
 
 			// Execute
-			middleware := ValidateQuery[TestListRequest]()
+			middleware := NewQueryValidationMiddleware[TestListRequest]().Handle()
 			middleware(c)
 
 			// Assert
@@ -385,7 +385,7 @@ func TestValidateQuery_ValidationErrors(t *testing.T) {
 			c.Request = httptest.NewRequest("GET", "/test?"+values.Encode(), nil)
 
 			// Execute
-			middleware := ValidateQuery[TestListRequest]()
+			middleware := NewQueryValidationMiddleware[TestListRequest]().Handle()
 			middleware(c)
 
 			// Assert
@@ -432,7 +432,7 @@ func TestValidateCombined_Success(t *testing.T) {
 	c.Params = []gin.Param{{Key: "id", Value: "proj-12345"}}
 
 	// Execute combined validation
-	middleware := ValidateCombined[TestUpdateRequest]()
+	middleware := NewCombinedValidationMiddleware[TestUpdateRequest]().Handle()
 	middleware(c)
 
 	// Assert
