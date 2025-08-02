@@ -223,14 +223,14 @@ func TestLoadConfigWithMocks_LocalAIEnabled_SkipsAWSCalls(t *testing.T) {
 	require.NoError(t, err)
 
 	defer func() {
-		os.Unsetenv("GIT_REPO_URL")            //nolint:errcheck
-		os.Unsetenv("GIT_TOKEN")               //nolint:errcheck
-		os.Unsetenv("COGNITO_USER_POOL_ID")    //nolint:errcheck
-		os.Unsetenv("COGNITO_CLIENT_ID")       //nolint:errcheck
-		os.Unsetenv("POSTGRES_PASSWORD")       //nolint:errcheck
-		os.Unsetenv("LOCAL_AI_ENABLED")        //nolint:errcheck
-		os.Unsetenv("LOCAL_AI_OLLAMA_URL")     //nolint:errcheck
-		os.Unsetenv("LOCAL_AI_CHROMA_URL")     //nolint:errcheck
+		os.Unsetenv("GIT_REPO_URL")         //nolint:errcheck
+		os.Unsetenv("GIT_TOKEN")            //nolint:errcheck
+		os.Unsetenv("COGNITO_USER_POOL_ID") //nolint:errcheck
+		os.Unsetenv("COGNITO_CLIENT_ID")    //nolint:errcheck
+		os.Unsetenv("POSTGRES_PASSWORD")    //nolint:errcheck
+		os.Unsetenv("LOCAL_AI_ENABLED")     //nolint:errcheck
+		os.Unsetenv("LOCAL_AI_OLLAMA_URL")  //nolint:errcheck
+		os.Unsetenv("LOCAL_AI_CHROMA_URL")  //nolint:errcheck
 	}()
 
 	// Expect NO calls to CloudFormation or Secrets Manager when LocalAI is enabled
@@ -242,12 +242,12 @@ func TestLoadConfigWithMocks_LocalAIEnabled_SkipsAWSCalls(t *testing.T) {
 
 	// Assert
 	require.NoError(t, err)
-	
+
 	// LocalAI config should be loaded
 	assert.True(t, cfg.LocalAI.Enabled)
 	assert.Equal(t, "http://ollama:11434", cfg.LocalAI.OllamaURL)
 	assert.Equal(t, "http://chromadb:8000", cfg.LocalAI.ChromaURL)
-	assert.Equal(t, "codellama:7b-instruct", cfg.LocalAI.Model) // default value
+	assert.Equal(t, "codellama:7b-instruct", cfg.LocalAI.Model)     // default value
 	assert.Equal(t, "all-MiniLM-L6-v2", cfg.LocalAI.EmbeddingModel) // default value
 
 	// AWS-related config should be empty (not loaded from CloudFormation)
