@@ -30,6 +30,11 @@ definitions:
         example: my-code-analyzer
         minLength: 1
         type: string
+      ai_config:
+        allOf:
+        - $ref: '#/definitions/config.AIConfiguration'
+        description: Optional AI configuration (defaults to platform default if not
+          provided)
       branch:
         description: Optional branch name, defaults to main
         example: main
@@ -376,6 +381,48 @@ definitions:
       updated_at:
         description: Timestamp when the project was last updated
         example: "2024-01-15T11:30:00Z"
+        type: string
+    type: object
+  config.AIConfiguration:
+    properties:
+      bedrock:
+        allOf:
+        - $ref: '#/definitions/config.BedrockAIRequestConfig'
+        description: Bedrock configuration (only used if provider is "bedrock")
+      local:
+        allOf:
+        - $ref: '#/definitions/config.LocalAIRequestConfig'
+        description: Local AI configuration (only used if provider is "local")
+      provider:
+        example: bedrock
+        type: string
+    type: object
+  config.BedrockAIRequestConfig:
+    properties:
+      agent_service_role_arn:
+        type: string
+      foundation_model:
+        example: amazon.titan-tg1-large
+        type: string
+      knowledge_base_service_role_arn:
+        type: string
+      region:
+        example: us-west-2
+        type: string
+    type: object
+  config.LocalAIRequestConfig:
+    properties:
+      chroma_url:
+        example: http://localhost:8000
+        type: string
+      embedding_model:
+        example: all-MiniLM-L6-v2
+        type: string
+      model:
+        example: codellama:7b-instruct
+        type: string
+      ollama_url:
+        example: http://localhost:11434
         type: string
     type: object
   models.CodebaseSummary:

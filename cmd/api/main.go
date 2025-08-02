@@ -19,7 +19,7 @@ import (
 	"github.com/kazemisoroush/code-refactoring-tool/api/repository"
 	"github.com/kazemisoroush/code-refactoring-tool/api/routes"
 	"github.com/kazemisoroush/code-refactoring-tool/api/services"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/builder"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/factory"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/rag"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/storage"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
@@ -81,6 +81,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Create projects table if it doesn't exist
+	if projectRepo, ok := projectRepository.(*repository.PostgresProjectRepository); ok {
+		if err := projectRepo.CreateTable(context.Background()); err != nil {
+			slog.Error("failed to create projects table", "error", err)
+			os.Exit(1)
+		}
+	}
+
 	// Initialize codebase repository
 	codebaseRepository, err := repository.NewPostgresCodebaseRepository(repository.PostgresConfig{
 		Host:     cfg.Postgres.Host,
@@ -107,20 +115,26 @@ func main() {
 	// Initialize RAG pipeline
 	ragService := rag.NewBedrockRAG(cfg.AWSConfig, gitRepo.GetPath(), cfg.KnowledgeBaseServiceRoleARN, cfg.RDSPostgres)
 
-	// Initialize RAG builder
-	ragBuilder := builder.NewBedrockRAGBuilder(
-		gitRepo.GetPath(),
+	// Initialize AI factory
+	aiFactory := factory.NewAIProviderFactory(
+		&cfg,
 		dataStore,
 		storageService,
 		ragService,
 	)
 
-	// Initialize agent builder
-	agentBuilder := builder.NewBedrockAgentBuilder(
-		cfg.AWSConfig,
-		gitRepo.GetPath(),
-		cfg.AgentServiceRoleARN,
-	)
+	// Create builders using factory with no specific AI configuration (use platform defaults)
+	ragBuilder, err := aiFactory.CreateRAGBuilder(nil, gitRepo.GetPath())
+	if err != nil {
+		slog.Error("failed to create RAG builder", "error", err)
+		os.Exit(1)
+	}
+
+	agentBuilder, err := aiFactory.CreateAgentBuilder(nil, gitRepo.GetPath())
+	if err != nil {
+		slog.Error("failed to create agent builder", "error", err)
+		os.Exit(1)
+	}
 
 	// Initialize service layer
 	agentService := services.NewAgentService(cfg.Git, ragBuilder, agentBuilder, gitRepo, agentRepository)
@@ -169,11 +183,12 @@ func main() {
 	// Setup API routes
 	v1 := router.Group("/api/v1")
 	{
-		// Health check (keep the old agent routes temporarily for backward compatibility)
+		// Keep old routes for backward compatibility (these don't conflict with new ones)
 		v1.POST("/agent/create", agentController.CreateAgent)
 		v1.GET("/agent/:id", agentController.GetAgent)
 		v1.DELETE("/agent/:id", agentController.DeleteAgent)
-		v1.GET("/agents", agentController.ListAgents)
+		// Remove this line as it conflicts with the new route
+		// v1.GET("/agents", agentController.ListAgents)
 	}
 
 	// Setup agent routes with validation middleware (new standardized routes)

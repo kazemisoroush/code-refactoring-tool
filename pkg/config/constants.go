@@ -1,5 +1,12 @@
 package config
 
+import "errors"
+
+var (
+	// ErrUnsupportedAIProvider is returned when an unsupported AI provider is specified
+	ErrUnsupportedAIProvider = errors.New("unsupported AI provider")
+)
+
 const (
 	// DefaultResourceTagKey and DefaultResourceTagValue are used for tagging AWS resources
 	DefaultResourceTagKey = "project"
@@ -27,6 +34,15 @@ const (
 
 	// AWSRegion used for aws.
 	AWSRegion = "us-east-1"
+
+	// AIProviderBedrock uses AWS Bedrock (default for SaaS)
+	AIProviderBedrock = "bedrock"
+
+	// AIProviderLocal uses local Ollama + ChromaDB (for development/enterprise)
+	AIProviderLocal = "local"
+
+	// AIProviderOpenAI uses OpenAI APIs (future extension)
+	AIProviderOpenAI = "openai"
 )
 
 var (

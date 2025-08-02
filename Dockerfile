@@ -2,18 +2,21 @@ FROM golang:1.24.1 AS builder
 
 WORKDIR /app
 
+# Copy go mod files and download dependencies
 COPY go.mod go.sum ./
 RUN go mod download
 
+# Copy source code
 COPY . .
 
-# Build the API server instead of main.go
+# Build the API server
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o api-server ./cmd/api/main.go
 
-FROM debian:bullseye-slim
+# Production image
+FROM debian:bullseye-slim AS production
 
-# Install CA certificates for TLS verification
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+# Install CA certificates and curl for health checks
+RUN apt-get update && apt-get install -y ca-certificates curl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

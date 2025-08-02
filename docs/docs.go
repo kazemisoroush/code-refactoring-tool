@@ -787,6 +787,14 @@ const docTemplate = `{
                     "minLength": 1,
                     "example": "my-code-analyzer"
                 },
+                "ai_config": {
+                    "description": "Optional AI configuration (defaults to platform default if not provided)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/config.AIConfiguration"
+                        }
+                    ]
+                },
                 "branch": {
                     "description": "Optional branch name, defaults to main",
                     "type": "string",
@@ -1236,6 +1244,71 @@ const docTemplate = `{
                     "description": "Timestamp when the project was last updated",
                     "type": "string",
                     "example": "2024-01-15T11:30:00Z"
+                }
+            }
+        },
+        "config.AIConfiguration": {
+            "type": "object",
+            "properties": {
+                "bedrock": {
+                    "description": "Bedrock configuration (only used if provider is \"bedrock\")",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/config.BedrockAIRequestConfig"
+                        }
+                    ]
+                },
+                "local": {
+                    "description": "Local AI configuration (only used if provider is \"local\")",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/config.LocalAIRequestConfig"
+                        }
+                    ]
+                },
+                "provider": {
+                    "type": "string",
+                    "example": "bedrock"
+                }
+            }
+        },
+        "config.BedrockAIRequestConfig": {
+            "type": "object",
+            "properties": {
+                "agent_service_role_arn": {
+                    "type": "string"
+                },
+                "foundation_model": {
+                    "type": "string",
+                    "example": "amazon.titan-tg1-large"
+                },
+                "knowledge_base_service_role_arn": {
+                    "type": "string"
+                },
+                "region": {
+                    "type": "string",
+                    "example": "us-west-2"
+                }
+            }
+        },
+        "config.LocalAIRequestConfig": {
+            "type": "object",
+            "properties": {
+                "chroma_url": {
+                    "type": "string",
+                    "example": "http://localhost:8000"
+                },
+                "embedding_model": {
+                    "type": "string",
+                    "example": "all-MiniLM-L6-v2"
+                },
+                "model": {
+                    "type": "string",
+                    "example": "codellama:7b-instruct"
+                },
+                "ollama_url": {
+                    "type": "string",
+                    "example": "http://localhost:11434"
                 }
             }
         },

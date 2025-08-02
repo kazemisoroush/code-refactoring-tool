@@ -20,14 +20,31 @@ swagger:
 	@swag init -g cmd/api/main.go -o docs/
 	@echo "Swagger documentation generated."
 
-build-api:
-	@echo "Building API server..."
-	@go build -o bin/api-server ./cmd/api/
-	@echo "API server built."
+# Local development
+serve:
+	@echo "Starting local development environment..."
+	@docker-compose up --build
+	@echo "Environment started. API available at http://localhost:8080"
 
-run-api: swagger build-api
-	@echo "Running API server..."
-	@./bin/api-server
+serve-detached:
+	@echo "Starting local development environment in background..."
+	@docker-compose up -d --build
+	@echo "Environment started. API available at http://localhost:8080"
+
+stop:
+	@echo "Stopping local development environment..."
+	@docker-compose down
+	@echo "Environment stopped."
+
+logs:
+	@echo "Following API logs..."
+	@docker-compose logs -f api
+
+# Production Docker build
+docker-build:
+	@echo "Building production Docker image..."
+	@docker build -t code-refactoring-tool:latest .
+	@echo "Docker image built."
 
 clean:
 	@echo "Cleaning build artifacts..."
@@ -35,6 +52,6 @@ clean:
 	@rm -rf docs/
 	@echo "Clean completed."
 
-.PHONY: test lint mock swagger build-api run-api clean ci
+.PHONY: test lint mock swagger build-api run-api serve serve-detached stop logs docker-build clean ci
 
 ci: mock test lint clean swagger

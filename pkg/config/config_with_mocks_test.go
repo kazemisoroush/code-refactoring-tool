@@ -190,3 +190,85 @@ func TestLoadConfigWithMocks_NoSecretARN(t *testing.T) {
 	assert.Equal(t, 5432, cfg.Postgres.Port)
 	assert.Equal(t, "testpassword123", cfg.Postgres.Password)
 }
+
+func TestLoadConfigWithMocks_LocalAIEnabled_SkipsAWSCalls(t *testing.T) {
+	// Setup
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockCfnClient := mocks.NewMockCloudFormationClient(ctrl)
+	mockSecretsClient := mocks.NewMockSecretsManagerClient(ctrl)
+	loader := config.NewLoader(mockCfnClient, mockSecretsClient)
+
+	// Set environment variables with LocalAI enabled
+	expectedRepoURL := "https://github.com/example/repo.git"
+	expectedToken := "ghp_testtoken123"
+
+	err := os.Setenv("GIT_REPO_URL", expectedRepoURL)
+	require.NoError(t, err)
+	err = os.Setenv("GIT_TOKEN", expectedToken)
+	require.NoError(t, err)
+	err = os.Setenv("COGNITO_USER_POOL_ID", "us-east-1_123456789")
+	require.NoError(t, err)
+	err = os.Setenv("COGNITO_CLIENT_ID", "1234567890abcdef")
+	require.NoError(t, err)
+	err = os.Setenv("POSTGRES_PASSWORD", "testpassword123")
+	require.NoError(t, err)
+	// Enable LocalAI
+	err = os.Setenv("LOCAL_AI_ENABLED", "true")
+	require.NoError(t, err)
+	err = os.Setenv("LOCAL_AI_OLLAMA_URL", "http://ollama:11434")
+	require.NoError(t, err)
+	err = os.Setenv("LOCAL_AI_CHROMA_URL", "http://chromadb:8000")
+	require.NoError(t, err)
+
+	defer func() {
+		os.Unsetenv("GIT_REPO_URL")            //nolint:errcheck
+		os.Unsetenv("GIT_TOKEN")               //nolint:errcheck
+		os.Unsetenv("COGNITO_USER_POOL_ID")    //nolint:errcheck
+		os.Unsetenv("COGNITO_CLIENT_ID")       //nolint:errcheck
+		os.Unsetenv("POSTGRES_PASSWORD")       //nolint:errcheck
+		os.Unsetenv("LOCAL_AI_ENABLED")        //nolint:errcheck
+		os.Unsetenv("LOCAL_AI_OLLAMA_URL")     //nolint:errcheck
+		os.Unsetenv("LOCAL_AI_CHROMA_URL")     //nolint:errcheck
+	}()
+
+	// Expect NO calls to CloudFormation or Secrets Manager when LocalAI is enabled
+	// mockCfnClient.EXPECT() - no expectations set, test will fail if called
+	// mockSecretsClient.EXPECT() - no expectations set, test will fail if called
+
+	// Act
+	cfg, err := config.LoadConfigWithDependencies(loader)
+
+	// Assert
+	require.NoError(t, err)
+	
+	// LocalAI config should be loaded
+	assert.True(t, cfg.LocalAI.Enabled)
+	assert.Equal(t, "http://ollama:11434", cfg.LocalAI.OllamaURL)
+	assert.Equal(t, "http://chromadb:8000", cfg.LocalAI.ChromaURL)
+	assert.Equal(t, "codellama:7b-instruct", cfg.LocalAI.Model) // default value
+	assert.Equal(t, "all-MiniLM-L6-v2", cfg.LocalAI.EmbeddingModel) // default value
+
+	// AWS-related config should be empty (not loaded from CloudFormation)
+	assert.Empty(t, cfg.KnowledgeBaseServiceRoleARN)
+	assert.Empty(t, cfg.AgentServiceRoleARN)
+	assert.Empty(t, cfg.S3BucketName)
+	assert.Empty(t, cfg.RDSPostgres.CredentialsSecretARN)
+	assert.Empty(t, cfg.RDSPostgres.InstanceARN)
+	assert.Empty(t, cfg.RDSPostgres.SchemaEnsureLambdaARN)
+
+	// Database config should use defaults/env vars (not from Secrets Manager)
+	assert.Equal(t, "localhost", cfg.Postgres.Host)
+	assert.Equal(t, 5432, cfg.Postgres.Port)
+	assert.Equal(t, "testpassword123", cfg.Postgres.Password)
+	assert.Equal(t, "code_refactoring_db", cfg.Postgres.Database)
+
+	// Git config should still be loaded from env vars
+	assert.Equal(t, expectedRepoURL, cfg.Git.RepoURL)
+	assert.Equal(t, expectedToken, cfg.Git.Token)
+
+	// Cognito config should still be loaded from env vars
+	assert.Equal(t, "us-east-1_123456789", cfg.Cognito.UserPoolID)
+	assert.Equal(t, "1234567890abcdef", cfg.Cognito.ClientID)
+}

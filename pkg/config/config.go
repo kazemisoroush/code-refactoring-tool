@@ -27,6 +27,18 @@ type Config struct {
 	KnowledgeBaseServiceRoleARN string      `envconfig:"KNOWLEDGE_BASE_SERVICE_ROLE_ARN"`
 	AgentServiceRoleARN         string      `envconfig:"AGENT_SERVICE_ROLE_ARN"`
 	RDSPostgres                 RDSPostgres `envconfig:"RDS_POSTGRES"`
+
+	// Local AI configuration
+	LocalAI LocalAIConfig `envconfig:"LOCAL_AI"`
+}
+
+// LocalAIConfig represents the configuration for local AI services
+type LocalAIConfig struct {
+	Enabled        bool   `envconfig:"ENABLED" default:"false"`
+	OllamaURL      string `envconfig:"OLLAMA_URL" default:"http://localhost:11434"`
+	Model          string `envconfig:"MODEL" default:"codellama:7b-instruct"`
+	ChromaURL      string `envconfig:"CHROMA_URL" default:"http://localhost:8000"`
+	EmbeddingModel string `envconfig:"EMBEDDING_MODEL" default:"all-MiniLM-L6-v2"`
 }
 
 // RDSPostgres represents the configuration for AWS RDS Postgres
@@ -132,18 +144,21 @@ func LoadConfigWithDependencies(loader *Loader) (Config, error) {
 		loader = NewLoader(cfnClient, secretsClient)
 	}
 
-	// Load values from CloudFormation stack if not already set
-	if cfg.KnowledgeBaseServiceRoleARN == "" || cfg.AgentServiceRoleARN == "" ||
-		cfg.S3BucketName == "" || cfg.RDSPostgres.InstanceARN == "" || cfg.RDSPostgres.SchemaEnsureLambdaARN == "" ||
-		cfg.RDSPostgres.CredentialsSecretARN == "" {
-		if err := loader.LoadStackOutputs(ctx, "CodeRefactorInfra", &cfg); err != nil {
-			return cfg, fmt.Errorf("failed to load stack outputs: %w", err)
+	// Only load AWS resources if not using local AI
+	if !cfg.LocalAI.Enabled {
+		// Load values from CloudFormation stack if not already set
+		if cfg.KnowledgeBaseServiceRoleARN == "" || cfg.AgentServiceRoleARN == "" ||
+			cfg.S3BucketName == "" || cfg.RDSPostgres.InstanceARN == "" || cfg.RDSPostgres.SchemaEnsureLambdaARN == "" ||
+			cfg.RDSPostgres.CredentialsSecretARN == "" {
+			if err := loader.LoadStackOutputs(ctx, "CodeRefactorInfra", &cfg); err != nil {
+				return cfg, fmt.Errorf("failed to load stack outputs: %w", err)
+			}
 		}
-	}
 
-	// Load database credentials from Secrets Manager if secret ARN is available
-	if err := loader.LoadDatabaseCredentials(ctx, cfg.RDSPostgres.CredentialsSecretARN, &cfg); err != nil {
-		return cfg, fmt.Errorf("failed to load database credentials: %w", err)
+		// Load database credentials from Secrets Manager if secret ARN is available
+		if err := loader.LoadDatabaseCredentials(ctx, cfg.RDSPostgres.CredentialsSecretARN, &cfg); err != nil {
+			return cfg, fmt.Errorf("failed to load database credentials: %w", err)
+		}
 	}
 
 	return cfg, nil

@@ -3,6 +3,8 @@ package models
 
 import (
 	"time"
+
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 )
 
 // CreateAgentRequest represents the request to create a new agent
@@ -13,6 +15,8 @@ type CreateAgentRequest struct {
 	Branch string `json:"branch,omitempty" validate:"omitempty,min=1" example:"main"`
 	// Optional custom agent name
 	AgentName string `json:"agent_name,omitempty" validate:"omitempty,min=1" example:"my-code-analyzer"`
+	// Optional AI configuration (defaults to platform default if not provided)
+	AIConfig *config.AIConfiguration `json:"ai_config,omitempty"`
 } //@name CreateAgentRequest
 
 // CreateAgentResponse represents the response when creating an agent
