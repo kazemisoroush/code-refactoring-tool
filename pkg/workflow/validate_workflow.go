@@ -8,17 +8,17 @@ import (
 
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/analyzer"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/analyzer/models"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/codebase"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/patcher"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/planner"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
 )
 
 // ValidateWorkflow represents a code analysis workflow
 type ValidateWorkflow struct {
 	Config     config.Config
 	Analyzers  []analyzer.Analyzer
-	Repository repository.Repository
+	Repository codebase.Codebase
 	Planner    planner.Planner
 	Patcher    patcher.Patcher
 }
@@ -26,7 +26,7 @@ type ValidateWorkflow struct {
 // NewValidateWorkflow creates a new Workflow instance
 func NewValidateWorkflow(
 	cfg config.Config,
-	repo repository.Repository,
+	repo codebase.Codebase,
 	planner planner.Planner,
 	patcher patcher.Patcher,
 	analyzers ...analyzer.Analyzer,

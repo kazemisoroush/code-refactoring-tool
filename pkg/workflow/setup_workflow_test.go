@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	builderMocks "github.com/kazemisoroush/code-refactoring-tool/pkg/ai/builder/mocks"
-	repositoryMocks "github.com/kazemisoroush/code-refactoring-tool/pkg/repository/mocks"
+	repositoryMocks "github.com/kazemisoroush/code-refactoring-tool/pkg/codebase/mocks"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/workflow"
 )
 

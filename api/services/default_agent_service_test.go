@@ -14,8 +14,8 @@ import (
 	"github.com/kazemisoroush/code-refactoring-tool/api/repository"
 	repoMocks "github.com/kazemisoroush/code-refactoring-tool/api/repository/mocks"
 	builderMocks "github.com/kazemisoroush/code-refactoring-tool/pkg/ai/builder/mocks"
+	gitRepoMocks "github.com/kazemisoroush/code-refactoring-tool/pkg/codebase/mocks"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
-	gitRepoMocks "github.com/kazemisoroush/code-refactoring-tool/pkg/repository/mocks"
 )
 
 func TestNewAgentService(t *testing.T) {
@@ -24,10 +24,10 @@ func TestNewAgentService(t *testing.T) {
 	defer ctrl.Finish()
 
 	gitConfig := config.GitConfig{
-		RepoURL: "https://github.com/example/repo.git",
-		Token:   "test-token",
-		Author:  "Test Author",
-		Email:   "test@example.com",
+		CodebaseURL: "https://github.com/example/repo.git",
+		Token:       "test-token",
+		Author:      "Test Author",
+		Email:       "test@example.com",
 	}
 	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
 	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)

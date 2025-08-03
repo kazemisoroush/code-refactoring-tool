@@ -29,7 +29,7 @@ func TestLoadConfigWithMocks_Success(t *testing.T) {
 	expectedRepoURL := "https://github.com/example/repo.git"
 	expectedToken := "ghp_testtoken123"
 
-	err := os.Setenv("GIT_REPO_URL", expectedRepoURL)
+	err := os.Setenv("GIT_CODEBASE_URL", expectedRepoURL)
 	require.NoError(t, err)
 	err = os.Setenv("GIT_TOKEN", expectedToken)
 	require.NoError(t, err)
@@ -41,7 +41,7 @@ func TestLoadConfigWithMocks_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	defer func() {
-		os.Unsetenv("GIT_REPO_URL")         //nolint:errcheck
+		os.Unsetenv("GIT_CODEBASE_URL")     //nolint:errcheck
 		os.Unsetenv("GIT_TOKEN")            //nolint:errcheck
 		os.Unsetenv("COGNITO_USER_POOL_ID") //nolint:errcheck
 		os.Unsetenv("COGNITO_CLIENT_ID")    //nolint:errcheck
@@ -103,7 +103,7 @@ func TestLoadConfigWithMocks_Success(t *testing.T) {
 
 	// Assert
 	require.NoError(t, err)
-	assert.Equal(t, expectedRepoURL, cfg.Git.RepoURL)
+	assert.Equal(t, expectedRepoURL, cfg.Git.CodebaseURL)
 	assert.Equal(t, expectedToken, cfg.Git.Token)
 	assert.Equal(t, "arn:aws:iam::123456789012:role/KnowledgeBaseRole", cfg.AI.Bedrock.KnowledgeBaseServiceRoleARN)
 	assert.Equal(t, "arn:aws:iam::123456789012:role/AgentRole", cfg.AI.Bedrock.AgentServiceRoleARN)
@@ -128,7 +128,7 @@ func TestLoadConfigWithMocks_NoSecretARN(t *testing.T) {
 	loader := config.NewLoader(mockCfnClient, mockSecretsClient)
 
 	// Set environment variables
-	err := os.Setenv("GIT_REPO_URL", "https://github.com/example/repo.git")
+	err := os.Setenv("GIT_CODEBASE_URL", "https://github.com/example/repo.git")
 	require.NoError(t, err)
 	err = os.Setenv("GIT_TOKEN", "ghp_testtoken123")
 	require.NoError(t, err)
@@ -140,7 +140,7 @@ func TestLoadConfigWithMocks_NoSecretARN(t *testing.T) {
 	require.NoError(t, err)
 
 	defer func() {
-		os.Unsetenv("GIT_REPO_URL")         //nolint:errcheck
+		os.Unsetenv("GIT_CODEBASE_URL")     //nolint:errcheck
 		os.Unsetenv("GIT_TOKEN")            //nolint:errcheck
 		os.Unsetenv("COGNITO_USER_POOL_ID") //nolint:errcheck
 		os.Unsetenv("COGNITO_CLIENT_ID")    //nolint:errcheck
@@ -204,7 +204,7 @@ func TestLoadConfigWithMocks_LocalAIEnabled_SkipsAWSCalls(t *testing.T) {
 	expectedRepoURL := "https://github.com/example/repo.git"
 	expectedToken := "ghp_testtoken123"
 
-	err := os.Setenv("GIT_REPO_URL", expectedRepoURL)
+	err := os.Setenv("GIT_CODEBASE_URL", expectedRepoURL)
 	require.NoError(t, err)
 	err = os.Setenv("GIT_TOKEN", expectedToken)
 	require.NoError(t, err)
@@ -223,7 +223,7 @@ func TestLoadConfigWithMocks_LocalAIEnabled_SkipsAWSCalls(t *testing.T) {
 	require.NoError(t, err)
 
 	defer func() {
-		os.Unsetenv("GIT_REPO_URL")         //nolint:errcheck
+		os.Unsetenv("GIT_CODEBASE_URL")     //nolint:errcheck
 		os.Unsetenv("GIT_TOKEN")            //nolint:errcheck
 		os.Unsetenv("COGNITO_USER_POOL_ID") //nolint:errcheck
 		os.Unsetenv("COGNITO_CLIENT_ID")    //nolint:errcheck
@@ -265,7 +265,7 @@ func TestLoadConfigWithMocks_LocalAIEnabled_SkipsAWSCalls(t *testing.T) {
 	assert.Equal(t, "code_refactoring_db", cfg.Postgres.Database)
 
 	// Git config should still be loaded from env vars
-	assert.Equal(t, expectedRepoURL, cfg.Git.RepoURL)
+	assert.Equal(t, expectedRepoURL, cfg.Git.CodebaseURL)
 	assert.Equal(t, expectedToken, cfg.Git.Token)
 
 	// Cognito config should still be loaded from env vars

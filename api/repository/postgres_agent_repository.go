@@ -11,6 +11,7 @@ import (
 	"github.com/lib/pq"
 
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
+	conf "github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 )
 
 // PostgresConfig holds configuration for PostgreSQL connection
@@ -32,7 +33,7 @@ type PostgresAgentRepository struct {
 // NewPostgresAgentRepository creates a new PostgreSQL agent repository
 func NewPostgresAgentRepository(config PostgresConfig, tableName string) (AgentRepository, error) {
 	if tableName == "" {
-		tableName = "agents"
+		tableName = conf.DefaultAgentsTableName
 	}
 
 	// Build connection string

@@ -11,6 +11,7 @@ import (
 	"github.com/lib/pq"
 
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
+	conf "github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 )
 
 // PostgresCodebaseRepository implements CodebaseRepository using PostgreSQL
@@ -22,7 +23,7 @@ type PostgresCodebaseRepository struct {
 // NewPostgresCodebaseRepository creates a new PostgreSQL codebase repository
 func NewPostgresCodebaseRepository(config PostgresConfig, tableName string) (CodebaseRepository, error) {
 	if tableName == "" {
-		tableName = "codebases"
+		tableName = conf.DefaultCodebasesTableName
 	}
 
 	// Build connection string

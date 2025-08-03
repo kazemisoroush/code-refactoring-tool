@@ -20,9 +20,9 @@ import (
 	"github.com/kazemisoroush/code-refactoring-tool/api/routes"
 	"github.com/kazemisoroush/code-refactoring-tool/api/services"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/factory"
+	pkgRepo "github.com/kazemisoroush/code-refactoring-tool/pkg/codebase"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/logging"
-	pkgRepo "github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
 )
 
 // @title Code Refactor Tool API
@@ -51,29 +51,25 @@ func main() {
 	// Setup structured logging
 	logging.SetupLogger(cfg.LogLevel)
 
-	// Initialize repositories and services
-	agentRepository, err := repository.NewPostgresAgentRepository(repository.PostgresConfig{
+	// Initialize Postgres config for repositories
+	postgresConfig := repository.PostgresConfig{
 		Host:     cfg.Postgres.Host,
 		Port:     cfg.Postgres.Port,
 		Database: cfg.Postgres.Database,
 		Username: cfg.Postgres.Username,
 		Password: cfg.Postgres.Password,
 		SSLMode:  cfg.Postgres.SSLMode,
-	}, "agents")
+	}
+
+	// Initialize repositories and services
+	agentRepository, err := repository.NewPostgresAgentRepository(postgresConfig, config.DefaultAgentsTableName)
 	if err != nil {
 		slog.Error("failed to initialize agent repository", "error", err)
 		os.Exit(1)
 	}
 
 	// Initialize project repository
-	projectRepository, err := repository.NewPostgresProjectRepository(repository.PostgresConfig{
-		Host:     cfg.Postgres.Host,
-		Port:     cfg.Postgres.Port,
-		Database: cfg.Postgres.Database,
-		Username: cfg.Postgres.Username,
-		Password: cfg.Postgres.Password,
-		SSLMode:  cfg.Postgres.SSLMode,
-	}, "projects")
+	projectRepository, err := repository.NewPostgresProjectRepository(postgresConfig, config.DefaultProjectsTableName)
 	if err != nil {
 		slog.Error("failed to initialize project repository", "error", err)
 		os.Exit(1)
@@ -88,21 +84,14 @@ func main() {
 	}
 
 	// Initialize codebase repository
-	codebaseRepository, err := repository.NewPostgresCodebaseRepository(repository.PostgresConfig{
-		Host:     cfg.Postgres.Host,
-		Port:     cfg.Postgres.Port,
-		Database: cfg.Postgres.Database,
-		Username: cfg.Postgres.Username,
-		Password: cfg.Postgres.Password,
-		SSLMode:  cfg.Postgres.SSLMode,
-	}, "codebases")
+	codebaseRepository, err := repository.NewPostgresCodebaseRepository(postgresConfig, config.DefaultCodebasesTableName)
 	if err != nil {
 		slog.Error("failed to initialize codebase repository", "error", err)
 		os.Exit(1)
 	}
 
 	// Initialize git repository (this will be used as a template)
-	gitRepo := pkgRepo.NewGitHubRepo(cfg.Git)
+	gitRepo := pkgRepo.NewGitHubCodebase(cfg.Git)
 
 	// Initialize AI factory (factory will create the appropriate services based on AI config)
 	aiFactory := factory.NewAIProviderFactory(

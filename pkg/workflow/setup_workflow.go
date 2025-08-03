@@ -7,12 +7,12 @@ import (
 	"log/slog"
 
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/builder"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/codebase"
 )
 
 // SetupWorkflow represents a workflow for setting up AI resources
 type SetupWorkflow struct {
-	Repository   repository.Repository
+	Repository   codebase.Codebase
 	RAGBuilder   builder.RAGBuilder
 	AgentBuilder builder.AgentBuilder
 
@@ -25,7 +25,7 @@ type SetupWorkflow struct {
 
 // NewSetupWorkflow creates a new SetupWorkflow instance
 func NewSetupWorkflow(
-	repo repository.Repository,
+	repo codebase.Codebase,
 	ragBuilder builder.RAGBuilder,
 	agentBuilder builder.AgentBuilder,
 ) (Workflow, error) {

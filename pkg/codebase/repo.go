@@ -1,11 +1,11 @@
-package repository
+package codebase
 
 import "context"
 
-// Repository is an interface for interacting with a git repository
+// Codebase is an interface for interacting with a git codebase
 //
-//go:generate mockgen -destination=./mocks/mock_repository.go -mock_names=Repository=MockRepository -package=mocks . Repository
-type Repository interface {
+//go:generate mockgen -destination=./mocks/mock_codebase.go -mock_names=Repository=MockRepository -package=mocks . Codebase
+type Codebase interface {
 	// Clone clones a git repository
 	Clone(ctx context.Context) error
 

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	conf "github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 	"github.com/lib/pq"
 )
 
@@ -19,7 +20,7 @@ type PostgresProjectRepository struct {
 // NewPostgresProjectRepository creates a new PostgreSQL project repository
 func NewPostgresProjectRepository(config PostgresConfig, tableName string) (ProjectRepository, error) {
 	if tableName == "" {
-		tableName = "projects"
+		tableName = conf.DefaultProjectsTableName
 	}
 
 	// Build connection string

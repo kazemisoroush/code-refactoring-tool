@@ -9,8 +9,8 @@ import (
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
 	"github.com/kazemisoroush/code-refactoring-tool/api/repository"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/builder"
+	pkgRepo "github.com/kazemisoroush/code-refactoring-tool/pkg/codebase"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
-	pkgRepo "github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/workflow"
 )
 
@@ -19,7 +19,7 @@ type DefaultAgentService struct {
 	gitConfig       config.GitConfig
 	ragBuilder      builder.RAGBuilder
 	agentBuilder    builder.AgentBuilder
-	gitRepository   pkgRepo.Repository
+	gitRepository   pkgRepo.Codebase
 	agentRepository repository.AgentRepository
 }
 
@@ -28,7 +28,7 @@ func NewAgentService(
 	gitConfig config.GitConfig,
 	ragBuilder builder.RAGBuilder,
 	agentBuilder builder.AgentBuilder,
-	gitRepo pkgRepo.Repository,
+	gitRepo pkgRepo.Codebase,
 	agentRepo repository.AgentRepository,
 ) AgentService {
 	return &DefaultAgentService{
@@ -46,10 +46,10 @@ func (s *DefaultAgentService) CreateAgent(ctx context.Context, request models.Cr
 
 	// Create a new repository instance for this request
 	repoConfig := s.gitConfig
-	repoConfig.RepoURL = request.RepositoryURL
+	repoConfig.CodebaseURL = request.RepositoryURL
 	// Note: Branch handling would need to be implemented in repository layer if needed
 
-	repo := pkgRepo.NewGitHubRepo(repoConfig)
+	repo := pkgRepo.NewGitHubCodebase(repoConfig)
 
 	// Create and run setup workflow
 	setupWorkflow, err := workflow.NewSetupWorkflow(repo, s.ragBuilder, s.agentBuilder)

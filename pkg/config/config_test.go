@@ -18,7 +18,7 @@ func TestLoadConfig_IntegrationTest(t *testing.T) {
 	expectedRepoURL := "https://github.com/example/repo.git"
 	expectedToken := "ghp_testtoken123"
 
-	err := os.Setenv("GIT_REPO_URL", expectedRepoURL)
+	err := os.Setenv("GIT_CODEBASE_URL", expectedRepoURL)
 	require.NoError(t, err, "Setenv should not return an error")
 	err = os.Setenv("GIT_TOKEN", expectedToken)
 	require.NoError(t, err, "Setenv should not return an error")
@@ -44,7 +44,7 @@ func TestLoadConfig_IntegrationTest(t *testing.T) {
 	err = os.Setenv("POSTGRES_PASSWORD", "testpassword123")
 	require.NoError(t, err, "Setenv should not return an error")
 
-	defer os.Unsetenv("GIT_REPO_URL")                          //nolint:errcheck
+	defer os.Unsetenv("GIT_CODEBASE_URL")                          //nolint:errcheck
 	defer os.Unsetenv("GIT_TOKEN")                             //nolint:errcheck
 	defer os.Unsetenv("KNOWLEDGE_BASE_SERVICE_ROLE_ARN")       //nolint:errcheck
 	defer os.Unsetenv("AGENT_SERVICE_ROLE_ARN")                //nolint:errcheck
@@ -69,7 +69,7 @@ func TestLoadConfig_IntegrationTest(t *testing.T) {
 
 func TestLoadConfig_MissingVariables(t *testing.T) {
 	// Arrange: Clear environment variables
-	err := os.Unsetenv("GIT_REPO_URL")
+	err := os.Unsetenv("GIT_CODEBASE_URL")
 	require.NoError(t, err, "Unsetenv should not return an error")
 	err = os.Unsetenv("GIT_TOKEN")
 	require.NoError(t, err, "Unsetenv should not return an error")
@@ -83,7 +83,7 @@ func TestLoadConfig_MissingVariables(t *testing.T) {
 
 func TestLoadConfig_InvalidGitHubURL(t *testing.T) {
 	// Arrange: Set an invalid GitHub repo URL
-	err := os.Setenv("GIT_REPO_URL", "https://invalid.com/repo.git")
+	err := os.Setenv("GIT_CODEBASE_URL", "https://invalid.com/repo.git")
 	require.NoError(t, err, "Setenv should not return an error")
 	err = os.Setenv("GIT_TOKEN", "ghp_testtoken123")
 	require.NoError(t, err, "Setenv should not return an error")
@@ -105,7 +105,7 @@ func TestLoadConfig_InvalidGitHubURL(t *testing.T) {
 	err = os.Setenv("POSTGRES_PASSWORD", "testpassword123")
 	require.NoError(t, err, "Setenv should not return an error")
 
-	defer os.Unsetenv("GIT_REPO_URL")                          //nolint:errcheck
+	defer os.Unsetenv("GIT_CODEBASE_URL")                      //nolint:errcheck
 	defer os.Unsetenv("GIT_TOKEN")                             //nolint:errcheck
 	defer os.Unsetenv("KNOWLEDGE_BASE_SERVICE_ROLE_ARN")       //nolint:errcheck
 	defer os.Unsetenv("AGENT_SERVICE_ROLE_ARN")                //nolint:errcheck

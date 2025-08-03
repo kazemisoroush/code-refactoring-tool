@@ -43,6 +43,15 @@ const (
 
 	// AIProviderOpenAI uses OpenAI APIs (future extension)
 	AIProviderOpenAI = "openai"
+
+	// DefaultAgentsTableName is the default name for the agents table
+	DefaultAgentsTableName = "agents"
+
+	// DefaultProjectsTableName is the default name for the projects table
+	DefaultProjectsTableName = "projects"
+
+	// DefaultCodebasesTableName is the default name for the codebases table
+	DefaultCodebasesTableName = "codebases"
 )
 
 var (

@@ -101,10 +101,10 @@ type DatabaseSecret struct {
 
 // GitConfig represents the Git configuration
 type GitConfig struct {
-	RepoURL string `envconfig:"REPO_URL"` // Per-request, not required at startup
-	Token   string `envconfig:"TOKEN" required:"true"`
-	Author  string `envconfig:"AUTHOR" default:"CodeRefactorBot"`
-	Email   string `envconfig:"EMAIL" default:"bot@example.com"`
+	CodebaseURL string `envconfig:"CODEBASE_URL"` // Per-request, not required at startup
+	Token       string `envconfig:"TOKEN" required:"true"`
+	Author      string `envconfig:"AUTHOR" default:"CodeRefactorBot"`
+	Email       string `envconfig:"EMAIL" default:"bot@example.com"`
 }
 
 // validateRepositoryURL ensures the RepoURL matches the expected GitHub URL pattern
@@ -136,8 +136,8 @@ func LoadConfigWithDependencies(loader *Loader) (Config, error) {
 	}
 
 	// Validate RepoURL if provided (it's optional at startup, provided per-request)
-	if cfg.Git.RepoURL != "" {
-		if err := validateRepositoryURL(cfg.Git.RepoURL); err != nil {
+	if cfg.Git.CodebaseURL != "" {
+		if err := validateRepositoryURL(cfg.Git.CodebaseURL); err != nil {
 			return cfg, fmt.Errorf("invalid GitHub repository URL: %w", err)
 		}
 	}
