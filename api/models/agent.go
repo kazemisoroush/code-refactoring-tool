@@ -3,9 +3,99 @@ package models
 
 import (
 	"time"
-
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 )
+
+// AgentStatus represents the current status of an agent
+type AgentStatus string
+
+// Agent status constants define the possible states of an agent
+const (
+	// AgentStatusPending indicates the agent is waiting to be initialized
+	AgentStatusPending AgentStatus = "pending"
+	// AgentStatusInitializing indicates the agent is being set up
+	AgentStatusInitializing AgentStatus = "initializing"
+	// AgentStatusReady indicates the agent is ready to process tasks
+	AgentStatusReady AgentStatus = "ready"
+	// AgentStatusTraining indicates the agent is being trained or updated
+	AgentStatusTraining AgentStatus = "training"
+	// AgentStatusFailed indicates the agent failed to initialize or operate
+	AgentStatusFailed AgentStatus = "failed"
+	// AgentStatusInactive indicates the agent is temporarily disabled
+	AgentStatusInactive AgentStatus = "inactive"
+	// AgentStatusCreating indicates the agent is being created (legacy)
+	AgentStatusCreating AgentStatus = "creating"
+	// AgentStatusError indicates the agent encountered an error (legacy)
+	AgentStatusError AgentStatus = "error"
+	// AgentStatusDeleted indicates the agent has been deleted (legacy)
+	AgentStatusDeleted AgentStatus = "deleted"
+)
+
+// Agent represents a complete agent with its AI configuration
+type Agent struct {
+	AgentID     string      `json:"agent_id" db:"agent_id"`
+	ProjectID   string      `json:"project_id" db:"project_id"`
+	Name        string      `json:"name" db:"name"`
+	Description *string     `json:"description,omitempty" db:"description"`
+	Status      AgentStatus `json:"status" db:"status"`
+
+	// AI Configuration - this is per-agent, not global
+	AIConfig AgentAIConfig `json:"ai_config" db:"ai_config"`
+
+	// Agent capabilities and metadata
+	Capabilities []string `json:"capabilities" db:"capabilities"` // e.g., ["code_analysis", "refactoring", "review"]
+	Version      string   `json:"version" db:"version"`
+
+	// Knowledge base and vector store IDs (provider-specific)
+	KnowledgeBaseID *string `json:"knowledge_base_id,omitempty" db:"knowledge_base_id"`
+	VectorStoreID   *string `json:"vector_store_id,omitempty" db:"vector_store_id"`
+
+	// Timestamps and metadata
+	CreatedAt  time.Time         `json:"created_at" db:"created_at"`
+	UpdatedAt  time.Time         `json:"updated_at" db:"updated_at"`
+	LastUsedAt *time.Time        `json:"last_used_at,omitempty" db:"last_used_at"`
+	Metadata   map[string]string `json:"metadata,omitempty" db:"metadata"`
+	Tags       map[string]string `json:"tags,omitempty" db:"tags"`
+}
+
+// AgentAIConfig represents AI configuration specific to an agent
+type AgentAIConfig struct {
+	Provider AIProvider `json:"provider" db:"provider"` // bedrock, local, openai
+
+	// Provider-specific configurations
+	Local   *LocalAgentConfig   `json:"local,omitempty" db:"local"`
+	Bedrock *BedrockAgentConfig `json:"bedrock,omitempty" db:"bedrock"`
+	OpenAI  *OpenAIAgentConfig  `json:"openai,omitempty" db:"openai"`
+}
+
+// LocalAgentConfig represents local AI configuration for an agent
+type LocalAgentConfig struct {
+	OllamaURL      string  `json:"ollama_url" db:"ollama_url"`
+	Model          string  `json:"model" db:"model"`
+	ChromaURL      string  `json:"chroma_url" db:"chroma_url"`
+	EmbeddingModel string  `json:"embedding_model" db:"embedding_model"`
+	Temperature    float64 `json:"temperature,omitempty" db:"temperature"`
+	MaxTokens      int     `json:"max_tokens,omitempty" db:"max_tokens"`
+}
+
+// BedrockAgentConfig represents AWS Bedrock configuration for an agent
+type BedrockAgentConfig struct {
+	Region                      string  `json:"region" db:"region"`
+	FoundationModel             string  `json:"foundation_model" db:"foundation_model"`
+	EmbeddingModel              string  `json:"embedding_model" db:"embedding_model"`
+	KnowledgeBaseServiceRoleARN string  `json:"knowledge_base_service_role_arn" db:"knowledge_base_service_role_arn"`
+	AgentServiceRoleARN         string  `json:"agent_service_role_arn" db:"agent_service_role_arn"`
+	S3BucketName                string  `json:"s3_bucket_name" db:"s3_bucket_name"`
+	Temperature                 float64 `json:"temperature,omitempty" db:"temperature"`
+	MaxTokens                   int     `json:"max_tokens,omitempty" db:"max_tokens"`
+}
+
+// OpenAIAgentConfig represents OpenAI configuration for an agent (future extension)
+type OpenAIAgentConfig struct {
+	APIKey      string  `json:"api_key" db:"api_key"`
+	Model       string  `json:"model" db:"model"`
+	Temperature float64 `json:"temperature,omitempty" db:"temperature"`
+	MaxTokens   int     `json:"max_tokens,omitempty" db:"max_tokens"`
+}
 
 // CreateAgentRequest represents the request to create a new agent
 type CreateAgentRequest struct {
@@ -16,7 +106,7 @@ type CreateAgentRequest struct {
 	// Optional custom agent name
 	AgentName string `json:"agent_name,omitempty" validate:"omitempty,min=1" example:"my-code-analyzer"`
 	// Optional AI configuration (defaults to platform default if not provided)
-	AIConfig *config.AIConfiguration `json:"ai_config,omitempty"`
+	// AIConfig *config.AIConfiguration `json:"ai_config,omitempty"` // TEMPORARILY DISABLED - will use new AgentAIConfig
 } //@name CreateAgentRequest
 
 // CreateAgentResponse represents the response when creating an agent
@@ -108,21 +198,6 @@ type ListAgentsResponse struct {
 	// Token for next page
 	NextToken string `json:"next_token,omitempty" example:"eyJ0aW1lc3RhbXAiOiIyMDI0LTAxLTE1VDEwOjMwOjAwWiJ9"`
 } //@name ListAgentsResponse
-
-// AgentStatus represents the status of an agent
-type AgentStatus string
-
-// Agent status constants
-const (
-	// AgentStatusCreating indicates the agent is being created
-	AgentStatusCreating AgentStatus = "creating"
-	// AgentStatusReady indicates the agent is ready for use
-	AgentStatusReady AgentStatus = "ready"
-	// AgentStatusError indicates the agent encountered an error
-	AgentStatusError AgentStatus = "error"
-	// AgentStatusDeleted indicates the agent has been deleted
-	AgentStatusDeleted AgentStatus = "deleted"
-)
 
 // ErrorResponse represents an error response
 type ErrorResponse struct {

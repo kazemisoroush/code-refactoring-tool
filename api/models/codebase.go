@@ -33,16 +33,106 @@ func (p Provider) String() string {
 
 // Codebase represents a Git-based repository attached to a Project
 type Codebase struct {
-	CodebaseID    string            `json:"codebaseId" db:"codebase_id"`
-	ProjectID     string            `json:"projectId" db:"project_id"`
-	Name          string            `json:"name" db:"name"`
-	Provider      Provider          `json:"provider" db:"provider"`
-	URL           string            `json:"url" db:"url"`
-	DefaultBranch string            `json:"defaultBranch" db:"default_branch"`
-	CreatedAt     time.Time         `json:"createdAt" db:"created_at"`
-	UpdatedAt     time.Time         `json:"updatedAt" db:"updated_at"`
-	Metadata      map[string]string `json:"metadata,omitempty" db:"metadata"`
-	Tags          map[string]string `json:"tags,omitempty" db:"tags"`
+	CodebaseID    string   `json:"codebase_id" db:"codebase_id"`
+	ProjectID     string   `json:"project_id" db:"project_id"`
+	Name          string   `json:"name" db:"name"`
+	Provider      Provider `json:"provider" db:"provider"`
+	URL           string   `json:"url" db:"url"`
+	DefaultBranch string   `json:"default_branch" db:"default_branch"`
+
+	// Git provider configuration
+	Config GitProviderConfig `json:"config" db:"config"`
+
+	// Status and metadata
+	Status     CodebaseStatus    `json:"status" db:"status"`
+	LastSyncAt *time.Time        `json:"last_sync_at,omitempty" db:"last_sync_at"`
+	CreatedAt  time.Time         `json:"created_at" db:"created_at"`
+	UpdatedAt  time.Time         `json:"updated_at" db:"updated_at"`
+	Metadata   map[string]string `json:"metadata,omitempty" db:"metadata"`
+	Tags       map[string]string `json:"tags,omitempty" db:"tags"`
+}
+
+// CodebaseStatus represents the status of a codebase
+type CodebaseStatus string
+
+const (
+	// CodebaseStatusActive indicates the codebase is active and available
+	CodebaseStatusActive CodebaseStatus = "active"
+	// CodebaseStatusSyncing indicates the codebase is currently syncing
+	CodebaseStatusSyncing CodebaseStatus = "syncing"
+	// CodebaseStatusSyncFailed indicates the last sync attempt failed
+	CodebaseStatusSyncFailed CodebaseStatus = "sync_failed"
+	// CodebaseStatusInactive indicates the codebase is inactive or archived
+	CodebaseStatusInactive CodebaseStatus = "inactive"
+)
+
+// GitProviderConfig represents provider-specific configuration
+type GitProviderConfig struct {
+	// Authentication method
+	AuthType GitAuthType `json:"auth_type" db:"auth_type"`
+
+	// For GitHub
+	GitHub *GitHubConfig `json:"github,omitempty" db:"github"`
+
+	// For GitLab
+	GitLab *GitLabConfig `json:"gitlab,omitempty" db:"gitlab"`
+
+	// For Bitbucket
+	Bitbucket *BitbucketConfig `json:"bitbucket,omitempty" db:"bitbucket"`
+
+	// For custom Git providers
+	Custom *CustomGitConfig `json:"custom,omitempty" db:"custom"`
+}
+
+// GitAuthType represents the type of authentication for Git providers
+type GitAuthType string
+
+const (
+	// GitAuthTypeToken represents a personal access token
+	GitAuthTypeToken GitAuthType = "token"
+
+	// GitAuthTypeOAuth represents an OAuth app
+	GitAuthTypeOAuth GitAuthType = "oauth"
+
+	// GitAuthTypeSSH SSH key
+	GitAuthTypeSSH GitAuthType = "ssh"
+
+	// GitAuthTypeBasic Username/password
+	GitAuthTypeBasic GitAuthType = "basic"
+)
+
+// GitHubConfig represents GitHub-specific configuration
+type GitHubConfig struct {
+	Token        string `json:"token,omitempty" db:"token"`               // PAT or OAuth token
+	Organization string `json:"organization,omitempty" db:"organization"` // GitHub org (if applicable)
+	Repository   string `json:"repository" db:"repository"`               // Repository name
+	Owner        string `json:"owner" db:"owner"`                         // Repository owner
+}
+
+// GitLabConfig represents GitLab-specific configuration
+type GitLabConfig struct {
+	Token     string `json:"token,omitempty" db:"token"`       // PAT or OAuth token
+	BaseURL   string `json:"base_url,omitempty" db:"base_url"` // For self-hosted GitLab
+	ProjectID string `json:"project_id" db:"project_id"`       // GitLab project ID
+	Namespace string `json:"namespace" db:"namespace"`         // GitLab namespace
+}
+
+// BitbucketConfig represents Bitbucket-specific configuration
+type BitbucketConfig struct {
+	Username    string `json:"username,omitempty" db:"username"`         // Bitbucket username
+	AppPassword string `json:"app_password,omitempty" db:"app_password"` // App password
+	Workspace   string `json:"workspace" db:"workspace"`                 // Bitbucket workspace
+	Repository  string `json:"repository" db:"repository"`               // Repository name
+}
+
+// CustomGitConfig represents configuration for custom Git providers
+type CustomGitConfig struct {
+	BaseURL  string            `json:"base_url" db:"base_url"`           // Git provider base URL
+	Token    string            `json:"token,omitempty" db:"token"`       // Authentication token
+	Username string            `json:"username,omitempty" db:"username"` // Username for basic auth
+	Password string            `json:"password,omitempty" db:"password"` // Password for basic auth
+	SSHKey   string            `json:"ssh_key,omitempty" db:"ssh_key"`   // SSH private key
+	Headers  map[string]string `json:"headers,omitempty" db:"headers"`   // Custom headers
 }
 
 // CreateCodebaseRequest represents the request to create a new codebase

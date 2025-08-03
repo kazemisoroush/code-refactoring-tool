@@ -19,8 +19,6 @@ import (
 	"github.com/kazemisoroush/code-refactoring-tool/api/repository"
 	"github.com/kazemisoroush/code-refactoring-tool/api/routes"
 	"github.com/kazemisoroush/code-refactoring-tool/api/services"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/factory"
-	pkgRepo "github.com/kazemisoroush/code-refactoring-tool/pkg/codebase"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 )
 
@@ -57,12 +55,13 @@ func main() {
 		SSLMode:  cfg.Postgres.SSLMode,
 	}
 
-	// Initialize repositories and services
-	agentRepository, err := repository.NewPostgresAgentRepository(postgresConfig, config.DefaultAgentsTableName)
-	if err != nil {
-		slog.Error("failed to initialize agent repository", "error", err)
-		os.Exit(1)
-	}
+	// Initialize repositories
+	// TODO: Enable when AI builder infrastructure is ready
+	// agentRepository, err := repository.NewPostgresAgentRepository(postgresConfig, config.DefaultAgentsTableName)
+	// if err != nil {
+	//     slog.Error("failed to initialize agent repository", "error", err)
+	//     os.Exit(1)
+	// }
 
 	// Initialize project repository
 	projectRepository, err := repository.NewPostgresProjectRepository(postgresConfig, config.DefaultProjectsTableName)
@@ -78,38 +77,28 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Initialize git codebase (this will be used as a template)
-	gitCodebase := pkgRepo.NewGitHubCodebase(cfg.Git)
-
-	// Initialize AI factory (factory will create the appropriate services based on AI config)
-	aiFactory := factory.NewAIProviderFactory(
-		cfg.AWSConfig,
-		&cfg.AI,
-	)
-
-	// Create builders using factory with no specific AI configuration (use platform defaults)
-	ragBuilder, err := aiFactory.CreateRAGBuilder(nil, gitCodebase.GetPath())
+	// Initialize task repository
+	taskRepository, err := repository.NewPostgresTaskRepository(postgresConfig, config.DefaultTasksTableName)
 	if err != nil {
-		slog.Error("failed to create RAG builder", "error", err)
+		slog.Error("failed to initialize task repository", "error", err)
 		os.Exit(1)
 	}
 
-	agentBuilder, err := aiFactory.CreateAgentBuilder(nil, gitCodebase.GetPath())
-	if err != nil {
-		slog.Error("failed to create agent builder", "error", err)
-		os.Exit(1)
-	}
-
-	// Initialize service layer
-	agentService := services.NewDefaultAgentService(cfg.Git, ragBuilder, agentBuilder, gitCodebase, agentRepository)
+	// Initialize service layer - NEW PROJECT-CENTRIC APPROACH
 	projectService := services.NewDefaultProjectService(projectRepository)
 	codebaseService := services.NewDefaultCodebaseService(codebaseRepository)
 	healthService := services.NewDefaultHealthService("code-refactor-tool-api", "1.0.0")
+	taskService := services.NewDefaultTaskService(taskRepository)
 
-	// Initialize controllers
-	agentController := controllers.NewAgentController(agentService)
+	// TODO: Create new AgentService when AI builder infrastructure is ready
+	// Requires: GitConfig, RAGBuilder, AgentBuilder, Codebase, AgentRepository
+	// agentService := services.NewDefaultAgentService(gitConfig, ragBuilder, agentBuilder, gitRepo, agentRepository)
+
+	// Initialize controllers - NEW TASK CONTROLLER ADDED
+	// agentController := controllers.NewAgentController(agentService)
 	projectController := controllers.NewProjectController(projectService)
 	codebaseController := controllers.NewCodebaseController(codebaseService)
+	taskController := controllers.NewTaskController(taskService)
 	healthController := controllers.NewHealthController(healthService)
 
 	// Initialize authentication middleware
@@ -143,23 +132,27 @@ func main() {
 	// Add authentication middleware
 	router.Use(authMiddleware.Handle())
 
-	// Setup API routes
-	v1 := router.Group("/api/v1")
-	{
-		// Keep old routes for backward compatibility (these don't conflict with new ones)
-		v1.POST("/agent/create", agentController.CreateAgent)
-		v1.GET("/agent/:id", agentController.GetAgent)
-		v1.DELETE("/agent/:id", agentController.DeleteAgent)
-	}
+	// Setup API routes - TEMPORARILY DISABLED
+	// v1 := router.Group("/api/v1")
+	// {
+	//     // TEMPORARILY DISABLED - will restore with new architecture
+	//     // v1.POST("/agent/create", agentController.CreateAgent)
+	//     // v1.GET("/agent/:id", agentController.GetAgent)
+	//     // v1.DELETE("/agent/:id", agentController.DeleteAgent)
+	// }
 
 	// Setup agent routes with validation middleware (new standardized routes)
-	routes.SetupAgentRoutes(router, agentController)
+	// TEMPORARILY DISABLED - will restore with new architecture
+	// routes.SetupAgentRoutes(router, agentController)
 
 	// Setup project routes with validation middleware
 	routes.SetupProjectRoutes(router, projectController)
 
 	// Setup codebase routes with validation middleware
 	routes.SetupCodebaseRoutes(router, codebaseController)
+
+	// Setup task routes with validation middleware - NEW!
+	routes.SetupTaskRoutes(router, taskController)
 
 	// Setup health routes with validation middleware
 	routes.SetupHealthRoutes(router, healthController)

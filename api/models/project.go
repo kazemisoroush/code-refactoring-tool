@@ -1,6 +1,57 @@
 // Package models provides data structures for API requests and responses
 package models
 
+import (
+	"time"
+)
+
+// ProjectStatus represents the status of a project
+type ProjectStatus string
+
+// Project status constants
+const (
+	// ProjectStatusActive indicates the project is active
+	ProjectStatusActive ProjectStatus = "active"
+	// ProjectStatusArchived indicates the project is archived
+	ProjectStatusArchived ProjectStatus = "archived"
+	// ProjectStatusDeleted indicates the project has been deleted
+	ProjectStatusDeleted ProjectStatus = "deleted"
+)
+
+// Project represents a complete project with all relationships
+type Project struct {
+	ProjectID   string            `json:"project_id" db:"project_id"`
+	Name        string            `json:"name" db:"name"`
+	Description *string           `json:"description,omitempty" db:"description"`
+	Language    *string           `json:"language,omitempty" db:"language"`
+	Status      ProjectStatus     `json:"status" db:"status"`
+	CreatedAt   time.Time         `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time         `json:"updated_at" db:"updated_at"`
+	Tags        map[string]string `json:"tags,omitempty" db:"tags"`
+	Metadata    map[string]string `json:"metadata,omitempty" db:"metadata"`
+
+	// Relationships (populated when requested) - forward declarations for now
+	CodebaseCount int `json:"codebase_count" db:"-"`
+	AgentCount    int `json:"agent_count" db:"-"`
+	TaskCount     int `json:"task_count" db:"-"`
+}
+
+// ProjectWithCounts represents a project with relationship counts for efficient listing
+type ProjectWithCounts struct {
+	ProjectID     string            `json:"project_id" db:"project_id"`
+	Name          string            `json:"name" db:"name"`
+	Description   *string           `json:"description,omitempty" db:"description"`
+	Language      *string           `json:"language,omitempty" db:"language"`
+	Status        ProjectStatus     `json:"status" db:"status"`
+	CreatedAt     time.Time         `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time         `json:"updated_at" db:"updated_at"`
+	Tags          map[string]string `json:"tags,omitempty" db:"tags"`
+	Metadata      map[string]string `json:"metadata,omitempty" db:"metadata"`
+	CodebaseCount int               `json:"codebase_count" db:"codebase_count"`
+	AgentCount    int               `json:"agent_count" db:"agent_count"`
+	TaskCount     int               `json:"task_count" db:"task_count"`
+}
+
 // CreateProjectRequest represents the request to create a new project
 type CreateProjectRequest struct {
 	// Human-readable project name
@@ -112,16 +163,3 @@ type ProjectSummary struct {
 	// Optional user-defined key-value tags
 	Tags map[string]string `json:"tags,omitempty" example:"env:prod,team:backend"`
 } //@name ProjectSummary
-
-// ProjectStatus represents the status of a project
-type ProjectStatus string
-
-// Project status constants
-const (
-	// ProjectStatusActive indicates the project is active
-	ProjectStatusActive ProjectStatus = "active"
-	// ProjectStatusArchived indicates the project is archived
-	ProjectStatusArchived ProjectStatus = "archived"
-	// ProjectStatusDeleted indicates the project has been deleted
-	ProjectStatusDeleted ProjectStatus = "deleted"
-)

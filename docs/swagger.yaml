@@ -30,11 +30,6 @@ definitions:
         example: my-code-analyzer
         minLength: 1
         type: string
-      ai_config:
-        allOf:
-        - $ref: '#/definitions/config.AIConfiguration'
-        description: Optional AI configuration (defaults to platform default if not
-          provided)
       branch:
         description: Optional branch name, defaults to main
         example: main
@@ -129,6 +124,21 @@ definitions:
         example: proj-12345-abcde
         type: string
     type: object
+  CreateTaskRequest:
+    type: object
+  CreateTaskResponse:
+    properties:
+      created_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/models.TaskStatus'
+        example: pending
+      task_id:
+        example: task-12345-abcde
+        type: string
+    type: object
   DeleteAgentResponse:
     properties:
       agent_id:
@@ -160,6 +170,27 @@ definitions:
       message:
         description: Error message
         example: Invalid request parameters
+        type: string
+    type: object
+  ExecuteTaskRequest:
+    type: object
+  ExecuteTaskResponse:
+    properties:
+      completed_at:
+        example: "2024-01-15T10:35:00Z"
+        type: string
+      created_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      output:
+        additionalProperties: {}
+        type: object
+      status:
+        allOf:
+        - $ref: '#/definitions/models.TaskStatus'
+        example: completed
+      task_id:
+        example: task-12345-abcde
         type: string
     type: object
   GetAgentResponse:
@@ -247,6 +278,52 @@ definitions:
         example: "2024-01-15T10:30:00Z"
         type: string
     type: object
+  GetTaskResponse:
+    properties:
+      agent_id:
+        description: Which agent to use for this task
+        type: string
+      codebase_id:
+        description: 'Optional: specific codebase, if nil uses all project codebases'
+        type: string
+      completed_at:
+        type: string
+      created_at:
+        type: string
+      description:
+        description: User's prompt/instructions
+        type: string
+      error_message:
+        type: string
+      input:
+        additionalProperties: {}
+        description: Additional input parameters
+        type: object
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      output:
+        additionalProperties: {}
+        description: Task results
+        type: object
+      project_id:
+        type: string
+      status:
+        $ref: '#/definitions/models.TaskStatus'
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      task_id:
+        type: string
+      title:
+        type: string
+      type:
+        $ref: '#/definitions/models.TaskType'
+      updated_at:
+        type: string
+    type: object
   HealthCheckResponse:
     properties:
       service:
@@ -293,6 +370,19 @@ definitions:
         items:
           $ref: '#/definitions/ProjectSummary'
         type: array
+    type: object
+  ListTasksResponse:
+    properties:
+      limit:
+        type: integer
+      offset:
+        type: integer
+      tasks:
+        items:
+          $ref: '#/definitions/models.Task'
+        type: array
+      total_count:
+        type: integer
     type: object
   ProjectSummary:
     properties:
@@ -383,46 +473,76 @@ definitions:
         example: "2024-01-15T11:30:00Z"
         type: string
     type: object
-  config.AIConfiguration:
+  UpdateTaskRequest:
     properties:
-      bedrock:
+      error_message:
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      output:
+        additionalProperties: {}
+        type: object
+      status:
         allOf:
-        - $ref: '#/definitions/config.BedrockAIRequestConfig'
-        description: Bedrock configuration (only used if provider is "bedrock")
-      local:
-        allOf:
-        - $ref: '#/definitions/config.LocalAIRequestConfig'
-        description: Local AI configuration (only used if provider is "local")
-      provider:
-        example: bedrock
+        - $ref: '#/definitions/models.TaskStatus'
+        enum:
+        - pending
+        - in_progress
+        - completed
+        - failed
+        - cancelled
+      taskID:
+        example: task-12345-abcde
         type: string
+    required:
+    - taskID
     type: object
-  config.BedrockAIRequestConfig:
+  UpdateTaskResponse:
     properties:
-      agent_service_role_arn:
+      agent_id:
+        description: Which agent to use for this task
         type: string
-      foundation_model:
-        example: amazon.titan-tg1-large
+      codebase_id:
+        description: 'Optional: specific codebase, if nil uses all project codebases'
         type: string
-      knowledge_base_service_role_arn:
+      completed_at:
         type: string
-      region:
-        example: us-west-2
+      created_at:
         type: string
-    type: object
-  config.LocalAIRequestConfig:
-    properties:
-      chroma_url:
-        example: http://localhost:8000
+      description:
+        description: User's prompt/instructions
         type: string
-      embedding_model:
-        example: all-MiniLM-L6-v2
+      error_message:
         type: string
-      model:
-        example: codellama:7b-instruct
+      input:
+        additionalProperties: {}
+        description: Additional input parameters
+        type: object
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      output:
+        additionalProperties: {}
+        description: Task results
+        type: object
+      project_id:
         type: string
-      ollama_url:
-        example: http://localhost:11434
+      status:
+        $ref: '#/definitions/models.TaskStatus'
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      task_id:
+        type: string
+      title:
+        type: string
+      type:
+        $ref: '#/definitions/models.TaskType'
+      updated_at:
         type: string
     type: object
   models.CodebaseSummary:
@@ -544,6 +664,80 @@ definitions:
     - ProviderGitLab
     - ProviderBitbucket
     - ProviderCustom
+  models.Task:
+    properties:
+      agent_id:
+        description: Which agent to use for this task
+        type: string
+      codebase_id:
+        description: 'Optional: specific codebase, if nil uses all project codebases'
+        type: string
+      completed_at:
+        type: string
+      created_at:
+        type: string
+      description:
+        description: User's prompt/instructions
+        type: string
+      error_message:
+        type: string
+      input:
+        additionalProperties: {}
+        description: Additional input parameters
+        type: object
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      output:
+        additionalProperties: {}
+        description: Task results
+        type: object
+      project_id:
+        type: string
+      status:
+        $ref: '#/definitions/models.TaskStatus'
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      task_id:
+        type: string
+      title:
+        type: string
+      type:
+        $ref: '#/definitions/models.TaskType'
+      updated_at:
+        type: string
+    type: object
+  models.TaskStatus:
+    enum:
+    - pending
+    - in_progress
+    - completed
+    - failed
+    - cancelled
+    type: string
+    x-enum-varnames:
+    - TaskStatusPending
+    - TaskStatusInProgress
+    - TaskStatusCompleted
+    - TaskStatusFailed
+    - TaskStatusCancelled
+  models.TaskType:
+    enum:
+    - code_analysis
+    - refactoring
+    - code_review
+    - documentation
+    - custom
+    type: string
+    x-enum-varnames:
+    - TaskTypeCodeAnalysis
+    - TaskTypeRefactoring
+    - TaskTypeCodeReview
+    - TaskTypeDocumentation
+    - TaskTypeCustom
   models.UpdateCodebaseRequest:
     properties:
       codebaseId:
@@ -710,6 +904,251 @@ paths:
       summary: Get an agent by ID
       tags:
       - agents
+  /api/v1/projects/{project_id}/tasks:
+    get:
+      description: List all tasks for a specific project with optional filtering
+      parameters:
+      - description: Project ID
+        in: path
+        name: project_id
+        required: true
+        type: string
+      - description: Filter by task status
+        enum:
+        - pending
+        - in_progress
+        - completed
+        - failed
+        - cancelled
+        in: query
+        name: status
+        type: string
+      - description: Filter by task type
+        enum:
+        - code_analysis
+        - refactoring
+        - code_review
+        - documentation
+        - custom
+        in: query
+        name: type
+        type: string
+      - description: Filter by agent ID
+        in: query
+        name: agent_id
+        type: string
+      - description: Number of results to return (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Number of results to skip (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ListTasksResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List tasks for a project
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      description: Create a new task for a specific project and agent
+      parameters:
+      - description: Project ID
+        in: path
+        name: project_id
+        required: true
+        type: string
+      - description: Task creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/CreateTaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new task
+      tags:
+      - tasks
+  /api/v1/projects/{project_id}/tasks/execute:
+    post:
+      consumes:
+      - application/json
+      description: Create and execute a task immediately (synchronously or asynchronously)
+      parameters:
+      - description: Project ID
+        in: path
+        name: project_id
+        required: true
+        type: string
+      - description: Task execution request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/ExecuteTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Synchronous execution completed
+          schema:
+            $ref: '#/definitions/ExecuteTaskResponse'
+        "202":
+          description: Asynchronous execution started
+          schema:
+            $ref: '#/definitions/ExecuteTaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Execute a task immediately
+      tags:
+      - tasks
+  /api/v1/tasks/{id}:
+    delete:
+      description: Delete a task by its unique identifier
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete a task
+      tags:
+      - tasks
+    get:
+      description: Retrieve a task by its unique identifier
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GetTaskResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a task by ID
+      tags:
+      - tasks
+    put:
+      consumes:
+      - application/json
+      description: Update an existing task's status, output, or metadata
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Task update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/UpdateTaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update a task
+      tags:
+      - tasks
   /codebases:
     get:
       description: Retrieve a list of codebases with optional pagination and filtering

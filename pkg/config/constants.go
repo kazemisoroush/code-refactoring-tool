@@ -52,6 +52,9 @@ const (
 
 	// DefaultCodebasesTableName is the default name for the codebases table
 	DefaultCodebasesTableName = "codebases"
+
+	// DefaultTasksTableName is the default name for the tasks table
+	DefaultTasksTableName = "tasks"
 )
 
 var (

@@ -202,6 +202,371 @@
                 }
             }
         },
+        "/api/v1/projects/{project_id}/tasks": {
+            "get": {
+                "description": "List all tasks for a specific project with optional filtering",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "List tasks for a project",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "pending",
+                            "in_progress",
+                            "completed",
+                            "failed",
+                            "cancelled"
+                        ],
+                        "type": "string",
+                        "description": "Filter by task status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "code_analysis",
+                            "refactoring",
+                            "code_review",
+                            "documentation",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "Filter by task type",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by agent ID",
+                        "name": "agent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of results to return (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of results to skip (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ListTasksResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new task for a specific project and agent",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Create a new task",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Task creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateTaskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/CreateTaskResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{project_id}/tasks/execute": {
+            "post": {
+                "description": "Create and execute a task immediately (synchronously or asynchronously)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Execute a task immediately",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Task execution request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ExecuteTaskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Synchronous execution completed",
+                        "schema": {
+                            "$ref": "#/definitions/ExecuteTaskResponse"
+                        }
+                    },
+                    "202": {
+                        "description": "Asynchronous execution started",
+                        "schema": {
+                            "$ref": "#/definitions/ExecuteTaskResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tasks/{id}": {
+            "get": {
+                "description": "Retrieve a task by its unique identifier",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Get a task by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/GetTaskResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update an existing task's status, output, or metadata",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Update a task",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Task update request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateTaskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/UpdateTaskResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a task by its unique identifier",
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Delete a task",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/codebases": {
             "get": {
                 "description": "Retrieve a list of codebases with optional pagination and filtering",
@@ -781,14 +1146,6 @@
                     "minLength": 1,
                     "example": "my-code-analyzer"
                 },
-                "ai_config": {
-                    "description": "Optional AI configuration (defaults to platform default if not provided)",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/config.AIConfiguration"
-                        }
-                    ]
-                },
                 "branch": {
                     "description": "Optional branch name, defaults to main",
                     "type": "string",
@@ -906,6 +1263,30 @@
                 }
             }
         },
+        "CreateTaskRequest": {
+            "type": "object"
+        },
+        "CreateTaskResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "status": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.TaskStatus"
+                        }
+                    ],
+                    "example": "pending"
+                },
+                "task_id": {
+                    "type": "string",
+                    "example": "task-12345-abcde"
+                }
+            }
+        },
         "DeleteAgentResponse": {
             "type": "object",
             "properties": {
@@ -948,6 +1329,38 @@
                     "description": "Error message",
                     "type": "string",
                     "example": "Invalid request parameters"
+                }
+            }
+        },
+        "ExecuteTaskRequest": {
+            "type": "object"
+        },
+        "ExecuteTaskResponse": {
+            "type": "object",
+            "properties": {
+                "completed_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:35:00Z"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "output": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "status": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.TaskStatus"
+                        }
+                    ],
+                    "example": "completed"
+                },
+                "task_id": {
+                    "type": "string",
+                    "example": "task-12345-abcde"
                 }
             }
         },
@@ -1062,6 +1475,72 @@
                 }
             }
         },
+        "GetTaskResponse": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "description": "Which agent to use for this task",
+                    "type": "string"
+                },
+                "codebase_id": {
+                    "description": "Optional: specific codebase, if nil uses all project codebases",
+                    "type": "string"
+                },
+                "completed_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "description": "User's prompt/instructions",
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "input": {
+                    "description": "Additional input parameters",
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "output": {
+                    "description": "Task results",
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "project_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.TaskStatus"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "task_id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/models.TaskType"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "HealthCheckResponse": {
             "type": "object",
             "properties": {
@@ -1123,6 +1602,26 @@
                     "items": {
                         "$ref": "#/definitions/ProjectSummary"
                     }
+                }
+            }
+        },
+        "ListTasksResponse": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Task"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
                 }
             }
         },
@@ -1241,68 +1740,108 @@
                 }
             }
         },
-        "config.AIConfiguration": {
+        "UpdateTaskRequest": {
             "type": "object",
+            "required": [
+                "taskID"
+            ],
             "properties": {
-                "bedrock": {
-                    "description": "Bedrock configuration (only used if provider is \"bedrock\")",
+                "error_message": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "output": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "status": {
+                    "enum": [
+                        "pending",
+                        "in_progress",
+                        "completed",
+                        "failed",
+                        "cancelled"
+                    ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/config.BedrockAIRequestConfig"
+                            "$ref": "#/definitions/models.TaskStatus"
                         }
                     ]
                 },
-                "local": {
-                    "description": "Local AI configuration (only used if provider is \"local\")",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/config.LocalAIRequestConfig"
-                        }
-                    ]
-                },
-                "provider": {
+                "taskID": {
                     "type": "string",
-                    "example": "bedrock"
+                    "example": "task-12345-abcde"
                 }
             }
         },
-        "config.BedrockAIRequestConfig": {
+        "UpdateTaskResponse": {
             "type": "object",
             "properties": {
-                "agent_service_role_arn": {
+                "agent_id": {
+                    "description": "Which agent to use for this task",
                     "type": "string"
                 },
-                "foundation_model": {
-                    "type": "string",
-                    "example": "amazon.titan-tg1-large"
-                },
-                "knowledge_base_service_role_arn": {
+                "codebase_id": {
+                    "description": "Optional: specific codebase, if nil uses all project codebases",
                     "type": "string"
                 },
-                "region": {
-                    "type": "string",
-                    "example": "us-west-2"
-                }
-            }
-        },
-        "config.LocalAIRequestConfig": {
-            "type": "object",
-            "properties": {
-                "chroma_url": {
-                    "type": "string",
-                    "example": "http://localhost:8000"
+                "completed_at": {
+                    "type": "string"
                 },
-                "embedding_model": {
-                    "type": "string",
-                    "example": "all-MiniLM-L6-v2"
+                "created_at": {
+                    "type": "string"
                 },
-                "model": {
-                    "type": "string",
-                    "example": "codellama:7b-instruct"
+                "description": {
+                    "description": "User's prompt/instructions",
+                    "type": "string"
                 },
-                "ollama_url": {
-                    "type": "string",
-                    "example": "http://localhost:11434"
+                "error_message": {
+                    "type": "string"
+                },
+                "input": {
+                    "description": "Additional input parameters",
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "output": {
+                    "description": "Task results",
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "project_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.TaskStatus"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "task_id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/models.TaskType"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -1475,6 +2014,106 @@
                 "ProviderGitLab",
                 "ProviderBitbucket",
                 "ProviderCustom"
+            ]
+        },
+        "models.Task": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "description": "Which agent to use for this task",
+                    "type": "string"
+                },
+                "codebase_id": {
+                    "description": "Optional: specific codebase, if nil uses all project codebases",
+                    "type": "string"
+                },
+                "completed_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "description": "User's prompt/instructions",
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "input": {
+                    "description": "Additional input parameters",
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "output": {
+                    "description": "Task results",
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "project_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.TaskStatus"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "task_id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/models.TaskType"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.TaskStatus": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "in_progress",
+                "completed",
+                "failed",
+                "cancelled"
+            ],
+            "x-enum-varnames": [
+                "TaskStatusPending",
+                "TaskStatusInProgress",
+                "TaskStatusCompleted",
+                "TaskStatusFailed",
+                "TaskStatusCancelled"
+            ]
+        },
+        "models.TaskType": {
+            "type": "string",
+            "enum": [
+                "code_analysis",
+                "refactoring",
+                "code_review",
+                "documentation",
+                "custom"
+            ],
+            "x-enum-varnames": [
+                "TaskTypeCodeAnalysis",
+                "TaskTypeRefactoring",
+                "TaskTypeCodeReview",
+                "TaskTypeDocumentation",
+                "TaskTypeCustom"
             ]
         },
         "models.UpdateCodebaseRequest": {
