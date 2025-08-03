@@ -38,10 +38,18 @@ func NewPostgresProjectRepository(config PostgresConfig, tableName string) (Proj
 		return nil, fmt.Errorf("failed to ping PostgreSQL database: %w", err)
 	}
 
-	return &PostgresProjectRepository{
+	repo := &PostgresProjectRepository{
 		db:        db,
 		tableName: tableName,
-	}, nil
+	}
+
+	// Create table if it doesn't exist
+	if err := repo.CreateTable(context.Background()); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("failed to create projects table: %w", err)
+	}
+
+	return repo, nil
 }
 
 // NewPostgresProjectRepositoryWithDB creates a new PostgreSQL project repository with an existing DB connection

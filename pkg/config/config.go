@@ -5,7 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -121,6 +124,32 @@ func validateRepositoryURL(url string) error {
 	return nil
 }
 
+// setupLogger configures slog with JSON output and the specified log level
+func setupLogger(level string) {
+	var logLevel slog.Level
+
+	switch strings.ToLower(level) {
+	case "debug":
+		logLevel = slog.LevelDebug
+	case "info":
+		logLevel = slog.LevelInfo
+	case "warn", "warning":
+		logLevel = slog.LevelWarn
+	case "error":
+		logLevel = slog.LevelError
+	default:
+		logLevel = slog.LevelInfo
+	}
+
+	// Create JSON handler with specified log level
+	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: logLevel,
+	})
+
+	// Set the default logger
+	slog.SetDefault(slog.New(handler))
+}
+
 // LoadConfig loads and validates configuration from environment variables and AWS
 func LoadConfig() (Config, error) {
 	return LoadConfigWithDependencies(nil)
@@ -134,6 +163,9 @@ func LoadConfigWithDependencies(loader *Loader) (Config, error) {
 	if err := envconfig.Process("", &cfg); err != nil {
 		return cfg, fmt.Errorf("failed to load environment variables: %w", err)
 	}
+
+	// Setup structured logging as early as possible
+	setupLogger(cfg.LogLevel)
 
 	// Validate RepoURL if provided (it's optional at startup, provided per-request)
 	if cfg.Git.CodebaseURL != "" {

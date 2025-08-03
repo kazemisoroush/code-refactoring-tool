@@ -77,7 +77,7 @@ func TestHealthController_HealthCheck_WithMetrics(t *testing.T) {
 
 	// Create a test router with metrics middleware
 	router := gin.New()
-	router.Use(metricsMiddleware.SetMetricsInContext())
+	router.Use(metricsMiddleware.Handle())
 	router.GET("/health", controller.HealthCheck)
 
 	// Create request

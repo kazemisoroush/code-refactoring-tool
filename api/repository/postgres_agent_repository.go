@@ -51,10 +51,18 @@ func NewPostgresAgentRepository(config PostgresConfig, tableName string) (AgentR
 		return nil, fmt.Errorf("failed to ping PostgreSQL database: %w", err)
 	}
 
-	return &PostgresAgentRepository{
+	repo := &PostgresAgentRepository{
 		db:        db,
 		tableName: tableName,
-	}, nil
+	}
+
+	// Create table if it doesn't exist
+	if err := repo.CreateAgentsTable(context.Background()); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("failed to create agents table: %w", err)
+	}
+
+	return repo, nil
 }
 
 // NewPostgresAgentRepositoryWithDB creates a new PostgreSQL agent repository with an existing DB connection

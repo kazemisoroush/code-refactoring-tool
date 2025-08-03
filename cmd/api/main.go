@@ -22,7 +22,6 @@ import (
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/factory"
 	pkgRepo "github.com/kazemisoroush/code-refactoring-tool/pkg/codebase"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/logging"
 )
 
 // @title Code Refactor Tool API
@@ -48,9 +47,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Setup structured logging
-	logging.SetupLogger(cfg.LogLevel)
-
 	// Initialize Postgres config for repositories
 	postgresConfig := repository.PostgresConfig{
 		Host:     cfg.Postgres.Host,
@@ -75,14 +71,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Create projects table if it doesn't exist
-	if projectRepo, ok := projectRepository.(*repository.PostgresProjectRepository); ok {
-		if err := projectRepo.CreateTable(context.Background()); err != nil {
-			slog.Error("failed to create projects table", "error", err)
-			os.Exit(1)
-		}
-	}
-
 	// Initialize codebase repository
 	codebaseRepository, err := repository.NewPostgresCodebaseRepository(postgresConfig, config.DefaultCodebasesTableName)
 	if err != nil {
@@ -90,8 +78,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Initialize git repository (this will be used as a template)
-	gitRepo := pkgRepo.NewGitHubCodebase(cfg.Git)
+	// Initialize git codebase (this will be used as a template)
+	gitCodebase := pkgRepo.NewGitHubCodebase(cfg.Git)
 
 	// Initialize AI factory (factory will create the appropriate services based on AI config)
 	aiFactory := factory.NewAIProviderFactory(
@@ -100,20 +88,20 @@ func main() {
 	)
 
 	// Create builders using factory with no specific AI configuration (use platform defaults)
-	ragBuilder, err := aiFactory.CreateRAGBuilder(nil, gitRepo.GetPath())
+	ragBuilder, err := aiFactory.CreateRAGBuilder(nil, gitCodebase.GetPath())
 	if err != nil {
 		slog.Error("failed to create RAG builder", "error", err)
 		os.Exit(1)
 	}
 
-	agentBuilder, err := aiFactory.CreateAgentBuilder(nil, gitRepo.GetPath())
+	agentBuilder, err := aiFactory.CreateAgentBuilder(nil, gitCodebase.GetPath())
 	if err != nil {
 		slog.Error("failed to create agent builder", "error", err)
 		os.Exit(1)
 	}
 
 	// Initialize service layer
-	agentService := services.NewDefaultAgentService(cfg.Git, ragBuilder, agentBuilder, gitRepo, agentRepository)
+	agentService := services.NewDefaultAgentService(cfg.Git, ragBuilder, agentBuilder, gitCodebase, agentRepository)
 	projectService := services.NewDefaultProjectService(projectRepository)
 	codebaseService := services.NewDefaultCodebaseService(codebaseRepository)
 	healthService := services.NewDefaultHealthService("code-refactor-tool-api", "1.0.0")
@@ -150,8 +138,7 @@ func main() {
 	router.Use(gin.Recovery())
 
 	// Add metrics middleware (before auth to capture all requests)
-	router.Use(metricsMiddleware.Layer())
-	router.Use(metricsMiddleware.SetMetricsInContext())
+	router.Use(metricsMiddleware.Handle())
 
 	// Add authentication middleware
 	router.Use(authMiddleware.Handle())
@@ -163,8 +150,6 @@ func main() {
 		v1.POST("/agent/create", agentController.CreateAgent)
 		v1.GET("/agent/:id", agentController.GetAgent)
 		v1.DELETE("/agent/:id", agentController.DeleteAgent)
-		// Remove this line as it conflicts with the new route
-		// v1.GET("/agents", agentController.ListAgents)
 	}
 
 	// Setup agent routes with validation middleware (new standardized routes)
@@ -181,9 +166,6 @@ func main() {
 
 	// Setup Swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
-	// Health check (keep old route for backward compatibility)
-	// router.GET("/health", healthController.HealthCheck)
 
 	// Create HTTP server
 	srv := &http.Server{
@@ -207,10 +189,10 @@ func main() {
 	slog.Info("Shutting down server...")
 
 	// Give outstanding requests a deadline for completion
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), time.Duration(cfg.TimeoutSeconds)*time.Second)
+	defer shutdownCancel()
 
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(shutdownCtx); err != nil {
 		slog.Error("Server forced to shutdown", "error", err)
 		os.Exit(1)
 	}

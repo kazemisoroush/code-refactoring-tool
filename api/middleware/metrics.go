@@ -41,9 +41,12 @@ func NewMetricsMiddleware(config config.MetricsConfig) (*MetricsMiddleware, erro
 	}, nil
 }
 
-// Layer is the middleware function that collects HTTP request metrics
-func (m *MetricsMiddleware) Layer() gin.HandlerFunc {
+// Handle is the middleware function that collects HTTP request metrics and sets context
+func (m *MetricsMiddleware) Handle() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Set metrics middleware in context for downstream handlers
+		c.Set("metrics", m)
+
 		if !m.config.Enabled {
 			c.Next()
 			return
@@ -225,12 +228,4 @@ func GetMetricsFromContext(c *gin.Context) *MetricsMiddleware {
 		}
 	}
 	return nil
-}
-
-// SetMetricsInContext stores the metrics middleware in gin context for downstream handlers
-func (m *MetricsMiddleware) SetMetricsInContext() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Set("metrics", m)
-		c.Next()
-	}
 }

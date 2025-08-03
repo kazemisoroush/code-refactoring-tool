@@ -92,7 +92,7 @@ func TestMetricsMiddleware_RequestMetrics_Disabled(t *testing.T) {
 	// Setup test route
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.Use(middleware.Layer())
+	router.Use(middleware.Handle())
 	router.GET("/test", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "success"})
 	})
@@ -128,7 +128,7 @@ func TestMetricsMiddleware_RequestMetrics_Success(t *testing.T) {
 	// Setup test route
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.Use(middleware.Layer())
+	router.Use(middleware.Handle())
 	router.GET("/test", func(c *gin.Context) {
 		time.Sleep(10 * time.Millisecond) // Simulate some processing time
 		c.JSON(http.StatusOK, gin.H{"message": "success"})
@@ -165,7 +165,7 @@ func TestMetricsMiddleware_RequestMetrics_ErrorResponse(t *testing.T) {
 	// Setup test route that returns an error
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.Use(middleware.Layer())
+	router.Use(middleware.Handle())
 	router.GET("/error", func(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
 	})
@@ -241,7 +241,7 @@ func TestGetMetricsFromContext(t *testing.T) {
 	// Setup test route
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.Use(middleware.SetMetricsInContext())
+	router.Use(middleware.Handle())
 	router.GET("/test", func(c *gin.Context) {
 		// Get metrics from context
 		metrics := GetMetricsFromContext(c)
@@ -320,7 +320,7 @@ func TestMetricsMiddleware_SetMetricsInContext(t *testing.T) {
 	// Setup test route
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.Use(middleware.SetMetricsInContext())
+	router.Use(middleware.Handle())
 	router.GET("/test", func(c *gin.Context) {
 		// Verify middleware is in context
 		metricsValue, exists := c.Get("metrics")
