@@ -20,8 +20,6 @@ import (
 	"github.com/kazemisoroush/code-refactoring-tool/api/routes"
 	"github.com/kazemisoroush/code-refactoring-tool/api/services"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/factory"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/rag"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/storage"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/logging"
 	pkgRepo "github.com/kazemisoroush/code-refactoring-tool/pkg/repository"
@@ -106,21 +104,10 @@ func main() {
 	// Initialize git repository (this will be used as a template)
 	gitRepo := pkgRepo.NewGitHubRepo(cfg.Git)
 
-	// Initialize S3 dataStore
-	dataStore := storage.NewS3DataStore(cfg.AWSConfig, cfg.S3BucketName, gitRepo.GetPath())
-
-	// Initialize storage
-	storageService := storage.NewRDSPostgresStorage(cfg.AWSConfig, cfg.RDSPostgres.SchemaEnsureLambdaARN)
-
-	// Initialize RAG pipeline
-	ragService := rag.NewBedrockRAG(cfg.AWSConfig, gitRepo.GetPath(), cfg.KnowledgeBaseServiceRoleARN, cfg.RDSPostgres)
-
-	// Initialize AI factory
+	// Initialize AI factory (factory will create the appropriate services based on AI config)
 	aiFactory := factory.NewAIProviderFactory(
-		&cfg,
-		dataStore,
-		storageService,
-		ragService,
+		cfg.AWSConfig,
+		&cfg.AI,
 	)
 
 	// Create builders using factory with no specific AI configuration (use platform defaults)

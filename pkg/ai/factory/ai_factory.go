@@ -26,37 +26,16 @@ type AIProviderFactory interface {
 }
 
 // DefaultAIProviderFactory is the default implementation of AIProviderFactory
-// DefaultAIProviderFactory is the default implementation of AIProviderFactory
 type DefaultAIProviderFactory struct {
-	awsConfig                   aws.Config
-	s3BucketName                string
-	knowledgeBaseServiceRoleARN string
-	agentServiceRoleARN         string
-	localAIEnabled              bool
-	localOllamaURL              string
-	localModel                  string
-	localChromaURL              string
-	localEmbeddingModel         string
-	dataStore                   storage.DataStore
-	storage                     storage.Storage
-	ragService                  rag.RAG
+	awsConfig aws.Config
+	aiConfig  *config.AIConfig
 }
 
 // NewAIProviderFactory creates a new AI provider factory
-func NewAIProviderFactory(cfg *config.Config, dataStore storage.DataStore, storageService storage.Storage, ragService rag.RAG) AIProviderFactory {
+func NewAIProviderFactory(awsConfig aws.Config, aiConfig *config.AIConfig) AIProviderFactory {
 	return &DefaultAIProviderFactory{
-		awsConfig:                   cfg.AWSConfig,
-		s3BucketName:                cfg.S3BucketName,
-		knowledgeBaseServiceRoleARN: cfg.KnowledgeBaseServiceRoleARN,
-		agentServiceRoleARN:         cfg.AgentServiceRoleARN,
-		localAIEnabled:              cfg.LocalAI.Enabled,
-		localOllamaURL:              cfg.LocalAI.OllamaURL,
-		localModel:                  cfg.LocalAI.Model,
-		localChromaURL:              cfg.LocalAI.ChromaURL,
-		localEmbeddingModel:         cfg.LocalAI.EmbeddingModel,
-		dataStore:                   dataStore,
-		storage:                     storageService,
-		ragService:                  ragService,
+		awsConfig: awsConfig,
+		aiConfig:  aiConfig,
 	}
 }
 
@@ -69,8 +48,17 @@ func (f *DefaultAIProviderFactory) CreateRAGBuilder(aiConfig *config.AIConfigura
 		localConfig := f.getLocalConfig(aiConfig)
 		return builder.NewLocalRAGBuilder(repoPath, localConfig.ChromaURL, localConfig.EmbeddingModel), nil
 	case config.AIProviderBedrock:
-		// Use existing Bedrock RAG builder creation logic
-		return builder.NewBedrockRAGBuilder(repoPath, f.dataStore, f.storage, f.ragService), nil
+		// Create the required services for Bedrock
+		// Create S3 dataStore
+		dataStore := storage.NewS3DataStore(f.awsConfig, f.aiConfig.Bedrock.S3BucketName, repoPath)
+
+		// Create RDS storage service
+		storageService := storage.NewRDSPostgresStorage(f.awsConfig, f.aiConfig.Bedrock.RDSPostgres.SchemaEnsureLambdaARN)
+
+		// Create RAG service
+		ragService := rag.NewBedrockRAG(f.awsConfig, repoPath, f.aiConfig.Bedrock.KnowledgeBaseServiceRoleARN, f.aiConfig.Bedrock.RDSPostgres)
+
+		return builder.NewBedrockRAGBuilder(repoPath, dataStore, storageService, ragService), nil
 	default:
 		return nil, fmt.Errorf("unsupported AI provider: %s", provider)
 	}
@@ -101,7 +89,7 @@ func (f *DefaultAIProviderFactory) getEffectiveProvider(aiConfig *config.AIConfi
 	}
 
 	// 2. Platform-level configuration from environment
-	if f.localAIEnabled {
+	if f.aiConfig.Local.Enabled {
 		return config.AIProviderLocal
 	}
 
@@ -113,10 +101,10 @@ func (f *DefaultAIProviderFactory) getEffectiveProvider(aiConfig *config.AIConfi
 func (f *DefaultAIProviderFactory) getLocalConfig(aiConfig *config.AIConfiguration) *config.LocalAIRequestConfig {
 	// Start with platform defaults
 	localConfig := &config.LocalAIRequestConfig{
-		OllamaURL:      f.localOllamaURL,
-		Model:          f.localModel,
-		ChromaURL:      f.localChromaURL,
-		EmbeddingModel: f.localEmbeddingModel,
+		OllamaURL:      f.aiConfig.Local.OllamaURL,
+		Model:          f.aiConfig.Local.Model,
+		ChromaURL:      f.aiConfig.Local.ChromaURL,
+		EmbeddingModel: f.aiConfig.Local.EmbeddingModel,
 	}
 
 	// Override with user-provided configuration if available
@@ -142,8 +130,8 @@ func (f *DefaultAIProviderFactory) getLocalConfig(aiConfig *config.AIConfigurati
 func (f *DefaultAIProviderFactory) getBedrockConfig(aiConfig *config.AIConfiguration) *config.BedrockAIRequestConfig {
 	// Start with platform defaults
 	bedrockConfig := &config.BedrockAIRequestConfig{
-		KnowledgeBaseServiceRoleARN: f.knowledgeBaseServiceRoleARN,
-		AgentServiceRoleARN:         f.agentServiceRoleARN,
+		KnowledgeBaseServiceRoleARN: f.aiConfig.Bedrock.KnowledgeBaseServiceRoleARN,
+		AgentServiceRoleARN:         f.aiConfig.Bedrock.AgentServiceRoleARN,
 		Region:                      f.awsConfig.Region,
 	}
 

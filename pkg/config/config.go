@@ -23,13 +23,8 @@ type Config struct {
 	Metrics        MetricsConfig  `envconfig:"METRICS"`
 	Postgres       PostgresConfig `envconfig:"POSTGRES"`
 
-	S3BucketName                string      `envconfig:"S3_BUCKET_NAME"`
-	KnowledgeBaseServiceRoleARN string      `envconfig:"KNOWLEDGE_BASE_SERVICE_ROLE_ARN"`
-	AgentServiceRoleARN         string      `envconfig:"AGENT_SERVICE_ROLE_ARN"`
-	RDSPostgres                 RDSPostgres `envconfig:"RDS_POSTGRES"`
-
-	// Local AI configuration
-	LocalAI LocalAIConfig `envconfig:"LOCAL_AI"`
+	// AI configuration (organized by provider)
+	AI AIConfig `envconfig:"AI"`
 }
 
 // LocalAIConfig represents the configuration for local AI services
@@ -39,6 +34,26 @@ type LocalAIConfig struct {
 	Model          string `envconfig:"MODEL" default:"codellama:7b-instruct"`
 	ChromaURL      string `envconfig:"CHROMA_URL" default:"http://localhost:8000"`
 	EmbeddingModel string `envconfig:"EMBEDDING_MODEL" default:"all-MiniLM-L6-v2"`
+}
+
+// BedrockAIConfig represents the configuration for AWS Bedrock AI services
+type BedrockAIConfig struct {
+	Region                      string      `envconfig:"REGION" default:"us-east-1"`
+	KnowledgeBaseServiceRoleARN string      `envconfig:"KNOWLEDGE_BASE_SERVICE_ROLE_ARN"`
+	AgentServiceRoleARN         string      `envconfig:"AGENT_SERVICE_ROLE_ARN"`
+	FoundationModel             string      `envconfig:"FOUNDATION_MODEL" default:"amazon.titan-tg1-large"`
+	S3BucketName                string      `envconfig:"S3_BUCKET_NAME"`
+	RDSPostgres                 RDSPostgres `envconfig:"RDS_POSTGRES"`
+}
+
+// AIConfig represents the overall AI configuration with provider-specific settings
+type AIConfig struct {
+	// Provider selection (can be overridden per request)
+	DefaultProvider string `envconfig:"DEFAULT_PROVIDER" default:"bedrock"`
+
+	// Provider-specific configurations
+	Local   LocalAIConfig   `envconfig:"LOCAL"`
+	Bedrock BedrockAIConfig `envconfig:"BEDROCK"`
 }
 
 // RDSPostgres represents the configuration for AWS RDS Postgres
@@ -145,18 +160,18 @@ func LoadConfigWithDependencies(loader *Loader) (Config, error) {
 	}
 
 	// Only load AWS resources if not using local AI
-	if !cfg.LocalAI.Enabled {
+	if !cfg.AI.Local.Enabled {
 		// Load values from CloudFormation stack if not already set
-		if cfg.KnowledgeBaseServiceRoleARN == "" || cfg.AgentServiceRoleARN == "" ||
-			cfg.S3BucketName == "" || cfg.RDSPostgres.InstanceARN == "" || cfg.RDSPostgres.SchemaEnsureLambdaARN == "" ||
-			cfg.RDSPostgres.CredentialsSecretARN == "" {
+		if cfg.AI.Bedrock.KnowledgeBaseServiceRoleARN == "" || cfg.AI.Bedrock.AgentServiceRoleARN == "" ||
+			cfg.AI.Bedrock.S3BucketName == "" || cfg.AI.Bedrock.RDSPostgres.InstanceARN == "" || cfg.AI.Bedrock.RDSPostgres.SchemaEnsureLambdaARN == "" ||
+			cfg.AI.Bedrock.RDSPostgres.CredentialsSecretARN == "" {
 			if err := loader.LoadStackOutputs(ctx, "CodeRefactorInfra", &cfg); err != nil {
 				return cfg, fmt.Errorf("failed to load stack outputs: %w", err)
 			}
 		}
 
 		// Load database credentials from Secrets Manager if secret ARN is available
-		if err := loader.LoadDatabaseCredentials(ctx, cfg.RDSPostgres.CredentialsSecretARN, &cfg); err != nil {
+		if err := loader.LoadDatabaseCredentials(ctx, cfg.AI.Bedrock.RDSPostgres.CredentialsSecretARN, &cfg); err != nil {
 			return cfg, fmt.Errorf("failed to load database credentials: %w", err)
 		}
 	}

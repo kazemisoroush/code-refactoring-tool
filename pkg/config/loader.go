@@ -35,17 +35,17 @@ func (l *Loader) LoadStackOutputs(ctx context.Context, stackName string, cfg *Co
 	for _, output := range resp.Stacks[0].Outputs {
 		switch *output.OutputKey {
 		case "BedrockKnowledgeBaseRoleArn":
-			cfg.KnowledgeBaseServiceRoleARN = *output.OutputValue
+			cfg.AI.Bedrock.KnowledgeBaseServiceRoleARN = *output.OutputValue
 		case "BedrockAgentRoleArn":
-			cfg.AgentServiceRoleARN = *output.OutputValue
+			cfg.AI.Bedrock.AgentServiceRoleARN = *output.OutputValue
 		case "RDSPostgresSchemaEnsureLambdaARN":
-			cfg.RDSPostgres.SchemaEnsureLambdaARN = *output.OutputValue
+			cfg.AI.Bedrock.RDSPostgres.SchemaEnsureLambdaARN = *output.OutputValue
 		case "BucketName":
-			cfg.S3BucketName = *output.OutputValue
+			cfg.AI.Bedrock.S3BucketName = *output.OutputValue
 		case "RDSPostgresInstanceARN":
-			cfg.RDSPostgres.InstanceARN = *output.OutputValue
+			cfg.AI.Bedrock.RDSPostgres.InstanceARN = *output.OutputValue
 		case "RDSPostgresCredentialsSecretARN":
-			cfg.RDSPostgres.CredentialsSecretARN = *output.OutputValue
+			cfg.AI.Bedrock.RDSPostgres.CredentialsSecretARN = *output.OutputValue
 		}
 	}
 

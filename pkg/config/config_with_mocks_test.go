@@ -105,9 +105,9 @@ func TestLoadConfigWithMocks_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, expectedRepoURL, cfg.Git.RepoURL)
 	assert.Equal(t, expectedToken, cfg.Git.Token)
-	assert.Equal(t, "arn:aws:iam::123456789012:role/KnowledgeBaseRole", cfg.KnowledgeBaseServiceRoleARN)
-	assert.Equal(t, "arn:aws:iam::123456789012:role/AgentRole", cfg.AgentServiceRoleARN)
-	assert.Equal(t, "my-s3-bucket", cfg.S3BucketName)
+	assert.Equal(t, "arn:aws:iam::123456789012:role/KnowledgeBaseRole", cfg.AI.Bedrock.KnowledgeBaseServiceRoleARN)
+	assert.Equal(t, "arn:aws:iam::123456789012:role/AgentRole", cfg.AI.Bedrock.AgentServiceRoleARN)
+	assert.Equal(t, "my-s3-bucket", cfg.AI.Bedrock.S3BucketName)
 
 	// Verify database credentials from Secrets Manager
 	assert.Equal(t, "mydb.cluster-xyz.us-east-1.rds.amazonaws.com", cfg.Postgres.Host)
@@ -181,9 +181,9 @@ func TestLoadConfigWithMocks_NoSecretARN(t *testing.T) {
 
 	// Assert
 	require.NoError(t, err)
-	assert.Equal(t, "arn:aws:iam::123456789012:role/KnowledgeBaseRole", cfg.KnowledgeBaseServiceRoleARN)
-	assert.Equal(t, "arn:aws:iam::123456789012:role/AgentRole", cfg.AgentServiceRoleARN)
-	assert.Equal(t, "my-s3-bucket", cfg.S3BucketName)
+	assert.Equal(t, "arn:aws:iam::123456789012:role/KnowledgeBaseRole", cfg.AI.Bedrock.KnowledgeBaseServiceRoleARN)
+	assert.Equal(t, "arn:aws:iam::123456789012:role/AgentRole", cfg.AI.Bedrock.AgentServiceRoleARN)
+	assert.Equal(t, "my-s3-bucket", cfg.AI.Bedrock.S3BucketName)
 
 	// Database config should use defaults/env vars since no secret was loaded
 	assert.Equal(t, "localhost", cfg.Postgres.Host)
@@ -215,11 +215,11 @@ func TestLoadConfigWithMocks_LocalAIEnabled_SkipsAWSCalls(t *testing.T) {
 	err = os.Setenv("POSTGRES_PASSWORD", "testpassword123")
 	require.NoError(t, err)
 	// Enable LocalAI
-	err = os.Setenv("LOCAL_AI_ENABLED", "true")
+	err = os.Setenv("AI_LOCAL_ENABLED", "true")
 	require.NoError(t, err)
-	err = os.Setenv("LOCAL_AI_OLLAMA_URL", "http://ollama:11434")
+	err = os.Setenv("AI_LOCAL_OLLAMA_URL", "http://ollama:11434")
 	require.NoError(t, err)
-	err = os.Setenv("LOCAL_AI_CHROMA_URL", "http://chromadb:8000")
+	err = os.Setenv("AI_LOCAL_CHROMA_URL", "http://chromadb:8000")
 	require.NoError(t, err)
 
 	defer func() {
@@ -228,9 +228,9 @@ func TestLoadConfigWithMocks_LocalAIEnabled_SkipsAWSCalls(t *testing.T) {
 		os.Unsetenv("COGNITO_USER_POOL_ID") //nolint:errcheck
 		os.Unsetenv("COGNITO_CLIENT_ID")    //nolint:errcheck
 		os.Unsetenv("POSTGRES_PASSWORD")    //nolint:errcheck
-		os.Unsetenv("LOCAL_AI_ENABLED")     //nolint:errcheck
-		os.Unsetenv("LOCAL_AI_OLLAMA_URL")  //nolint:errcheck
-		os.Unsetenv("LOCAL_AI_CHROMA_URL")  //nolint:errcheck
+		os.Unsetenv("AI_LOCAL_ENABLED")     //nolint:errcheck
+		os.Unsetenv("AI_LOCAL_OLLAMA_URL")  //nolint:errcheck
+		os.Unsetenv("AI_LOCAL_CHROMA_URL")  //nolint:errcheck
 	}()
 
 	// Expect NO calls to CloudFormation or Secrets Manager when LocalAI is enabled
@@ -244,19 +244,19 @@ func TestLoadConfigWithMocks_LocalAIEnabled_SkipsAWSCalls(t *testing.T) {
 	require.NoError(t, err)
 
 	// LocalAI config should be loaded
-	assert.True(t, cfg.LocalAI.Enabled)
-	assert.Equal(t, "http://ollama:11434", cfg.LocalAI.OllamaURL)
-	assert.Equal(t, "http://chromadb:8000", cfg.LocalAI.ChromaURL)
-	assert.Equal(t, "codellama:7b-instruct", cfg.LocalAI.Model)     // default value
-	assert.Equal(t, "all-MiniLM-L6-v2", cfg.LocalAI.EmbeddingModel) // default value
+	assert.True(t, cfg.AI.Local.Enabled)
+	assert.Equal(t, "http://ollama:11434", cfg.AI.Local.OllamaURL)
+	assert.Equal(t, "http://chromadb:8000", cfg.AI.Local.ChromaURL)
+	assert.Equal(t, "codellama:7b-instruct", cfg.AI.Local.Model)     // default value
+	assert.Equal(t, "all-MiniLM-L6-v2", cfg.AI.Local.EmbeddingModel) // default value
 
 	// AWS-related config should be empty (not loaded from CloudFormation)
-	assert.Empty(t, cfg.KnowledgeBaseServiceRoleARN)
-	assert.Empty(t, cfg.AgentServiceRoleARN)
-	assert.Empty(t, cfg.S3BucketName)
-	assert.Empty(t, cfg.RDSPostgres.CredentialsSecretARN)
-	assert.Empty(t, cfg.RDSPostgres.InstanceARN)
-	assert.Empty(t, cfg.RDSPostgres.SchemaEnsureLambdaARN)
+	assert.Empty(t, cfg.AI.Bedrock.KnowledgeBaseServiceRoleARN)
+	assert.Empty(t, cfg.AI.Bedrock.AgentServiceRoleARN)
+	assert.Empty(t, cfg.AI.Bedrock.S3BucketName)
+	assert.Empty(t, cfg.AI.Bedrock.RDSPostgres.CredentialsSecretARN)
+	assert.Empty(t, cfg.AI.Bedrock.RDSPostgres.InstanceARN)
+	assert.Empty(t, cfg.AI.Bedrock.RDSPostgres.SchemaEnsureLambdaARN)
 
 	// Database config should use defaults/env vars (not from Secrets Manager)
 	assert.Equal(t, "localhost", cfg.Postgres.Host)
