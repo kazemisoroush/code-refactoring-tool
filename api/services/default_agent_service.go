@@ -23,8 +23,8 @@ type DefaultAgentService struct {
 	agentRepository repository.AgentRepository
 }
 
-// NewAgentService creates a new instance of DefaultAgentService
-func NewAgentService(
+// NewDefaultAgentService creates a new instance of DefaultAgentService
+func NewDefaultAgentService(
 	gitConfig config.GitConfig,
 	ragBuilder builder.RAGBuilder,
 	agentBuilder builder.AgentBuilder,

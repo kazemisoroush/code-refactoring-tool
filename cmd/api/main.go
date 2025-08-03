@@ -113,7 +113,7 @@ func main() {
 	}
 
 	// Initialize service layer
-	agentService := services.NewAgentService(cfg.Git, ragBuilder, agentBuilder, gitRepo, agentRepository)
+	agentService := services.NewDefaultAgentService(cfg.Git, ragBuilder, agentBuilder, gitRepo, agentRepository)
 	projectService := services.NewDefaultProjectService(projectRepository)
 	codebaseService := services.NewDefaultCodebaseService(codebaseRepository)
 	healthService := services.NewDefaultHealthService("code-refactor-tool-api", "1.0.0")

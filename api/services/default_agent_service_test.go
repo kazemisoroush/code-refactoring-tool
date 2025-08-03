@@ -35,7 +35,7 @@ func TestNewAgentService(t *testing.T) {
 	mockAgentRepo := repoMocks.NewMockAgentRepository(ctrl)
 
 	// Act
-	service := NewAgentService(gitConfig, mockRAGBuilder, mockAgentBuilder, mockGitRepo, mockAgentRepo)
+	service := NewDefaultAgentService(gitConfig, mockRAGBuilder, mockAgentBuilder, mockGitRepo, mockAgentRepo)
 
 	// Assert
 	assert.NotNil(t, service)
@@ -69,7 +69,7 @@ func TestDefaultAgentService_GetAgent_Success(t *testing.T) {
 		GetAgent(gomock.Any(), agentID).
 		Return(expectedRecord, nil)
 
-	service := NewAgentService(gitConfig, mockRAGBuilder, mockAgentBuilder, mockGitRepo, mockAgentRepo)
+	service := NewDefaultAgentService(gitConfig, mockRAGBuilder, mockAgentBuilder, mockGitRepo, mockAgentRepo)
 
 	// Act
 	result, err := service.GetAgent(context.Background(), agentID)
@@ -99,7 +99,7 @@ func TestDefaultAgentService_GetAgent_NotFound(t *testing.T) {
 		GetAgent(gomock.Any(), agentID).
 		Return(nil, expectedError)
 
-	service := NewAgentService(gitConfig, mockRAGBuilder, mockAgentBuilder, mockGitRepo, mockAgentRepo)
+	service := NewDefaultAgentService(gitConfig, mockRAGBuilder, mockAgentBuilder, mockGitRepo, mockAgentRepo)
 
 	// Act
 	response, err := service.GetAgent(context.Background(), agentID)
@@ -147,7 +147,7 @@ func TestDefaultAgentService_ListAgents_Success(t *testing.T) {
 		Times(1)
 
 	gitConfig := config.GitConfig{}
-	service := NewAgentService(gitConfig, mockRAGBuilder, mockAgentBuilder, mockGitRepo, mockAgentRepo)
+	service := NewDefaultAgentService(gitConfig, mockRAGBuilder, mockAgentBuilder, mockGitRepo, mockAgentRepo)
 
 	// Act
 	request := models.ListAgentsRequest{}
@@ -179,7 +179,7 @@ func TestDefaultAgentService_ListAgents_RepositoryError(t *testing.T) {
 		Times(1)
 
 	gitConfig := config.GitConfig{}
-	service := NewAgentService(gitConfig, mockRAGBuilder, mockAgentBuilder, mockGitRepo, mockAgentRepo)
+	service := NewDefaultAgentService(gitConfig, mockRAGBuilder, mockAgentBuilder, mockGitRepo, mockAgentRepo)
 
 	// Act
 	request := models.ListAgentsRequest{}
