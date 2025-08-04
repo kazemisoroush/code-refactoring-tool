@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -9,86 +8,17 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang/mock/gomock"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/auth"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/auth/mocks"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
-// MockAuthProvider is a mock implementation of auth.AuthProvider for testing
-type MockAuthProvider struct {
-	mock.Mock
-}
+func TestNewAuthMiddleware(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-func (m *MockAuthProvider) CreateUser(ctx context.Context, req *auth.CreateUserRequest) (*auth.User, error) {
-	args := m.Called(ctx, req)
-	return args.Get(0).(*auth.User), args.Error(1)
-}
-
-func (m *MockAuthProvider) GetUser(ctx context.Context, userID string) (*auth.User, error) {
-	args := m.Called(ctx, userID)
-	return args.Get(0).(*auth.User), args.Error(1)
-}
-
-func (m *MockAuthProvider) GetUserByEmail(ctx context.Context, email string) (*auth.User, error) {
-	args := m.Called(ctx, email)
-	return args.Get(0).(*auth.User), args.Error(1)
-}
-
-func (m *MockAuthProvider) UpdateUser(ctx context.Context, userID string, req *auth.UpdateUserRequest) (*auth.User, error) {
-	args := m.Called(ctx, userID, req)
-	return args.Get(0).(*auth.User), args.Error(1)
-}
-
-func (m *MockAuthProvider) DeleteUser(ctx context.Context, userID string) error {
-	args := m.Called(ctx, userID)
-	return args.Error(0)
-}
-
-func (m *MockAuthProvider) ListUsers(ctx context.Context, req *auth.ListUsersRequest) (*auth.ListUsersResponse, error) {
-	args := m.Called(ctx, req)
-	return args.Get(0).(*auth.ListUsersResponse), args.Error(1)
-}
-
-func (m *MockAuthProvider) SignUp(ctx context.Context, req *auth.SignUpRequest) (*auth.AuthResult, error) {
-	args := m.Called(ctx, req)
-	return args.Get(0).(*auth.AuthResult), args.Error(1)
-}
-
-func (m *MockAuthProvider) SignIn(ctx context.Context, req *auth.SignInRequest) (*auth.AuthResult, error) {
-	args := m.Called(ctx, req)
-	return args.Get(0).(*auth.AuthResult), args.Error(1)
-}
-
-func (m *MockAuthProvider) RefreshToken(ctx context.Context, refreshToken string) (*auth.AuthResult, error) {
-	args := m.Called(ctx, refreshToken)
-	return args.Get(0).(*auth.AuthResult), args.Error(1)
-}
-
-func (m *MockAuthProvider) SignOut(ctx context.Context, accessToken string) error {
-	args := m.Called(ctx, accessToken)
-	return args.Error(0)
-}
-
-func (m *MockAuthProvider) ValidateToken(ctx context.Context, token string) (*auth.TokenClaims, error) {
-	args := m.Called(ctx, token)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*auth.TokenClaims), args.Error(1)
-}
-
-func (m *MockAuthProvider) ResetPassword(ctx context.Context, email string) error {
-	args := m.Called(ctx, email)
-	return args.Error(0)
-}
-
-func (m *MockAuthProvider) ConfirmPasswordReset(ctx context.Context, req *auth.PasswordResetRequest) error {
-	args := m.Called(ctx, req)
-	return args.Error(0)
-}
-
-func TestNewProviderAuthMiddleware(t *testing.T) {
-	mockProvider := &MockAuthProvider{}
+	mockProvider := mocks.NewMockAuthProvider(ctrl)
 	middleware := NewAuthMiddleware(mockProvider)
 
 	assert.NotNil(t, middleware)
@@ -97,8 +27,11 @@ func TestNewProviderAuthMiddleware(t *testing.T) {
 	assert.Equal(t, mockProvider, authMiddleware.authProvider)
 }
 
-func TestProviderAuthMiddleware_Handle_PublicEndpoints(t *testing.T) {
-	mockProvider := &MockAuthProvider{}
+func TestAuthMiddleware_Handle_PublicEndpoints(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockProvider := mocks.NewMockAuthProvider(ctrl)
 	middleware := NewAuthMiddleware(mockProvider)
 
 	gin.SetMode(gin.TestMode)
@@ -133,8 +66,11 @@ func TestProviderAuthMiddleware_Handle_PublicEndpoints(t *testing.T) {
 	}
 }
 
-func TestProviderAuthMiddleware_Handle_MissingAuthorizationHeader(t *testing.T) {
-	mockProvider := &MockAuthProvider{}
+func TestAuthMiddleware_Handle_MissingAuthorizationHeader(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockProvider := mocks.NewMockAuthProvider(ctrl)
 	middleware := NewAuthMiddleware(mockProvider)
 
 	gin.SetMode(gin.TestMode)
@@ -152,8 +88,11 @@ func TestProviderAuthMiddleware_Handle_MissingAuthorizationHeader(t *testing.T) 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
-func TestProviderAuthMiddleware_Handle_InvalidAuthorizationFormat(t *testing.T) {
-	mockProvider := &MockAuthProvider{}
+func TestAuthMiddleware_Handle_InvalidAuthorizationFormat(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockProvider := mocks.NewMockAuthProvider(ctrl)
 	middleware := NewAuthMiddleware(mockProvider)
 
 	gin.SetMode(gin.TestMode)
@@ -187,8 +126,11 @@ func TestProviderAuthMiddleware_Handle_InvalidAuthorizationFormat(t *testing.T) 
 	}
 }
 
-func TestProviderAuthMiddleware_Handle_ValidToken(t *testing.T) {
-	mockProvider := &MockAuthProvider{}
+func TestAuthMiddleware_Handle_ValidToken(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockProvider := mocks.NewMockAuthProvider(ctrl)
 	middleware := NewAuthMiddleware(mockProvider)
 
 	gin.SetMode(gin.TestMode)
@@ -203,7 +145,7 @@ func TestProviderAuthMiddleware_Handle_ValidToken(t *testing.T) {
 		IssuedAt:  time.Now(),
 		ExpiresAt: time.Now().Add(time.Hour),
 	}
-	mockProvider.On("ValidateToken", mock.Anything, "valid-token").Return(expectedClaims, nil)
+	mockProvider.EXPECT().ValidateToken(gomock.Any(), "valid-token").Return(expectedClaims, nil)
 
 	router.Use(middleware.Handle())
 	router.GET("/api/projects", func(c *gin.Context) {
@@ -228,11 +170,13 @@ func TestProviderAuthMiddleware_Handle_ValidToken(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	mockProvider.AssertExpectations(t)
 }
 
-func TestProviderAuthMiddleware_Handle_InvalidToken(t *testing.T) {
-	mockProvider := &MockAuthProvider{}
+func TestAuthMiddleware_Handle_InvalidToken(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockProvider := mocks.NewMockAuthProvider(ctrl)
 	middleware := NewAuthMiddleware(mockProvider)
 
 	gin.SetMode(gin.TestMode)
@@ -240,7 +184,7 @@ func TestProviderAuthMiddleware_Handle_InvalidToken(t *testing.T) {
 	_, router := gin.CreateTestContext(w)
 
 	// Mock token validation failure
-	mockProvider.On("ValidateToken", mock.Anything, "invalid-token").Return(nil, errors.New("token expired"))
+	mockProvider.EXPECT().ValidateToken(gomock.Any(), "invalid-token").Return(nil, errors.New("token expired"))
 
 	router.Use(middleware.Handle())
 	router.GET("/api/projects", func(c *gin.Context) {
@@ -252,11 +196,13 @@ func TestProviderAuthMiddleware_Handle_InvalidToken(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	mockProvider.AssertExpectations(t)
 }
 
 func TestAuthMiddleware_IsPublicEndpoint(t *testing.T) {
-	mockProvider := &MockAuthProvider{}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockProvider := mocks.NewMockAuthProvider(ctrl)
 	middleware := NewAuthMiddleware(mockProvider).(*AuthMiddleware)
 
 	tests := []struct {
