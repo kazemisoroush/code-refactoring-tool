@@ -8,3 +8,5 @@ __pycache__
 code-refactoring-tool
 config.test
 api-server
+main
+build-test

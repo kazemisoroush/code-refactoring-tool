@@ -57,7 +57,8 @@ func main() {
 	}
 
 	// Initialize repositories
-	// TODO: Enable when AI builder infrastructure is ready
+	// NOTE: Agent repository temporarily disabled for API-first development
+	// Will be enabled when full AWS infrastructure is required
 	// agentRepository, err := repository.NewPostgresAgentRepository(postgresConfig, config.DefaultAgentsTableName)
 	// if err != nil {
 	//     slog.Error("failed to initialize agent repository", "error", err)
@@ -88,7 +89,7 @@ func main() {
 	// Initialize service layer - PHASE 3: API-FIRST DEPENDENCY INJECTION
 
 	// For now, create a simple factory without full AWS config
-	// TODO: Implement full AWS config loading in Phase 4
+	// NOTE: Full AWS config loading will be implemented when infrastructure scaling is needed
 	aiFactory := factory.NewTaskExecutionFactory(
 		cfg.AWSConfig,          // Use AWS config from main config
 		config.LocalAIConfig{}, // Empty for now
@@ -100,20 +101,17 @@ func main() {
 	codebaseService := services.NewDefaultCodebaseService(codebaseRepository)
 	healthService := services.NewDefaultHealthService("code-refactor-tool-api", "1.0.0")
 
-	// Create temporary agent repository - TODO: Enable actual agent repository in Phase 4
-	// agentRepository := repository.NewPostgresAgentRepository(postgresConfig, config.DefaultAgentsTableName)
-
-	// NEW: Task service with dynamic AI capabilities and dependency injection
+	// Agent repository temporarily nil for API-first development
 	taskService := services.NewTaskService(
 		taskRepository,
 		projectRepository,
-		nil, // agentRepository - will be enabled in Phase 4
+		nil, // agentRepository - will be enabled when full AWS infrastructure is required
 		codebaseRepository,
 		aiFactory,
 	)
 
-	// TODO: Create new AgentService when AI builder infrastructure is ready
-	// Requires: GitConfig, RAGBuilder, AgentBuilder, Codebase, AgentRepository
+	// NOTE: AgentService creation deferred until full AWS infrastructure is required
+	// Will need: GitConfig, RAGBuilder, AgentBuilder, Codebase, AgentRepository
 	// agentService := services.NewDefaultAgentService(gitConfig, ragBuilder, agentBuilder, gitRepo, agentRepository)
 
 	// Initialize controllers - NEW TASK CONTROLLER ADDED

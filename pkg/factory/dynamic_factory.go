@@ -151,34 +151,40 @@ func (f *DefaultTaskExecutionFactory) createBedrockAgent(ctx context.Context, co
 	return f.bedrockAgentBuilder.Build(ctx, ragID)
 }
 
-func (f *DefaultTaskExecutionFactory) createLocalAgent(_ context.Context, config *models.LocalAgentConfig, task *models.TaskWithFullContext) (string, string, error) {
+func (f *DefaultTaskExecutionFactory) createLocalAgent(ctx context.Context, config *models.LocalAgentConfig, task *models.TaskWithFullContext) (string, string, error) {
 	if config == nil {
 		return "", "", fmt.Errorf("local configuration is required")
 	}
 
-	// TODO: Implement local agent creation with existing builder pattern
-	_ = task // Acknowledge task parameter usage will be implemented later
-	return "", "", fmt.Errorf("local agent creation not yet implemented")
+	// Use existing LocalAgentBuilder
+	builder := builder.NewLocalAgentBuilder(config.OllamaURL, config.Model)
+
+	// We don't have a specific RAG ID for local, use a placeholder
+	ragID := "local-rag-" + task.TaskID
+
+	return builder.Build(ctx, ragID)
 }
 
 // Private helper methods for creating RAG instances
 func (f *DefaultTaskExecutionFactory) createBedrockRAG(ctx context.Context, _ *models.CodebaseWithContext) (string, error) {
 	// Initialize Bedrock RAG builder if not already done
 	if f.bedrockRAGBuilder == nil {
-		// TODO: Check existing BedrockRAGBuilder constructor parameters
-		// For now, return an error indicating this needs to be implemented
-		_ = ctx // Acknowledge ctx parameter usage will be implemented later
-		return "", fmt.Errorf("bedrock RAG builder initialization not yet implemented - requires proper constructor parameters")
+		return "", fmt.Errorf("bedrock RAG builder not initialized - requires dataStore, storage, and rag dependencies")
 	}
 
 	// Build RAG pipeline
 	return f.bedrockRAGBuilder.Build(ctx)
 }
 
-func (f *DefaultTaskExecutionFactory) createLocalRAG(_ context.Context, cb *models.CodebaseWithContext) (string, error) {
-	// TODO: Implement local RAG creation
-	_ = cb // Acknowledge cb parameter usage will be implemented later
-	return "", fmt.Errorf("local RAG creation not yet implemented")
+func (f *DefaultTaskExecutionFactory) createLocalRAG(ctx context.Context, _ *models.CodebaseWithContext) (string, error) {
+	// Use existing LocalRAGBuilder
+	// Default local configuration - in production this would come from config
+	repoPath := "/tmp/local-repos" // Default path for local repos
+	chromaURL := "http://localhost:8000"
+	embeddingModel := "nomic-embed-text"
+
+	builder := builder.NewLocalRAGBuilder(repoPath, chromaURL, embeddingModel)
+	return builder.Build(ctx)
 }
 
 // Private validation methods

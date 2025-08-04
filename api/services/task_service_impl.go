@@ -310,18 +310,47 @@ func (s *TaskServiceImpl) loadTaskWithFullContext(ctx context.Context, taskID st
 		}
 	}
 
-	// For now, we'll simplify the context loading
-	// In Phase 3, we'll implement proper resource conversion
-	taskContext := &models.TaskWithFullContext{
-		Task:     *task,
-		Project:  nil, // TODO: Convert ProjectRecord to Project model
-		Agent:    nil, // TODO: Convert AgentRecord to Agent model
-		Codebase: nil,
+	// Convert repository records to API models
+	var projectModel *models.Project
+	if project != nil {
+		projectModel = &models.Project{
+			ProjectID:   project.ProjectID,
+			Name:        project.Name,
+			Description: project.Description,
+			Language:    project.Language,
+			Status:      models.ProjectStatus(project.Status),
+			CreatedAt:   project.CreatedAt,
+			UpdatedAt:   project.UpdatedAt,
+			Tags:        project.Tags,
+			Metadata:    project.Metadata,
+		}
 	}
 
-	// We have the records available for validation
-	_ = project // ProjectRecord available for business logic
-	_ = agent   // AgentRecord available for business logic
+	var agentModel *models.Agent
+	if agent != nil {
+		agentModel = &models.Agent{
+			AgentID:   agent.AgentID,
+			ProjectID: task.ProjectID, // From task context
+			Name:      agent.AgentName,
+			Status:    models.AgentStatus(agent.Status),
+			Version:   agent.AgentVersion,
+			CreatedAt: agent.CreatedAt,
+			UpdatedAt: agent.UpdatedAt,
+		}
+		if agent.KnowledgeBaseID != "" {
+			agentModel.KnowledgeBaseID = &agent.KnowledgeBaseID
+		}
+		if agent.VectorStoreID != "" {
+			agentModel.VectorStoreID = &agent.VectorStoreID
+		}
+	}
+
+	taskContext := &models.TaskWithFullContext{
+		Task:     *task,
+		Project:  projectModel,
+		Agent:    agentModel,
+		Codebase: nil,
+	}
 
 	// Load codebase if specified
 	if task.CodebaseID != nil {

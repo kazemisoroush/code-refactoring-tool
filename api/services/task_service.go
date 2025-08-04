@@ -30,5 +30,5 @@ type TaskService interface {
 	ExecuteTask(ctx context.Context, req *models.ExecuteTaskRequest) (*models.ExecuteTaskResponse, error)
 }
 
-// TODO: ProjectTaskService implementation will be restored when AI factory integration is ready
-// Currently using DefaultTaskService which has a simpler implementation
+// NOTE: TaskServiceImpl provides full AI factory integration for task execution
+// See task_service_impl.go for the complete implementation
