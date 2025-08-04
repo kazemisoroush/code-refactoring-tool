@@ -5,30 +5,7 @@ import (
 	"github.com/kazemisoroush/code-refactoring-tool/api/controllers"
 	"github.com/kazemisoroush/code-refactoring-tool/api/middleware"
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/auth"
 )
-
-// SetupRoutesWithAuth configures all routes with authentication middleware
-func SetupRoutesWithAuth(
-	router *gin.Engine,
-	authProvider auth.AuthProvider,
-	projectController *controllers.ProjectController,
-	codebaseController *controllers.CodebaseController,
-	agentController *controllers.AgentController,
-	healthController *controllers.HealthController,
-) {
-	// Set up authentication middleware
-	authMiddleware := middleware.NewAuthMiddleware(authProvider)
-
-	// Apply auth middleware globally (except for public endpoints)
-	router.Use(authMiddleware.Handle())
-
-	// Set up all routes
-	SetupProjectRoutes(router, projectController)
-	SetupCodebaseRoutes(router, codebaseController)
-	SetupAgentRoutes(router, agentController)
-	SetupHealthRoutes(router, healthController)
-}
 
 // SetupProjectRoutes configures the project routes with generic validation middleware
 // This demonstrates the new annotation-based validation approach
