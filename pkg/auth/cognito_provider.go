@@ -8,26 +8,19 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 )
-
-// CognitoConfig contains configuration for Cognito authentication
-type CognitoConfig struct {
-	UserPoolID   string
-	ClientID     string
-	ClientSecret *string // Optional, for confidential clients
-	Region       string
-}
 
 // CognitoProvider implements AuthProvider using AWS Cognito
 type CognitoProvider struct {
 	client *cognitoidentityprovider.Client
-	config CognitoConfig
+	config config.CognitoConfig
 }
 
 // NewCognitoProvider creates a new Cognito authentication provider
-func NewCognitoProvider(client *cognitoidentityprovider.Client, config CognitoConfig) *CognitoProvider {
+func NewCognitoProvider(awsConfig aws.Config, config config.CognitoConfig) *CognitoProvider {
 	return &CognitoProvider{
-		client: client,
+		client: cognitoidentityprovider.NewFromConfig(awsConfig),
 		config: config,
 	}
 }

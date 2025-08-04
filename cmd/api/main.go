@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -63,15 +62,6 @@ func main() {
 		SSLMode:  cfg.Postgres.SSLMode,
 	}
 
-	// Initialize repositories
-	// NOTE: Agent repository temporarily disabled for API-first development
-	// Will be enabled when full AWS infrastructure is required
-	// agentRepository, err := repository.NewPostgresAgentRepository(postgresConfig, config.DefaultAgentsTableName)
-	// if err != nil {
-	//     slog.Error("failed to initialize agent repository", "error", err)
-	//     os.Exit(1)
-	// }
-
 	// Initialize project repository
 	projectRepository, err := repository.NewPostgresProjectRepository(postgresConfig, appconfig.DefaultProjectsTableName)
 	if err != nil {
@@ -93,10 +83,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Initialize service layer - PHASE 3: API-FIRST DEPENDENCY INJECTION
-
-	// For now, create a simple factory without full AWS config
-	// NOTE: Full AWS config loading will be implemented when infrastructure scaling is needed
+	// TODO: Arguments here needs to be fixed
 	aiFactory := factory.NewTaskExecutionFactory(
 		cfg.AWSConfig,             // Use AWS config from main config
 		appconfig.LocalAIConfig{}, // Empty for now
@@ -112,17 +99,12 @@ func main() {
 	taskService := services.NewTaskService(
 		taskRepository,
 		projectRepository,
-		nil, // agentRepository - will be enabled when full AWS infrastructure is required
+		// TODO: agentRepository - will be enabled when full AWS infrastructure is required
+		nil,
 		codebaseRepository,
 		aiFactory,
 	)
 
-	// NOTE: AgentService creation deferred until full AWS infrastructure is required
-	// Will need: GitConfig, RAGBuilder, AgentBuilder, Codebase, AgentRepository
-	// agentService := services.NewDefaultAgentService(gitConfig, ragBuilder, agentBuilder, gitRepo, agentRepository)
-
-	// Initialize controllers - NEW TASK CONTROLLER ADDED
-	// agentController := controllers.NewAgentController(agentService)
 	projectController := controllers.NewProjectController(projectService)
 	codebaseController := controllers.NewCodebaseController(codebaseService)
 	taskController := controllers.NewTaskController(taskService)
@@ -135,17 +117,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Initialize Cognito client
-	cognitoClient := cognitoidentityprovider.NewFromConfig(awsConfig)
-
-	// Initialize Cognito provider
-	cognitoProvider := auth.NewCognitoProvider(cognitoClient, auth.CognitoConfig{
-		UserPoolID: cfg.Cognito.UserPoolID,
-		Region:     cfg.Cognito.Region,
-		ClientID:   cfg.Cognito.ClientID,
-	})
-
-	// Initialize authentication middleware
+	// Initialize Cognito provider and authentication middleware
+	cognitoProvider := auth.NewCognitoProvider(awsConfig, cfg.Cognito)
 	authMiddleware := middleware.NewAuthMiddleware(cognitoProvider)
 
 	// Initialize metrics middleware
@@ -171,19 +144,6 @@ func main() {
 
 	// Add authentication middleware
 	router.Use(authMiddleware.Handle())
-
-	// Setup API routes - TEMPORARILY DISABLED
-	// v1 := router.Group("/api/v1")
-	// {
-	//     // TEMPORARILY DISABLED - will restore with new architecture
-	//     // v1.POST("/agent/create", agentController.CreateAgent)
-	//     // v1.GET("/agent/:id", agentController.GetAgent)
-	//     // v1.DELETE("/agent/:id", agentController.DeleteAgent)
-	// }
-
-	// Setup agent routes with validation middleware (new standardized routes)
-	// TEMPORARILY DISABLED - will restore with new architecture
-	// routes.SetupAgentRoutes(router, agentController)
 
 	// Setup project routes with validation middleware
 	routes.SetupProjectRoutes(router, projectController)

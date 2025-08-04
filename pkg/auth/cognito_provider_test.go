@@ -5,12 +5,15 @@ import (
 	"context"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCognitoProvider_SignIn(t *testing.T) {
-	config := CognitoConfig{
+	awsConfig := aws.Config{Region: "us-east-1"}
+	cognitoConfig := config.CognitoConfig{
 		UserPoolID: "us-east-1_example",
 		ClientID:   "test-client-id",
 		Region:     "us-east-1",
@@ -20,13 +23,14 @@ func TestCognitoProvider_SignIn(t *testing.T) {
 	t.Run("successful sign in", func(t *testing.T) {
 		// This test demonstrates the abstraction -
 		// the client doesn't know it's using Cognito underneath
-		provider := NewCognitoProvider(nil, config)
+		provider := NewCognitoProvider(awsConfig, cognitoConfig)
 		assert.NotNil(t, provider)
 	})
 }
 
 func TestCognitoProvider_CreateUser(t *testing.T) {
-	config := CognitoConfig{
+	awsConfig := aws.Config{Region: "us-east-1"}
+	cognitoConfig := config.CognitoConfig{
 		UserPoolID: "us-east-1_example",
 		ClientID:   "test-client-id",
 		Region:     "us-east-1",
@@ -45,7 +49,7 @@ func TestCognitoProvider_CreateUser(t *testing.T) {
 			Password:  &password,
 		}
 
-		provider := NewCognitoProvider(nil, config)
+		provider := NewCognitoProvider(awsConfig, cognitoConfig)
 		assert.NotNil(t, provider)
 
 		// This test demonstrates that our provider implements the AuthProvider interface
@@ -65,14 +69,15 @@ func TestCognitoProvider_CreateUser(t *testing.T) {
 }
 
 func TestCognitoProvider_ValidateToken(t *testing.T) {
-	config := CognitoConfig{
+	awsConfig := aws.Config{Region: "us-east-1"}
+	cognitoConfig := config.CognitoConfig{
 		UserPoolID: "us-east-1_example",
 		ClientID:   "test-client-id",
 		Region:     "us-east-1",
 	}
 
 	t.Run("interface compatibility", func(t *testing.T) {
-		provider := NewCognitoProvider(nil, config)
+		provider := NewCognitoProvider(awsConfig, cognitoConfig)
 
 		// This demonstrates the key abstraction:
 		// ValidateToken returns generic TokenClaims regardless of provider
@@ -92,11 +97,12 @@ func TestAbstractionExample(t *testing.T) {
 		// This is the key benefit: client code can work with any provider
 
 		// Could be Cognito
-		cognitoConfig := CognitoConfig{
+		awsConfig := aws.Config{Region: "us-east-1"}
+		cognitoConfig := config.CognitoConfig{
 			UserPoolID: "us-east-1_example",
 			ClientID:   "cognito-client-id",
 		}
-		cognitoProvider := NewCognitoProvider(nil, cognitoConfig)
+		cognitoProvider := NewCognitoProvider(awsConfig, cognitoConfig)
 
 		// Could be Auth0, Firebase, or any other provider
 		// auth0Provider := NewAuth0Provider(auth0Config)
@@ -145,12 +151,13 @@ func TestCognitoIntegration(t *testing.T) {
 
 // TestErrorMapping verifies that Cognito errors are properly mapped to our generic errors
 func TestCognitoProvider_ErrorMapping(t *testing.T) {
-	config := CognitoConfig{
+	awsConfig := aws.Config{Region: "us-east-1"}
+	cognitoConfig := config.CognitoConfig{
 		UserPoolID: "us-east-1_example",
 		ClientID:   "test-client-id",
 	}
 
-	provider := NewCognitoProvider(nil, config)
+	provider := NewCognitoProvider(awsConfig, cognitoConfig)
 
 	t.Run("maps Cognito errors to generic errors", func(t *testing.T) {
 		// Test that Cognito-specific errors become generic errors
@@ -189,12 +196,13 @@ func TestCognitoProvider_ErrorMapping(t *testing.T) {
 
 // TestUserStatusMapping verifies that Cognito user statuses map correctly
 func TestCognitoProvider_UserStatusMapping(t *testing.T) {
-	config := CognitoConfig{
+	awsConfig := aws.Config{Region: "us-east-1"}
+	cognitoConfig := config.CognitoConfig{
 		UserPoolID: "us-east-1_example",
 		ClientID:   "test-client-id",
 	}
 
-	provider := NewCognitoProvider(nil, config)
+	provider := NewCognitoProvider(awsConfig, cognitoConfig)
 
 	t.Run("maps Cognito user status to generic status", func(t *testing.T) {
 		tests := []struct {
@@ -216,12 +224,13 @@ func TestCognitoProvider_UserStatusMapping(t *testing.T) {
 
 // BenchmarkCognitoProvider_SignIn benchmarks the sign in performance
 func BenchmarkCognitoProvider_SignIn(b *testing.B) {
-	config := CognitoConfig{
+	awsConfig := aws.Config{Region: "us-east-1"}
+	cognitoConfig := config.CognitoConfig{
 		UserPoolID: "us-east-1_example",
 		ClientID:   "test-client-id",
 	}
 
-	provider := NewCognitoProvider(nil, config)
+	provider := NewCognitoProvider(awsConfig, cognitoConfig)
 	ctx := context.Background()
 
 	req := &SignInRequest{
