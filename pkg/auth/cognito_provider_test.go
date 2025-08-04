@@ -1,4 +1,4 @@
-//go:generate mockgen -source=cognito_provider.go -destination=mocks/mock_cognito_provider.go -package=mocks
+// Package auth provides authentication providers for various services like AWS Cognito.
 package auth
 
 import (
