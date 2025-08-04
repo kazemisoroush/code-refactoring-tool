@@ -231,18 +231,20 @@ func TestValidateURI_InvalidProjectID(t *testing.T) {
 		projectID      string
 		expectedError  string
 		expectedStatus int
+		shouldFail     bool
 	}{
 		{
-			name:           "invalid project ID format",
-			projectID:      "invalid-id",
-			expectedError:  "ID must start with 'proj-' followed by alphanumeric characters",
-			expectedStatus: http.StatusBadRequest,
+			name:           "valid project ID",
+			projectID:      "any-non-empty-id",
+			expectedStatus: http.StatusOK,
+			shouldFail:     false,
 		},
 		{
 			name:           "empty project ID",
 			projectID:      "",
 			expectedError:  "ID is required",
 			expectedStatus: http.StatusBadRequest,
+			shouldFail:     true,
 		},
 	}
 
@@ -260,23 +262,28 @@ func TestValidateURI_InvalidProjectID(t *testing.T) {
 			middleware(c)
 
 			// Assert
-			assert.True(t, c.IsAborted())
-			assert.Equal(t, tt.expectedStatus, w.Code)
+			if tt.shouldFail {
+				assert.True(t, c.IsAborted())
+				assert.Equal(t, tt.expectedStatus, w.Code)
 
-			var response map[string]interface{}
-			err := json.Unmarshal(w.Body.Bytes(), &response)
-			require.NoError(t, err)
+				var response map[string]interface{}
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				require.NoError(t, err)
 
-			// Check if the error message is in message or details field
-			errorMessage := ""
-			if msg, ok := response["message"].(string); ok {
-				errorMessage += msg
+				// Check if the error message is in message or details field
+				errorMessage := ""
+				if msg, ok := response["message"].(string); ok {
+					errorMessage += msg
+				}
+				if details, ok := response["details"].(string); ok {
+					errorMessage += details
+				}
+
+				assert.Contains(t, errorMessage, tt.expectedError)
+			} else {
+				assert.False(t, c.IsAborted())
+				assert.Equal(t, tt.expectedStatus, w.Code)
 			}
-			if details, ok := response["details"].(string); ok {
-				errorMessage += " " + details
-			}
-
-			assert.Contains(t, errorMessage, tt.expectedError)
 		})
 	}
 }

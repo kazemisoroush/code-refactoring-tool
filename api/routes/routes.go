@@ -28,21 +28,21 @@ func SetupProjectRoutes(router *gin.Engine, controller *controllers.ProjectContr
 
 		// GET by ID - validate URI parameters using struct tags
 		// The middleware automatically validates based on the struct tags in GetProjectRequest
-		projectGroup.GET("/:id",
+		projectGroup.GET("/:project_id",
 			middleware.NewURIValidationMiddleware[models.GetProjectRequest]().Handle(),
 			controller.GetProject,
 		)
 
 		// UPDATE - validate both URI and JSON using struct tags
 		// The middleware automatically validates based on the struct tags in UpdateProjectRequest
-		projectGroup.PUT("/:id",
+		projectGroup.PUT("/:project_id",
 			middleware.NewCombinedValidationMiddleware[models.UpdateProjectRequest]().Handle(),
 			controller.UpdateProject,
 		)
 
 		// DELETE - validate URI parameters using struct tags
 		// The middleware automatically validates based on the struct tags in DeleteProjectRequest
-		projectGroup.DELETE("/:id",
+		projectGroup.DELETE("/:project_id",
 			middleware.NewURIValidationMiddleware[models.DeleteProjectRequest]().Handle(),
 			controller.DeleteProject,
 		)

@@ -3,7 +3,6 @@ package middleware
 import (
 	"fmt"
 	"reflect"
-	"regexp"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -229,22 +228,10 @@ func NewCombinedValidationMiddleware[T any]() Middleware {
 
 // Custom validation functions
 
-// validateProjectID validates project ID format
+// validateProjectID validates project ID format - just ensures it's a non-empty string
 func validateProjectID(fl validator.FieldLevel) bool {
 	projectID := fl.Field().String()
-
-	if len(projectID) < 6 {
-		return false
-	}
-
-	if !strings.HasPrefix(projectID, "proj-") {
-		return false
-	}
-
-	// Check if the rest contains only alphanumeric characters and hyphens
-	rest := projectID[5:]
-	matched, _ := regexp.MatchString(`^[a-zA-Z0-9-]+$`, rest)
-	return matched
+	return len(projectID) > 0
 }
 
 // validateProvider validates that the provider is one of the supported types

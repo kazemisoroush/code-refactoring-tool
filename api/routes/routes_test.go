@@ -4,6 +4,7 @@ package routes
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -121,7 +122,7 @@ func TestProjectRoutesWithValidation(t *testing.T) {
 	})
 
 	t.Run("UpdateProject_InvalidProjectID", func(t *testing.T) {
-		// Invalid project ID should fail validation
+		// Project ID that doesn't exist should fail at service layer
 		request := models.UpdateProjectRequest{
 			Name: stringPtr("Updated Project"),
 		}
@@ -129,21 +130,19 @@ func TestProjectRoutesWithValidation(t *testing.T) {
 		jsonData, err := json.Marshal(request)
 		require.NoError(t, err)
 
-		req := httptest.NewRequest("PUT", "/api/v1/projects/invalid-id", bytes.NewBuffer(jsonData))
+		// Set up mock to return not found error
+		mockService.EXPECT().
+			UpdateProject(gomock.Any(), gomock.Any()).
+			Return(nil, errors.New("project not found"))
+
+		req := httptest.NewRequest("PUT", "/api/v1/projects/nonexistent-id", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
 		router.ServeHTTP(w, req)
 
-		// Should return validation error
-		assert.Equal(t, http.StatusBadRequest, w.Code)
-
-		var response map[string]interface{}
-		err = json.Unmarshal(w.Body.Bytes(), &response)
-		require.NoError(t, err)
-
-		assert.Contains(t, response["message"].(string), "Validation failed")
-		assert.Contains(t, response["details"].(string), "ID must start with 'proj-'")
+		// Should return not found error from service
+		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 
 	t.Run("ListProjects_ValidQuery", func(t *testing.T) {
@@ -183,14 +182,18 @@ func TestProjectRoutesWithValidation(t *testing.T) {
 	})
 
 	t.Run("GetProject_InvalidProjectID", func(t *testing.T) {
-		// Invalid project ID should fail validation
+		// Set up mock to return not found error
+		mockService.EXPECT().
+			GetProject(gomock.Any(), "invalid-id").
+			Return(nil, errors.New("project not found"))
+
 		req := httptest.NewRequest("GET", "/api/v1/projects/invalid-id", nil)
 		w := httptest.NewRecorder()
 
 		router.ServeHTTP(w, req)
 
-		// Should return validation error
-		assert.Equal(t, http.StatusBadRequest, w.Code)
+		// Should return not found error from service
+		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 }
 
@@ -201,21 +204,21 @@ func TestValidationMiddlewareExtensibility(t *testing.T) {
 		// Test that our custom project_id validation rule works
 		router := gin.New()
 
-		router.GET("/test/:id", middleware.NewURIValidationMiddleware[models.GetProjectRequest]().Handle(), func(c *gin.Context) {
+		router.GET("/test/:project_id", middleware.NewURIValidationMiddleware[models.GetProjectRequest]().Handle(), func(c *gin.Context) {
 			c.JSON(200, gin.H{"status": "ok"})
 		})
 
-		// Valid project ID
-		req := httptest.NewRequest("GET", "/test/proj-12345-abcdef", nil)
+		// Valid project ID - any non-empty string
+		req := httptest.NewRequest("GET", "/test/any-project-id", nil)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		// Invalid project ID
-		req = httptest.NewRequest("GET", "/test/invalid-id", nil)
+		// Another valid project ID
+		req = httptest.NewRequest("GET", "/test/12345-abcdef", nil)
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
 	t.Run("GenericMiddlewareWorksWithDifferentTypes", func(t *testing.T) {

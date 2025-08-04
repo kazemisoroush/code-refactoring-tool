@@ -18,7 +18,16 @@ const (
 	ProjectStatusDeleted ProjectStatus = "deleted"
 )
 
-// Project represents a complete project with all relationships
+// ProjectConfig holds basic project-level configuration settings
+type ProjectConfig struct {
+	// Default AI provider preference for new agents (can be overridden per agent)
+	DefaultAIProvider string `json:"default_ai_provider,omitempty" db:"default_ai_provider"`
+
+	// Default branch to use when no branch is specified
+	DefaultBranch string `json:"default_branch,omitempty" db:"default_branch"`
+}
+
+// Project represents a basic project
 type Project struct {
 	ProjectID   string            `json:"project_id" db:"project_id"`
 	Name        string            `json:"name" db:"name"`
@@ -30,26 +39,8 @@ type Project struct {
 	Tags        map[string]string `json:"tags,omitempty" db:"tags"`
 	Metadata    map[string]string `json:"metadata,omitempty" db:"metadata"`
 
-	// Relationships (populated when requested) - forward declarations for now
-	CodebaseCount int `json:"codebase_count" db:"-"`
-	AgentCount    int `json:"agent_count" db:"-"`
-	TaskCount     int `json:"task_count" db:"-"`
-}
-
-// ProjectWithCounts represents a project with relationship counts for efficient listing
-type ProjectWithCounts struct {
-	ProjectID     string            `json:"project_id" db:"project_id"`
-	Name          string            `json:"name" db:"name"`
-	Description   *string           `json:"description,omitempty" db:"description"`
-	Language      *string           `json:"language,omitempty" db:"language"`
-	Status        ProjectStatus     `json:"status" db:"status"`
-	CreatedAt     time.Time         `json:"created_at" db:"created_at"`
-	UpdatedAt     time.Time         `json:"updated_at" db:"updated_at"`
-	Tags          map[string]string `json:"tags,omitempty" db:"tags"`
-	Metadata      map[string]string `json:"metadata,omitempty" db:"metadata"`
-	CodebaseCount int               `json:"codebase_count" db:"codebase_count"`
-	AgentCount    int               `json:"agent_count" db:"agent_count"`
-	TaskCount     int               `json:"task_count" db:"task_count"`
+	// Project configuration
+	Config ProjectConfig `json:"config" db:"config"`
 }
 
 // CreateProjectRequest represents the request to create a new project
@@ -67,7 +58,7 @@ type CreateProjectRequest struct {
 // CreateProjectResponse represents the response when creating a project
 type CreateProjectResponse struct {
 	// Unique identifier for the project
-	ProjectID string `json:"project_id" example:"proj-12345-abcde"`
+	ProjectID string `json:"project_id" example:"12345-abcde"`
 	// Timestamp when the project was created
 	CreatedAt string `json:"created_at" example:"2024-01-15T10:30:00Z"`
 } //@name CreateProjectResponse
@@ -75,13 +66,13 @@ type CreateProjectResponse struct {
 // GetProjectRequest represents the request to get a project
 type GetProjectRequest struct {
 	// Unique identifier for the project
-	ProjectID string `uri:"id" validate:"required,project_id" example:"proj-12345-abcde"`
+	ProjectID string `uri:"project_id" validate:"required,project_id" example:"12345-abcde"`
 } //@name GetProjectRequest
 
 // GetProjectResponse represents the response when getting a project
 type GetProjectResponse struct {
 	// Unique identifier for the project
-	ProjectID string `json:"project_id" example:"proj-12345-abcde"`
+	ProjectID string `json:"project_id" example:"12345-abcde"`
 	// Human-readable project name
 	Name string `json:"name" example:"my-project"`
 	// Optional project summary
@@ -101,7 +92,7 @@ type GetProjectResponse struct {
 // UpdateProjectRequest represents the request to update a project
 type UpdateProjectRequest struct {
 	// Unique identifier for the project
-	ProjectID string `uri:"id" validate:"required,project_id" example:"proj-12345-abcde"`
+	ProjectID string `uri:"project_id" validate:"required,project_id" example:"12345-abcde"`
 	// Optional human-readable project name
 	Name *string `json:"name,omitempty" validate:"omitempty,min=1,max=100" example:"updated-project"`
 	// Optional project summary
@@ -117,7 +108,7 @@ type UpdateProjectRequest struct {
 // UpdateProjectResponse represents the response when updating a project
 type UpdateProjectResponse struct {
 	// Unique identifier for the project
-	ProjectID string `json:"project_id" example:"proj-12345-abcde"`
+	ProjectID string `json:"project_id" example:"12345-abcde"`
 	// Timestamp when the project was last updated
 	UpdatedAt string `json:"updated_at" example:"2024-01-15T11:30:00Z"`
 } //@name UpdateProjectResponse
@@ -125,7 +116,7 @@ type UpdateProjectResponse struct {
 // DeleteProjectRequest represents the request to delete a project
 type DeleteProjectRequest struct {
 	// Unique identifier for the project
-	ProjectID string `uri:"id" validate:"required,project_id" example:"proj-12345-abcde"`
+	ProjectID string `uri:"project_id" validate:"required,project_id" example:"12345-abcde"`
 } //@name DeleteProjectRequest
 
 // DeleteProjectResponse represents the response when deleting a project
@@ -155,7 +146,7 @@ type ListProjectsResponse struct {
 // ProjectSummary represents a summary of a project for listing
 type ProjectSummary struct {
 	// Unique identifier for the project
-	ProjectID string `json:"project_id" example:"proj-12345-abcde"`
+	ProjectID string `json:"project_id" example:"12345-abcde"`
 	// Human-readable project name
 	Name string `json:"name" example:"my-project"`
 	// Timestamp when the project was created

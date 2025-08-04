@@ -194,7 +194,7 @@ func TestProjectController_GetProject_Success(t *testing.T) {
 	router := gin.New()
 
 	// Use validation middleware with the controller
-	router.GET("/projects/:id", middleware.NewURIValidationMiddleware[models.GetProjectRequest]().Handle(), controller.GetProject)
+	router.GET("/projects/:project_id", middleware.NewURIValidationMiddleware[models.GetProjectRequest]().Handle(), controller.GetProject)
 
 	req := httptest.NewRequest(http.MethodGet, "/projects/"+projectID, nil)
 	w := httptest.NewRecorder()
@@ -218,29 +218,35 @@ func TestProjectController_GetProject_NotFound(t *testing.T) {
 	mockService := servicesMocks.NewMockProjectService(ctrl)
 	controller := NewProjectController(mockService)
 
-	// Use an invalid project ID that will fail validation
-	projectID := "invalid-id"
+	// Use a valid project ID that doesn't exist
+	projectID := "nonexistent-project"
+
+	// Mock service to return not found error
+	notFoundError := errors.New("project not found")
+	mockService.EXPECT().
+		GetProject(gomock.Any(), projectID).
+		Return(nil, notFoundError).
+		Times(1)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 
 	// Use validation middleware with the controller
-	router.GET("/projects/:id", middleware.NewURIValidationMiddleware[models.GetProjectRequest]().Handle(), controller.GetProject)
+	router.GET("/projects/:project_id", middleware.NewURIValidationMiddleware[models.GetProjectRequest]().Handle(), controller.GetProject)
 
 	req := httptest.NewRequest(http.MethodGet, "/projects/"+projectID, nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusNotFound, w.Code)
 
 	var errorResponse models.ErrorResponse
 	err := json.Unmarshal(w.Body.Bytes(), &errorResponse)
 	require.NoError(t, err)
 
-	assert.Equal(t, http.StatusBadRequest, errorResponse.Code)
-	assert.Equal(t, "Validation failed", errorResponse.Message)
-	assert.Contains(t, errorResponse.Details, "ID must start with 'proj-'")
+	assert.Equal(t, http.StatusNotFound, errorResponse.Code)
+	assert.Contains(t, errorResponse.Message, "Project not found")
 }
 
 func TestProjectController_GetProject_ServiceError(t *testing.T) {
@@ -262,7 +268,7 @@ func TestProjectController_GetProject_ServiceError(t *testing.T) {
 	router := gin.New()
 
 	// Use validation middleware with the controller
-	router.GET("/projects/:id", middleware.NewURIValidationMiddleware[models.GetProjectRequest]().Handle(), controller.GetProject)
+	router.GET("/projects/:project_id", middleware.NewURIValidationMiddleware[models.GetProjectRequest]().Handle(), controller.GetProject)
 
 	req := httptest.NewRequest(http.MethodGet, "/projects/"+projectID, nil)
 	w := httptest.NewRecorder()
@@ -310,7 +316,7 @@ func TestProjectController_UpdateProject_Success(t *testing.T) {
 	router := gin.New()
 
 	// Use validation middleware with the controller
-	router.PUT("/projects/:id", middleware.NewCombinedValidationMiddleware[models.UpdateProjectRequest]().Handle(), controller.UpdateProject)
+	router.PUT("/projects/:project_id", middleware.NewCombinedValidationMiddleware[models.UpdateProjectRequest]().Handle(), controller.UpdateProject)
 
 	reqBody, err := json.Marshal(request)
 	require.NoError(t, err)
@@ -352,7 +358,7 @@ func TestProjectController_DeleteProject_Success(t *testing.T) {
 	router := gin.New()
 
 	// Use validation middleware with the controller
-	router.DELETE("/projects/:id", middleware.NewURIValidationMiddleware[models.DeleteProjectRequest]().Handle(), controller.DeleteProject)
+	router.DELETE("/projects/:project_id", middleware.NewURIValidationMiddleware[models.DeleteProjectRequest]().Handle(), controller.DeleteProject)
 
 	req := httptest.NewRequest(http.MethodDelete, "/projects/"+projectID, nil)
 	w := httptest.NewRecorder()

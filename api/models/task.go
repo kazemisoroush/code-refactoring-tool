@@ -63,6 +63,25 @@ type Task struct {
 	CompletedAt  *time.Time        `json:"completed_at,omitempty" db:"completed_at"`
 	Metadata     map[string]string `json:"metadata,omitempty" db:"metadata"`
 	Tags         map[string]string `json:"tags,omitempty" db:"tags"`
+
+	// Enhanced execution context (populated when requested)
+	ExecutionContext TaskExecutionContext `json:"execution_context,omitempty" db:"-"`
+
+	// Relationship data (populated when requested)
+	Project  *Project  `json:"project,omitempty" db:"-"`
+	Agent    *Agent    `json:"agent,omitempty" db:"-"`
+	Codebase *Codebase `json:"codebase,omitempty" db:"-"`
+}
+
+// TaskExecutionContext holds essential context information about task execution
+type TaskExecutionContext struct {
+	// Execution environment details
+	AgentVersion string `json:"agent_version,omitempty"`
+	AIProvider   string `json:"ai_provider,omitempty"`
+	ModelUsed    string `json:"model_used,omitempty"`
+
+	// Basic performance metrics
+	ExecutionTimeMs int64 `json:"execution_time_ms,omitempty"`
 }
 
 // CreateTaskRequest represents the request to create a new task

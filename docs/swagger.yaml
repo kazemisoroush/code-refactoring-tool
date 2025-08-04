@@ -121,7 +121,7 @@ definitions:
         type: string
       project_id:
         description: Unique identifier for the project
-        example: proj-12345-abcde
+        example: 12345-abcde
         type: string
     type: object
   CreateTaskRequest:
@@ -263,7 +263,7 @@ definitions:
         type: string
       project_id:
         description: Unique identifier for the project
-        example: proj-12345-abcde
+        example: 12345-abcde
         type: string
       tags:
         additionalProperties:
@@ -280,9 +280,13 @@ definitions:
     type: object
   GetTaskResponse:
     properties:
+      agent:
+        $ref: '#/definitions/models.Agent'
       agent_id:
         description: Which agent to use for this task
         type: string
+      codebase:
+        $ref: '#/definitions/models.Codebase'
       codebase_id:
         description: 'Optional: specific codebase, if nil uses all project codebases'
         type: string
@@ -295,6 +299,10 @@ definitions:
         type: string
       error_message:
         type: string
+      execution_context:
+        allOf:
+        - $ref: '#/definitions/models.TaskExecutionContext'
+        description: Enhanced execution context (populated when requested)
       input:
         additionalProperties: {}
         description: Additional input parameters
@@ -307,6 +315,10 @@ definitions:
         additionalProperties: {}
         description: Task results
         type: object
+      project:
+        allOf:
+        - $ref: '#/definitions/models.Project'
+        description: Relationship data (populated when requested)
       project_id:
         type: string
       status:
@@ -396,7 +408,7 @@ definitions:
         type: string
       project_id:
         description: Unique identifier for the project
-        example: proj-12345-abcde
+        example: 12345-abcde
         type: string
       tags:
         additionalProperties:
@@ -449,7 +461,7 @@ definitions:
         type: string
       projectID:
         description: Unique identifier for the project
-        example: proj-12345-abcde
+        example: 12345-abcde
         type: string
       tags:
         additionalProperties:
@@ -466,7 +478,7 @@ definitions:
     properties:
       project_id:
         description: Unique identifier for the project
-        example: proj-12345-abcde
+        example: 12345-abcde
         type: string
       updated_at:
         description: Timestamp when the project was last updated
@@ -501,9 +513,13 @@ definitions:
     type: object
   UpdateTaskResponse:
     properties:
+      agent:
+        $ref: '#/definitions/models.Agent'
       agent_id:
         description: Which agent to use for this task
         type: string
+      codebase:
+        $ref: '#/definitions/models.Codebase'
       codebase_id:
         description: 'Optional: specific codebase, if nil uses all project codebases'
         type: string
@@ -516,6 +532,10 @@ definitions:
         type: string
       error_message:
         type: string
+      execution_context:
+        allOf:
+        - $ref: '#/definitions/models.TaskExecutionContext'
+        description: Enhanced execution context (populated when requested)
       input:
         additionalProperties: {}
         description: Additional input parameters
@@ -528,6 +548,10 @@ definitions:
         additionalProperties: {}
         description: Task results
         type: object
+      project:
+        allOf:
+        - $ref: '#/definitions/models.Project'
+        description: Relationship data (populated when requested)
       project_id:
         type: string
       status:
@@ -545,6 +569,180 @@ definitions:
       updated_at:
         type: string
     type: object
+  models.AIProvider:
+    enum:
+    - bedrock
+    - local
+    - openai
+    type: string
+    x-enum-varnames:
+    - AIProviderBedrock
+    - AIProviderLocal
+    - AIProviderOpenAI
+  models.Agent:
+    properties:
+      agent_id:
+        type: string
+      ai_config:
+        allOf:
+        - $ref: '#/definitions/models.AgentAIConfig'
+        description: AI Configuration - this is per-agent, not global
+      capabilities:
+        description: Agent capabilities and metadata
+        items:
+          type: string
+        type: array
+      created_at:
+        description: Timestamps and metadata
+        type: string
+      description:
+        type: string
+      knowledge_base_id:
+        description: Knowledge base and vector store IDs (provider-specific)
+        type: string
+      last_used_at:
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+      project_id:
+        type: string
+      status:
+        $ref: '#/definitions/models.AgentStatus'
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      updated_at:
+        type: string
+      vector_store_id:
+        type: string
+      version:
+        type: string
+    type: object
+  models.AgentAIConfig:
+    properties:
+      bedrock:
+        $ref: '#/definitions/models.BedrockAgentConfig'
+      local:
+        allOf:
+        - $ref: '#/definitions/models.LocalAgentConfig'
+        description: Provider-specific configurations
+      openai:
+        $ref: '#/definitions/models.OpenAIAgentConfig'
+      provider:
+        allOf:
+        - $ref: '#/definitions/models.AIProvider'
+        description: bedrock, local, openai
+    type: object
+  models.AgentStatus:
+    enum:
+    - pending
+    - initializing
+    - ready
+    - training
+    - failed
+    - inactive
+    - creating
+    - error
+    - deleted
+    type: string
+    x-enum-varnames:
+    - AgentStatusPending
+    - AgentStatusInitializing
+    - AgentStatusReady
+    - AgentStatusTraining
+    - AgentStatusFailed
+    - AgentStatusInactive
+    - AgentStatusCreating
+    - AgentStatusError
+    - AgentStatusDeleted
+  models.BedrockAgentConfig:
+    properties:
+      agent_service_role_arn:
+        type: string
+      embedding_model:
+        type: string
+      foundation_model:
+        type: string
+      knowledge_base_service_role_arn:
+        type: string
+      max_tokens:
+        type: integer
+      region:
+        type: string
+      s3_bucket_name:
+        type: string
+      temperature:
+        type: number
+    type: object
+  models.BitbucketConfig:
+    properties:
+      app_password:
+        description: App password
+        type: string
+      repository:
+        description: Repository name
+        type: string
+      username:
+        description: Bitbucket username
+        type: string
+      workspace:
+        description: Bitbucket workspace
+        type: string
+    type: object
+  models.Codebase:
+    properties:
+      codebase_id:
+        type: string
+      config:
+        allOf:
+        - $ref: '#/definitions/models.GitProviderConfig'
+        description: Git provider configuration
+      created_at:
+        type: string
+      default_branch:
+        type: string
+      last_sync_at:
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+      project_id:
+        type: string
+      provider:
+        $ref: '#/definitions/models.Provider'
+      status:
+        allOf:
+        - $ref: '#/definitions/models.CodebaseStatus'
+        description: Status and metadata
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      updated_at:
+        type: string
+      url:
+        type: string
+    type: object
+  models.CodebaseStatus:
+    enum:
+    - active
+    - syncing
+    - sync_failed
+    - inactive
+    type: string
+    x-enum-varnames:
+    - CodebaseStatusActive
+    - CodebaseStatusSyncing
+    - CodebaseStatusSyncFailed
+    - CodebaseStatusInactive
   models.CodebaseSummary:
     properties:
       codebaseId:
@@ -601,6 +799,29 @@ definitions:
       createdAt:
         type: string
     type: object
+  models.CustomGitConfig:
+    properties:
+      base_url:
+        description: Git provider base URL
+        type: string
+      headers:
+        additionalProperties:
+          type: string
+        description: Custom headers
+        type: object
+      password:
+        description: Password for basic auth
+        type: string
+      ssh_key:
+        description: SSH private key
+        type: string
+      token:
+        description: Authentication token
+        type: string
+      username:
+        description: Username for basic auth
+        type: string
+    type: object
   models.DeleteCodebaseResponse:
     properties:
       success:
@@ -633,6 +854,71 @@ definitions:
       url:
         type: string
     type: object
+  models.GitAuthType:
+    enum:
+    - token
+    - oauth
+    - ssh
+    - basic
+    type: string
+    x-enum-varnames:
+    - GitAuthTypeToken
+    - GitAuthTypeOAuth
+    - GitAuthTypeSSH
+    - GitAuthTypeBasic
+  models.GitHubConfig:
+    properties:
+      organization:
+        description: GitHub org (if applicable)
+        type: string
+      owner:
+        description: Repository owner
+        type: string
+      repository:
+        description: Repository name
+        type: string
+      token:
+        description: PAT or OAuth token
+        type: string
+    type: object
+  models.GitLabConfig:
+    properties:
+      base_url:
+        description: For self-hosted GitLab
+        type: string
+      namespace:
+        description: GitLab namespace
+        type: string
+      project_id:
+        description: GitLab project ID
+        type: string
+      token:
+        description: PAT or OAuth token
+        type: string
+    type: object
+  models.GitProviderConfig:
+    properties:
+      auth_type:
+        allOf:
+        - $ref: '#/definitions/models.GitAuthType'
+        description: Authentication method
+      bitbucket:
+        allOf:
+        - $ref: '#/definitions/models.BitbucketConfig'
+        description: For Bitbucket
+      custom:
+        allOf:
+        - $ref: '#/definitions/models.CustomGitConfig'
+        description: For custom Git providers
+      github:
+        allOf:
+        - $ref: '#/definitions/models.GitHubConfig'
+        description: For GitHub
+      gitlab:
+        allOf:
+        - $ref: '#/definitions/models.GitLabConfig'
+        description: For GitLab
+    type: object
   models.ListCodebasesResponse:
     properties:
       codebases:
@@ -642,6 +928,81 @@ definitions:
       nextToken:
         type: string
     type: object
+  models.LocalAgentConfig:
+    properties:
+      chroma_url:
+        type: string
+      embedding_model:
+        type: string
+      max_tokens:
+        type: integer
+      model:
+        type: string
+      ollama_url:
+        type: string
+      temperature:
+        type: number
+    type: object
+  models.OpenAIAgentConfig:
+    properties:
+      api_key:
+        type: string
+      max_tokens:
+        type: integer
+      model:
+        type: string
+      temperature:
+        type: number
+    type: object
+  models.Project:
+    properties:
+      config:
+        allOf:
+        - $ref: '#/definitions/models.ProjectConfig'
+        description: Project configuration
+      created_at:
+        type: string
+      description:
+        type: string
+      language:
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+      project_id:
+        type: string
+      status:
+        $ref: '#/definitions/models.ProjectStatus'
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      updated_at:
+        type: string
+    type: object
+  models.ProjectConfig:
+    properties:
+      default_ai_provider:
+        description: Default AI provider preference for new agents (can be overridden
+          per agent)
+        type: string
+      default_branch:
+        description: Default branch to use when no branch is specified
+        type: string
+    type: object
+  models.ProjectStatus:
+    enum:
+    - active
+    - archived
+    - deleted
+    type: string
+    x-enum-varnames:
+    - ProjectStatusActive
+    - ProjectStatusArchived
+    - ProjectStatusDeleted
   models.Provider:
     enum:
     - github
@@ -666,9 +1027,13 @@ definitions:
     - ProviderCustom
   models.Task:
     properties:
+      agent:
+        $ref: '#/definitions/models.Agent'
       agent_id:
         description: Which agent to use for this task
         type: string
+      codebase:
+        $ref: '#/definitions/models.Codebase'
       codebase_id:
         description: 'Optional: specific codebase, if nil uses all project codebases'
         type: string
@@ -681,6 +1046,10 @@ definitions:
         type: string
       error_message:
         type: string
+      execution_context:
+        allOf:
+        - $ref: '#/definitions/models.TaskExecutionContext'
+        description: Enhanced execution context (populated when requested)
       input:
         additionalProperties: {}
         description: Additional input parameters
@@ -693,6 +1062,10 @@ definitions:
         additionalProperties: {}
         description: Task results
         type: object
+      project:
+        allOf:
+        - $ref: '#/definitions/models.Project'
+        description: Relationship data (populated when requested)
       project_id:
         type: string
       status:
@@ -708,6 +1081,19 @@ definitions:
       type:
         $ref: '#/definitions/models.TaskType'
       updated_at:
+        type: string
+    type: object
+  models.TaskExecutionContext:
+    properties:
+      agent_version:
+        description: Execution environment details
+        type: string
+      ai_provider:
+        type: string
+      execution_time_ms:
+        description: Basic performance metrics
+        type: integer
+      model_used:
         type: string
     type: object
   models.TaskStatus:

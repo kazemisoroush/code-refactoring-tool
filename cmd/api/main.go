@@ -20,6 +20,7 @@ import (
 	"github.com/kazemisoroush/code-refactoring-tool/api/routes"
 	"github.com/kazemisoroush/code-refactoring-tool/api/services"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/factory"
 )
 
 // @title Code Refactor Tool API
@@ -84,11 +85,32 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Initialize service layer - NEW PROJECT-CENTRIC APPROACH
+	// Initialize service layer - PHASE 3: API-FIRST DEPENDENCY INJECTION
+
+	// For now, create a simple factory without full AWS config
+	// TODO: Implement full AWS config loading in Phase 4
+	aiFactory := factory.NewTaskExecutionFactory(
+		cfg.AWSConfig,          // Use AWS config from main config
+		config.LocalAIConfig{}, // Empty for now
+		cfg.Git,
+	)
+
+	// Initialize services with full dependency injection
 	projectService := services.NewDefaultProjectService(projectRepository)
 	codebaseService := services.NewDefaultCodebaseService(codebaseRepository)
 	healthService := services.NewDefaultHealthService("code-refactor-tool-api", "1.0.0")
-	taskService := services.NewDefaultTaskService(taskRepository)
+
+	// Create temporary agent repository - TODO: Enable actual agent repository in Phase 4
+	// agentRepository := repository.NewPostgresAgentRepository(postgresConfig, config.DefaultAgentsTableName)
+
+	// NEW: Task service with dynamic AI capabilities and dependency injection
+	taskService := services.NewTaskService(
+		taskRepository,
+		projectRepository,
+		nil, // agentRepository - will be enabled in Phase 4
+		codebaseRepository,
+		aiFactory,
+	)
 
 	// TODO: Create new AgentService when AI builder infrastructure is ready
 	// Requires: GitConfig, RAGBuilder, AgentBuilder, Codebase, AgentRepository

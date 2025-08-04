@@ -1265,7 +1265,7 @@ const docTemplate = `{
                 "project_id": {
                     "description": "Unique identifier for the project",
                     "type": "string",
-                    "example": "proj-12345-abcde"
+                    "example": "12345-abcde"
                 }
             }
         },
@@ -1461,7 +1461,7 @@ const docTemplate = `{
                 "project_id": {
                     "description": "Unique identifier for the project",
                     "type": "string",
-                    "example": "proj-12345-abcde"
+                    "example": "12345-abcde"
                 },
                 "tags": {
                     "description": "Optional user-defined key-value tags",
@@ -1484,9 +1484,15 @@ const docTemplate = `{
         "GetTaskResponse": {
             "type": "object",
             "properties": {
+                "agent": {
+                    "$ref": "#/definitions/models.Agent"
+                },
                 "agent_id": {
                     "description": "Which agent to use for this task",
                     "type": "string"
+                },
+                "codebase": {
+                    "$ref": "#/definitions/models.Codebase"
                 },
                 "codebase_id": {
                     "description": "Optional: specific codebase, if nil uses all project codebases",
@@ -1505,6 +1511,14 @@ const docTemplate = `{
                 "error_message": {
                     "type": "string"
                 },
+                "execution_context": {
+                    "description": "Enhanced execution context (populated when requested)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.TaskExecutionContext"
+                        }
+                    ]
+                },
                 "input": {
                     "description": "Additional input parameters",
                     "type": "object",
@@ -1520,6 +1534,14 @@ const docTemplate = `{
                     "description": "Task results",
                     "type": "object",
                     "additionalProperties": {}
+                },
+                "project": {
+                    "description": "Relationship data (populated when requested)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Project"
+                        }
+                    ]
                 },
                 "project_id": {
                     "type": "string"
@@ -1647,7 +1669,7 @@ const docTemplate = `{
                 "project_id": {
                     "description": "Unique identifier for the project",
                     "type": "string",
-                    "example": "proj-12345-abcde"
+                    "example": "12345-abcde"
                 },
                 "tags": {
                     "description": "Optional user-defined key-value tags",
@@ -1716,7 +1738,7 @@ const docTemplate = `{
                 "projectID": {
                     "description": "Unique identifier for the project",
                     "type": "string",
-                    "example": "proj-12345-abcde"
+                    "example": "12345-abcde"
                 },
                 "tags": {
                     "description": "Optional user-defined key-value tags",
@@ -1737,7 +1759,7 @@ const docTemplate = `{
                 "project_id": {
                     "description": "Unique identifier for the project",
                     "type": "string",
-                    "example": "proj-12345-abcde"
+                    "example": "12345-abcde"
                 },
                 "updated_at": {
                     "description": "Timestamp when the project was last updated",
@@ -1788,9 +1810,15 @@ const docTemplate = `{
         "UpdateTaskResponse": {
             "type": "object",
             "properties": {
+                "agent": {
+                    "$ref": "#/definitions/models.Agent"
+                },
                 "agent_id": {
                     "description": "Which agent to use for this task",
                     "type": "string"
+                },
+                "codebase": {
+                    "$ref": "#/definitions/models.Codebase"
                 },
                 "codebase_id": {
                     "description": "Optional: specific codebase, if nil uses all project codebases",
@@ -1809,6 +1837,14 @@ const docTemplate = `{
                 "error_message": {
                     "type": "string"
                 },
+                "execution_context": {
+                    "description": "Enhanced execution context (populated when requested)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.TaskExecutionContext"
+                        }
+                    ]
+                },
                 "input": {
                     "description": "Additional input parameters",
                     "type": "object",
@@ -1824,6 +1860,14 @@ const docTemplate = `{
                     "description": "Task results",
                     "type": "object",
                     "additionalProperties": {}
+                },
+                "project": {
+                    "description": "Relationship data (populated when requested)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Project"
+                        }
+                    ]
                 },
                 "project_id": {
                     "type": "string"
@@ -1850,6 +1894,263 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "models.AIProvider": {
+            "type": "string",
+            "enum": [
+                "bedrock",
+                "local",
+                "openai"
+            ],
+            "x-enum-varnames": [
+                "AIProviderBedrock",
+                "AIProviderLocal",
+                "AIProviderOpenAI"
+            ]
+        },
+        "models.Agent": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "type": "string"
+                },
+                "ai_config": {
+                    "description": "AI Configuration - this is per-agent, not global",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.AgentAIConfig"
+                        }
+                    ]
+                },
+                "capabilities": {
+                    "description": "Agent capabilities and metadata",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "created_at": {
+                    "description": "Timestamps and metadata",
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "knowledge_base_id": {
+                    "description": "Knowledge base and vector store IDs (provider-specific)",
+                    "type": "string"
+                },
+                "last_used_at": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "project_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.AgentStatus"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "vector_store_id": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.AgentAIConfig": {
+            "type": "object",
+            "properties": {
+                "bedrock": {
+                    "$ref": "#/definitions/models.BedrockAgentConfig"
+                },
+                "local": {
+                    "description": "Provider-specific configurations",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.LocalAgentConfig"
+                        }
+                    ]
+                },
+                "openai": {
+                    "$ref": "#/definitions/models.OpenAIAgentConfig"
+                },
+                "provider": {
+                    "description": "bedrock, local, openai",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.AIProvider"
+                        }
+                    ]
+                }
+            }
+        },
+        "models.AgentStatus": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "initializing",
+                "ready",
+                "training",
+                "failed",
+                "inactive",
+                "creating",
+                "error",
+                "deleted"
+            ],
+            "x-enum-varnames": [
+                "AgentStatusPending",
+                "AgentStatusInitializing",
+                "AgentStatusReady",
+                "AgentStatusTraining",
+                "AgentStatusFailed",
+                "AgentStatusInactive",
+                "AgentStatusCreating",
+                "AgentStatusError",
+                "AgentStatusDeleted"
+            ]
+        },
+        "models.BedrockAgentConfig": {
+            "type": "object",
+            "properties": {
+                "agent_service_role_arn": {
+                    "type": "string"
+                },
+                "embedding_model": {
+                    "type": "string"
+                },
+                "foundation_model": {
+                    "type": "string"
+                },
+                "knowledge_base_service_role_arn": {
+                    "type": "string"
+                },
+                "max_tokens": {
+                    "type": "integer"
+                },
+                "region": {
+                    "type": "string"
+                },
+                "s3_bucket_name": {
+                    "type": "string"
+                },
+                "temperature": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.BitbucketConfig": {
+            "type": "object",
+            "properties": {
+                "app_password": {
+                    "description": "App password",
+                    "type": "string"
+                },
+                "repository": {
+                    "description": "Repository name",
+                    "type": "string"
+                },
+                "username": {
+                    "description": "Bitbucket username",
+                    "type": "string"
+                },
+                "workspace": {
+                    "description": "Bitbucket workspace",
+                    "type": "string"
+                }
+            }
+        },
+        "models.Codebase": {
+            "type": "object",
+            "properties": {
+                "codebase_id": {
+                    "type": "string"
+                },
+                "config": {
+                    "description": "Git provider configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.GitProviderConfig"
+                        }
+                    ]
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "default_branch": {
+                    "type": "string"
+                },
+                "last_sync_at": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "project_id": {
+                    "type": "string"
+                },
+                "provider": {
+                    "$ref": "#/definitions/models.Provider"
+                },
+                "status": {
+                    "description": "Status and metadata",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.CodebaseStatus"
+                        }
+                    ]
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CodebaseStatus": {
+            "type": "string",
+            "enum": [
+                "active",
+                "syncing",
+                "sync_failed",
+                "inactive"
+            ],
+            "x-enum-varnames": [
+                "CodebaseStatusActive",
+                "CodebaseStatusSyncing",
+                "CodebaseStatusSyncFailed",
+                "CodebaseStatusInactive"
+            ]
         },
         "models.CodebaseSummary": {
             "type": "object",
@@ -1932,6 +2233,38 @@ const docTemplate = `{
                 }
             }
         },
+        "models.CustomGitConfig": {
+            "type": "object",
+            "properties": {
+                "base_url": {
+                    "description": "Git provider base URL",
+                    "type": "string"
+                },
+                "headers": {
+                    "description": "Custom headers",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "password": {
+                    "description": "Password for basic auth",
+                    "type": "string"
+                },
+                "ssh_key": {
+                    "description": "SSH private key",
+                    "type": "string"
+                },
+                "token": {
+                    "description": "Authentication token",
+                    "type": "string"
+                },
+                "username": {
+                    "description": "Username for basic auth",
+                    "type": "string"
+                }
+            }
+        },
         "models.DeleteCodebaseResponse": {
             "type": "object",
             "properties": {
@@ -1981,6 +2314,108 @@ const docTemplate = `{
                 }
             }
         },
+        "models.GitAuthType": {
+            "type": "string",
+            "enum": [
+                "token",
+                "oauth",
+                "ssh",
+                "basic"
+            ],
+            "x-enum-varnames": [
+                "GitAuthTypeToken",
+                "GitAuthTypeOAuth",
+                "GitAuthTypeSSH",
+                "GitAuthTypeBasic"
+            ]
+        },
+        "models.GitHubConfig": {
+            "type": "object",
+            "properties": {
+                "organization": {
+                    "description": "GitHub org (if applicable)",
+                    "type": "string"
+                },
+                "owner": {
+                    "description": "Repository owner",
+                    "type": "string"
+                },
+                "repository": {
+                    "description": "Repository name",
+                    "type": "string"
+                },
+                "token": {
+                    "description": "PAT or OAuth token",
+                    "type": "string"
+                }
+            }
+        },
+        "models.GitLabConfig": {
+            "type": "object",
+            "properties": {
+                "base_url": {
+                    "description": "For self-hosted GitLab",
+                    "type": "string"
+                },
+                "namespace": {
+                    "description": "GitLab namespace",
+                    "type": "string"
+                },
+                "project_id": {
+                    "description": "GitLab project ID",
+                    "type": "string"
+                },
+                "token": {
+                    "description": "PAT or OAuth token",
+                    "type": "string"
+                }
+            }
+        },
+        "models.GitProviderConfig": {
+            "type": "object",
+            "properties": {
+                "auth_type": {
+                    "description": "Authentication method",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.GitAuthType"
+                        }
+                    ]
+                },
+                "bitbucket": {
+                    "description": "For Bitbucket",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.BitbucketConfig"
+                        }
+                    ]
+                },
+                "custom": {
+                    "description": "For custom Git providers",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.CustomGitConfig"
+                        }
+                    ]
+                },
+                "github": {
+                    "description": "For GitHub",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.GitHubConfig"
+                        }
+                    ]
+                },
+                "gitlab": {
+                    "description": "For GitLab",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.GitLabConfig"
+                        }
+                    ]
+                }
+            }
+        },
         "models.ListCodebasesResponse": {
             "type": "object",
             "properties": {
@@ -1994,6 +2429,118 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "models.LocalAgentConfig": {
+            "type": "object",
+            "properties": {
+                "chroma_url": {
+                    "type": "string"
+                },
+                "embedding_model": {
+                    "type": "string"
+                },
+                "max_tokens": {
+                    "type": "integer"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "ollama_url": {
+                    "type": "string"
+                },
+                "temperature": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.OpenAIAgentConfig": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "type": "string"
+                },
+                "max_tokens": {
+                    "type": "integer"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "temperature": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.Project": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "description": "Project configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.ProjectConfig"
+                        }
+                    ]
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "project_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.ProjectStatus"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ProjectConfig": {
+            "type": "object",
+            "properties": {
+                "default_ai_provider": {
+                    "description": "Default AI provider preference for new agents (can be overridden per agent)",
+                    "type": "string"
+                },
+                "default_branch": {
+                    "description": "Default branch to use when no branch is specified",
+                    "type": "string"
+                }
+            }
+        },
+        "models.ProjectStatus": {
+            "type": "string",
+            "enum": [
+                "active",
+                "archived",
+                "deleted"
+            ],
+            "x-enum-varnames": [
+                "ProjectStatusActive",
+                "ProjectStatusArchived",
+                "ProjectStatusDeleted"
+            ]
         },
         "models.Provider": {
             "type": "string",
@@ -2025,9 +2572,15 @@ const docTemplate = `{
         "models.Task": {
             "type": "object",
             "properties": {
+                "agent": {
+                    "$ref": "#/definitions/models.Agent"
+                },
                 "agent_id": {
                     "description": "Which agent to use for this task",
                     "type": "string"
+                },
+                "codebase": {
+                    "$ref": "#/definitions/models.Codebase"
                 },
                 "codebase_id": {
                     "description": "Optional: specific codebase, if nil uses all project codebases",
@@ -2046,6 +2599,14 @@ const docTemplate = `{
                 "error_message": {
                     "type": "string"
                 },
+                "execution_context": {
+                    "description": "Enhanced execution context (populated when requested)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.TaskExecutionContext"
+                        }
+                    ]
+                },
                 "input": {
                     "description": "Additional input parameters",
                     "type": "object",
@@ -2061,6 +2622,14 @@ const docTemplate = `{
                     "description": "Task results",
                     "type": "object",
                     "additionalProperties": {}
+                },
+                "project": {
+                    "description": "Relationship data (populated when requested)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Project"
+                        }
+                    ]
                 },
                 "project_id": {
                     "type": "string"
@@ -2084,6 +2653,25 @@ const docTemplate = `{
                     "$ref": "#/definitions/models.TaskType"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.TaskExecutionContext": {
+            "type": "object",
+            "properties": {
+                "agent_version": {
+                    "description": "Execution environment details",
+                    "type": "string"
+                },
+                "ai_provider": {
+                    "type": "string"
+                },
+                "execution_time_ms": {
+                    "description": "Basic performance metrics",
+                    "type": "integer"
+                },
+                "model_used": {
                     "type": "string"
                 }
             }
