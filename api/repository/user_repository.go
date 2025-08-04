@@ -7,9 +7,9 @@ import (
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
 )
 
-//go:generate mockgen -source=user_repository.go -destination=mocks/mock_user_repository.go -package=mocks
-
 // UserRepository defines operations for user data storage
+//
+//go:generate mockgen -source=user_repository.go -destination=mocks/mock_user_repository.go -package=mocks
 type UserRepository interface {
 	// Basic CRUD operations
 	CreateUser(ctx context.Context, user *models.DBUser) (*models.DBUser, error)

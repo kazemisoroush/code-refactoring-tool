@@ -49,6 +49,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Give outstanding requests a deadline for completion
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), time.Duration(cfg.TimeoutSeconds)*time.Second)
+	defer shutdownCancel()
+
 	// Initialize Postgres config for repositories
 	postgresConfig := repository.PostgresConfig{
 		Host:     cfg.Postgres.Host,
@@ -125,7 +129,7 @@ func main() {
 	healthController := controllers.NewHealthController(healthService)
 
 	// Initialize AWS config
-	awsConfig, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(cfg.Cognito.Region))
+	awsConfig, err := config.LoadDefaultConfig(shutdownCtx, config.WithRegion(cfg.Cognito.Region))
 	if err != nil {
 		slog.Error("failed to load AWS config", "error", err)
 		os.Exit(1)
@@ -216,10 +220,6 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	slog.Info("Shutting down server...")
-
-	// Give outstanding requests a deadline for completion
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), time.Duration(cfg.TimeoutSeconds)*time.Second)
-	defer shutdownCancel()
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		slog.Error("Server forced to shutdown", "error", err)
