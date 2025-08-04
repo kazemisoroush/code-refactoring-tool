@@ -10,3 +10,4 @@ config.test
 api-server
 main
 build-test
+bin/

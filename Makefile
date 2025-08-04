@@ -1,3 +1,31 @@
+# Code Refactoring Tool - Makefile
+
+# Show available commands
+help:
+	@echo "Code Refactoring Tool - Available Commands:"
+	@echo ""
+	@echo "Development:"
+	@echo "  test        - Run all tests"
+	@echo "  lint        - Run golangci-lint"
+	@echo "  mock        - Generate mocks using go generate"
+	@echo "  build       - Build application binaries"
+	@echo "  swagger     - Generate Swagger documentation"
+	@echo ""
+	@echo "Docker & Local Development:"
+	@echo "  serve       - Start local development environment"
+	@echo "  serve-detached - Start development environment in background"
+	@echo "  stop        - Stop local development environment"
+	@echo "  logs        - Follow API logs"
+	@echo "  docker-build - Build production Docker image"
+	@echo ""
+	@echo "CI/CD:"
+	@echo "  ci          - Run complete CI pipeline (mock, test, lint, build, swagger)"
+	@echo ""
+	@echo "Utility:"
+	@echo "  clean       - Clean build artifacts (keeps documentation)"
+	@echo "  help        - Show this help message"
+	@echo ""
+
 # Run tests for the main application
 test:
 	@echo "Running tests..."
@@ -46,12 +74,24 @@ docker-build:
 	@docker build -t code-refactoring-tool:latest .
 	@echo "Docker image built."
 
+# Build the application binaries
+build:
+	@echo "Building application binaries..."
+	@mkdir -p bin/
+	@go build -o bin/api -ldflags="-s -w" ./cmd/api
+	@echo "API binary built at bin/api"
+	@echo "Binary size: $$(du -h bin/api | cut -f1)"
+	@echo "Build completed."
+
 clean:
-	@echo "Cleaning build artifacts..."
+	@echo "🧹 Cleaning build artifacts..."
 	@rm -rf bin/
-	@rm -rf docs/
-	@echo "Clean completed."
+	@echo "✅ Clean completed!"
 
-.PHONY: test lint mock swagger build-api run-api serve serve-detached stop logs docker-build clean ci
+# Make help the default target
+.DEFAULT_GOAL := help
 
-ci: mock test lint clean swagger
+.PHONY: help test lint mock swagger build serve serve-detached stop logs docker-build clean ci
+
+ci: mock test lint build swagger
+	@echo "🎉 CI pipeline completed successfully!"

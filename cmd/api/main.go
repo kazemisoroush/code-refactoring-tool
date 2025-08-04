@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -19,7 +21,8 @@ import (
 	"github.com/kazemisoroush/code-refactoring-tool/api/repository"
 	"github.com/kazemisoroush/code-refactoring-tool/api/routes"
 	"github.com/kazemisoroush/code-refactoring-tool/api/services"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/auth"
+	appconfig "github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/factory"
 )
 
@@ -40,7 +43,7 @@ import (
 
 func main() {
 	// Load configuration
-	cfg, err := config.LoadConfig()
+	cfg, err := appconfig.LoadConfig()
 	if err != nil {
 		slog.Error("failed to load config", "error", err)
 		os.Exit(1)
@@ -66,21 +69,21 @@ func main() {
 	// }
 
 	// Initialize project repository
-	projectRepository, err := repository.NewPostgresProjectRepository(postgresConfig, config.DefaultProjectsTableName)
+	projectRepository, err := repository.NewPostgresProjectRepository(postgresConfig, appconfig.DefaultProjectsTableName)
 	if err != nil {
 		slog.Error("failed to initialize project repository", "error", err)
 		os.Exit(1)
 	}
 
 	// Initialize codebase repository
-	codebaseRepository, err := repository.NewPostgresCodebaseRepository(postgresConfig, config.DefaultCodebasesTableName)
+	codebaseRepository, err := repository.NewPostgresCodebaseRepository(postgresConfig, appconfig.DefaultCodebasesTableName)
 	if err != nil {
 		slog.Error("failed to initialize codebase repository", "error", err)
 		os.Exit(1)
 	}
 
 	// Initialize task repository
-	taskRepository, err := repository.NewPostgresTaskRepository(postgresConfig, config.DefaultTasksTableName)
+	taskRepository, err := repository.NewPostgresTaskRepository(postgresConfig, appconfig.DefaultTasksTableName)
 	if err != nil {
 		slog.Error("failed to initialize task repository", "error", err)
 		os.Exit(1)
@@ -91,8 +94,8 @@ func main() {
 	// For now, create a simple factory without full AWS config
 	// NOTE: Full AWS config loading will be implemented when infrastructure scaling is needed
 	aiFactory := factory.NewTaskExecutionFactory(
-		cfg.AWSConfig,          // Use AWS config from main config
-		config.LocalAIConfig{}, // Empty for now
+		cfg.AWSConfig,             // Use AWS config from main config
+		appconfig.LocalAIConfig{}, // Empty for now
 		cfg.Git,
 	)
 
@@ -121,15 +124,28 @@ func main() {
 	taskController := controllers.NewTaskController(taskService)
 	healthController := controllers.NewHealthController(healthService)
 
-	// Initialize authentication middleware
-	authMiddleware := middleware.NewAuthMiddleware(config.CognitoConfig{
+	// Initialize AWS config
+	awsConfig, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(cfg.Cognito.Region))
+	if err != nil {
+		slog.Error("failed to load AWS config", "error", err)
+		os.Exit(1)
+	}
+
+	// Initialize Cognito client
+	cognitoClient := cognitoidentityprovider.NewFromConfig(awsConfig)
+
+	// Initialize Cognito provider
+	cognitoProvider := auth.NewCognitoProvider(cognitoClient, auth.CognitoConfig{
 		UserPoolID: cfg.Cognito.UserPoolID,
 		Region:     cfg.Cognito.Region,
 		ClientID:   cfg.Cognito.ClientID,
 	})
 
+	// Initialize authentication middleware
+	authMiddleware := middleware.NewAuthMiddleware(cognitoProvider)
+
 	// Initialize metrics middleware
-	metricsMiddleware, err := middleware.NewMetricsMiddleware(config.MetricsConfig{
+	metricsMiddleware, err := middleware.NewMetricsMiddleware(appconfig.MetricsConfig{
 		Namespace:   cfg.Metrics.Namespace,
 		Region:      cfg.Metrics.Region,
 		ServiceName: cfg.Metrics.ServiceName,
