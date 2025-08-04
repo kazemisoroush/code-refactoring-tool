@@ -31,9 +31,6 @@ type DefaultTaskExecutionFactory struct {
 	// AWS configuration for Bedrock
 	awsConfig aws.Config
 
-	// Local AI configuration
-	localConfig config.LocalAIConfig
-
 	// Git configuration
 	gitConfig config.GitConfig
 
@@ -43,15 +40,10 @@ type DefaultTaskExecutionFactory struct {
 }
 
 // NewTaskExecutionFactory creates a new dynamic factory for task execution
-func NewTaskExecutionFactory(
-	awsConfig aws.Config,
-	localConfig config.LocalAIConfig,
-	gitConfig config.GitConfig,
-) TaskExecutionFactory {
+func NewTaskExecutionFactory(awsConfig aws.Config, gitConfig config.GitConfig) TaskExecutionFactory {
 	return &DefaultTaskExecutionFactory{
-		awsConfig:   awsConfig,
-		localConfig: localConfig,
-		gitConfig:   gitConfig,
+		awsConfig: awsConfig,
+		gitConfig: gitConfig,
 	}
 }
 

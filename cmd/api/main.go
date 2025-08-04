@@ -62,6 +62,12 @@ func main() {
 		SSLMode:  cfg.Postgres.SSLMode,
 	}
 
+	// Initialize agent repository
+	agentRepository, err := repository.NewPostgresAgentRepository(postgresConfig, appconfig.DefaultAgentsTableName)
+	if err != nil {
+		slog.Error("failed to initialize agent repository", "error", err)
+	}
+
 	// Initialize project repository
 	projectRepository, err := repository.NewPostgresProjectRepository(postgresConfig, appconfig.DefaultProjectsTableName)
 	if err != nil {
@@ -90,12 +96,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// TODO: Arguments here needs to be fixed
-	aiFactory := factory.NewTaskExecutionFactory(
-		cfg.AWSConfig,             // Use AWS config from main config
-		appconfig.LocalAIConfig{}, // Empty for now
-		cfg.Git,
-	)
+	// TODO: Git config needs to come from API or Database
+	aiFactory := factory.NewTaskExecutionFactory(cfg.AWSConfig, cfg.Git)
 
 	// Initialize services with full dependency injection
 	projectService := services.NewDefaultProjectService(projectRepository)
@@ -106,8 +108,7 @@ func main() {
 	taskService := services.NewTaskService(
 		taskRepository,
 		projectRepository,
-		// TODO: agentRepository - will be enabled when full AWS infrastructure is required
-		nil,
+		agentRepository,
 		codebaseRepository,
 		aiFactory,
 	)
