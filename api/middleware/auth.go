@@ -68,14 +68,7 @@ func (m *AuthMiddleware) Handle() gin.HandlerFunc {
 
 // isPublicEndpoint checks if the given path is a public endpoint
 func (m *AuthMiddleware) isPublicEndpoint(path string) bool {
-	publicPaths := []string{
-		"/health",
-		"/swagger",
-		"/docs",
-		"/api-docs",
-	}
-
-	for _, publicPath := range publicPaths {
+	for _, publicPath := range PublicEndpoints {
 		if strings.HasPrefix(path, publicPath) {
 			return true
 		}
