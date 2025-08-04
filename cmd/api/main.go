@@ -83,6 +83,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize user repository
+	userRepository, err := repository.NewPostgresUserRepository(postgresConfig, appconfig.DefaultUsersTableName)
+	if err != nil {
+		slog.Error("failed to initialize user repository", "error", err)
+		os.Exit(1)
+	}
+
 	// TODO: Arguments here needs to be fixed
 	aiFactory := factory.NewTaskExecutionFactory(
 		cfg.AWSConfig,             // Use AWS config from main config
@@ -119,6 +126,13 @@ func main() {
 
 	// Initialize Cognito provider and authentication middleware
 	cognitoProvider := auth.NewCognitoProvider(awsConfig, cfg.Cognito)
+
+	// Initialize auth service with user repository and auth provider
+	authService := services.NewAuthService(cognitoProvider, userRepository)
+
+	// Initialize auth controller
+	authController := controllers.NewAuthController(authService)
+
 	authMiddleware := middleware.NewAuthMiddleware(cognitoProvider)
 
 	// Initialize metrics middleware
@@ -153,6 +167,9 @@ func main() {
 
 	// Setup task routes with validation middleware - NEW!
 	routes.SetupTaskRoutes(router, taskController)
+
+	// Setup auth routes with authentication middleware
+	routes.RegisterAuthRoutes(router, authController, authMiddleware)
 
 	// Setup health routes with validation middleware
 	routes.SetupHealthRoutes(router, healthController)

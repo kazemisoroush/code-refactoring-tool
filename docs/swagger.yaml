@@ -419,6 +419,13 @@ definitions:
           team: backend
         type: object
     type: object
+  SuccessResponse:
+    properties:
+      message:
+        description: Success message
+        example: Operation completed successfully
+        type: string
+    type: object
   UpdateProjectRequest:
     properties:
       description:
@@ -579,6 +586,27 @@ definitions:
     - AIProviderBedrock
     - AIProviderLocal
     - AIProviderOpenAI
+  models.APIUser:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      role:
+        $ref: '#/definitions/models.UserRole'
+      status:
+        $ref: '#/definitions/models.UserStatus'
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      username:
+        type: string
+    type: object
   models.Agent:
     properties:
       agent_id:
@@ -799,6 +827,37 @@ definitions:
       createdAt:
         type: string
     type: object
+  models.CreateUserRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        maxLength: 50
+        type: string
+      last_name:
+        maxLength: 50
+        type: string
+      role:
+        allOf:
+        - $ref: '#/definitions/models.UserRole'
+        enum:
+        - owner
+        - admin
+        - developer
+        - viewer
+      username:
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - email
+    - username
+    type: object
+  models.CreateUserResponse:
+    properties:
+      user:
+        $ref: '#/definitions/models.APIUser'
+    type: object
   models.CustomGitConfig:
     properties:
       base_url:
@@ -853,6 +912,11 @@ definitions:
         type: string
       url:
         type: string
+    type: object
+  models.GetUserResponse:
+    properties:
+      user:
+        $ref: '#/definitions/models.APIUser'
     type: object
   models.GitAuthType:
     enum:
@@ -927,6 +991,19 @@ definitions:
         type: array
       nextToken:
         type: string
+    type: object
+  models.ListUsersResponse:
+    properties:
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+      users:
+        items:
+          $ref: '#/definitions/models.APIUser'
+        type: array
     type: object
   models.LocalAgentConfig:
     properties:
@@ -1025,6 +1102,89 @@ definitions:
     - ProviderGitLab
     - ProviderBitbucket
     - ProviderCustom
+  models.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  models.RefreshTokenResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+    type: object
+  models.SignInRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  models.SignInResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+      user:
+        $ref: '#/definitions/models.APIUser'
+    type: object
+  models.SignOutRequest:
+    properties:
+      access_token:
+        type: string
+    required:
+    - access_token
+    type: object
+  models.SignUpRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        maxLength: 50
+        type: string
+      last_name:
+        maxLength: 50
+        type: string
+      password:
+        minLength: 8
+        type: string
+      username:
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  models.SignUpResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+      user:
+        $ref: '#/definitions/models.APIUser'
+    type: object
   models.Task:
     properties:
       agent:
@@ -1154,6 +1314,68 @@ definitions:
       updatedAt:
         type: string
     type: object
+  models.UpdateUserRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        maxLength: 50
+        type: string
+      last_name:
+        maxLength: 50
+        type: string
+      role:
+        allOf:
+        - $ref: '#/definitions/models.UserRole'
+        enum:
+        - owner
+        - admin
+        - developer
+        - viewer
+      user_id:
+        type: string
+    required:
+    - user_id
+    type: object
+  models.UpdateUserResponse:
+    properties:
+      user:
+        $ref: '#/definitions/models.APIUser'
+    type: object
+  models.UserRole:
+    enum:
+    - owner
+    - admin
+    - developer
+    - viewer
+    type: string
+    x-enum-comments:
+      RoleAdmin: Manage users, all projects
+      RoleDeveloper: Create/manage own projects
+      RoleOwner: Full access to everything
+      RoleViewer: Read-only access
+    x-enum-descriptions:
+    - Full access to everything
+    - Manage users, all projects
+    - Create/manage own projects
+    - Read-only access
+    x-enum-varnames:
+    - RoleOwner
+    - RoleAdmin
+    - RoleDeveloper
+    - RoleViewer
+  models.UserStatus:
+    enum:
+    - active
+    - inactive
+    - pending
+    - suspended
+    type: string
+    x-enum-varnames:
+    - UserStatusActive
+    - UserStatusInactive
+    - UserStatusPending
+    - UserStatusSuspended
 host: localhost:8080
 info:
   contact:
@@ -1535,6 +1757,302 @@ paths:
       summary: Update a task
       tags:
       - tasks
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh an access token using a refresh token
+      parameters:
+      - description: Refresh token request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.RefreshTokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Refresh access token
+      tags:
+      - authentication
+  /auth/signin:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user and return access tokens
+      parameters:
+      - description: Sign in request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.SignInRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SignInResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Authenticate a user
+      tags:
+      - authentication
+  /auth/signout:
+    post:
+      consumes:
+      - application/json
+      description: Sign out a user and invalidate tokens
+      parameters:
+      - description: Sign out request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.SignOutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Sign out a user
+      tags:
+      - authentication
+  /auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user account
+      parameters:
+      - description: Sign up request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.SignUpRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.SignUpResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Register a new user
+      tags:
+      - authentication
+  /auth/users:
+    get:
+      description: List users with optional filtering
+      parameters:
+      - default: 10
+        description: Maximum number of users to return
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of users to skip
+        in: query
+        name: offset
+        type: integer
+      - description: Filter by user role
+        in: query
+        name: role
+        type: string
+      - description: Filter by user status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ListUsersResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: List users
+      tags:
+      - authentication
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account (admin operation)
+      parameters:
+      - description: Create user request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.CreateUserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Create a new user (Admin)
+      tags:
+      - authentication
+  /auth/users/{id}:
+    delete:
+      description: Delete a user account
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Delete user
+      tags:
+      - authentication
+    get:
+      description: Get user information by user ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.GetUserResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get user by ID
+      tags:
+      - authentication
+    put:
+      consumes:
+      - application/json
+      description: Update user information
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update user request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UpdateUserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Update user
+      tags:
+      - authentication
   /codebases:
     get:
       description: Retrieve a list of codebases with optional pagination and filtering

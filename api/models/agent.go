@@ -208,3 +208,9 @@ type ErrorResponse struct {
 	// Optional error details
 	Details string `json:"details,omitempty" example:"repository_url is required"`
 } //@name ErrorResponse
+
+// SuccessResponse represents a success response
+type SuccessResponse struct {
+	// Success message
+	Message string `json:"message" example:"Operation completed successfully"`
+} //@name SuccessResponse

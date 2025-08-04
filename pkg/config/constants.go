@@ -55,6 +55,9 @@ const (
 
 	// DefaultTasksTableName is the default name for the tasks table
 	DefaultTasksTableName = "tasks"
+
+	// DefaultUsersTableName is the default name for the users table
+	DefaultUsersTableName = "users"
 )
 
 var (
