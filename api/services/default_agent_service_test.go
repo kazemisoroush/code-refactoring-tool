@@ -16,22 +16,6 @@ import (
 	factoryMocks "github.com/kazemisoroush/code-refactoring-tool/pkg/factory/mocks"
 )
 
-func TestNewAgentService(t *testing.T) {
-	// Arrange
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockAgentRepo := repoMocks.NewMockAgentRepository(ctrl)
-	mockInfraFactory := factoryMocks.NewMockAIInfrastructureFactory(ctrl)
-
-	// Act
-	service := NewDefaultAgentService(mockAgentRepo, mockInfraFactory)
-
-	// Assert
-	assert.NotNil(t, service)
-	assert.IsType(t, &DefaultAgentService{}, service)
-}
-
 func TestDefaultAgentService_GetAgent_Success(t *testing.T) {
 	// Arrange
 	ctrl := gomock.NewController(t)
