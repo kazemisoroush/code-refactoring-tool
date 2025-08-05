@@ -3,6 +3,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
@@ -59,18 +60,10 @@ func (s *DefaultAgentService) CreateAgent(ctx context.Context, request models.Cr
 	}
 
 	// Create agent record to store in database
-	agentRecord := &repository.AgentRecord{
-		AgentID:         infraResult.AgentID,
-		AgentVersion:    infraResult.AgentVersion,
-		KnowledgeBaseID: infraResult.KnowledgeBaseID,
-		VectorStoreID:   infraResult.VectorStoreID,
-		RepositoryURL:   request.RepositoryURL,
-		Branch:          request.Branch,
-		AgentName:       request.AgentName,
-		Status:          string(infraResult.Status),
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
-	}
+	agentRecord := repository.NewAgentRecord(request, infraResult.AgentID, infraResult.AgentVersion, infraResult.KnowledgeBaseID, infraResult.VectorStoreID)
+	agentRecord.Status = string(infraResult.Status)
+	agentRecord.CreatedAt = time.Now()
+	agentRecord.UpdatedAt = time.Now()
 
 	// Set default agent name if not provided
 	if agentRecord.AgentName == "" {
@@ -167,13 +160,19 @@ func (s *DefaultAgentService) UpdateAgent(ctx context.Context, request models.Up
 	if infrastructureChangeRequired {
 		slog.Info("Infrastructure changes detected, updating AI infrastructure", "agent_id", request.AgentID)
 
-		// Use provided AI config or keep existing defaults
+		// Use provided AI config or keep existing agent's configuration
 		var agentConfig *models.AgentAIConfig
 		if request.AIConfig != nil {
 			agentConfig = request.AIConfig
 		} else {
-			agentConfig = &models.AgentAIConfig{
-				Provider: models.AIProviderBedrock,
+			// Try to get full existing AI config from repository
+			if existingConfig, err := existingAgent.GetAIConfig(); err == nil && existingConfig != nil {
+				agentConfig = existingConfig
+			} else {
+				// Fallback to minimal config with just provider
+				agentConfig = &models.AgentAIConfig{
+					Provider: models.AIProvider(existingAgent.AIProvider),
+				}
 			}
 		}
 
@@ -191,6 +190,7 @@ func (s *DefaultAgentService) UpdateAgent(ctx context.Context, request models.Up
 		Branch:        existingAgent.Branch,
 		Status:        existingAgent.Status,
 		AIProvider:    existingAgent.AIProvider,
+		AIConfigJSON:  existingAgent.AIConfigJSON,
 	}
 
 	// Apply updates if provided
@@ -205,6 +205,10 @@ func (s *DefaultAgentService) UpdateAgent(ctx context.Context, request models.Up
 	}
 	if request.AIConfig != nil {
 		updateRecord.AIProvider = string(request.AIConfig.Provider)
+		// Serialize and store the full AI config
+		if configJSON, err := json.Marshal(request.AIConfig); err == nil {
+			updateRecord.AIConfigJSON = string(configJSON)
+		}
 	}
 
 	// If infrastructure was recreated, update the infrastructure IDs

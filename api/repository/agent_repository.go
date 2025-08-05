@@ -3,6 +3,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
@@ -19,6 +20,7 @@ type AgentRecord struct {
 	AgentName       string    `json:"agent_name,omitempty" db:"agent_name"`
 	Status          string    `json:"status" db:"status"`
 	AIProvider      string    `json:"ai_provider,omitempty" db:"ai_provider"`
+	AIConfigJSON    string    `json:"ai_config_json,omitempty" db:"ai_config_json"`
 	CreatedAt       time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
 }
@@ -52,12 +54,31 @@ func NewAgentRecord(request models.CreateAgentRequest, agentID, agentVersion, kb
 		UpdatedAt:       now,
 	}
 
-	// Set AI provider if provided
+	// Set AI config if provided
 	if request.AIConfig != nil {
 		record.AIProvider = string(request.AIConfig.Provider)
+
+		// Serialize AI config to JSON for storage
+		if configJSON, err := json.Marshal(request.AIConfig); err == nil {
+			record.AIConfigJSON = string(configJSON)
+		}
 	}
 
 	return record
+}
+
+// GetAIConfig deserializes the stored AI configuration
+func (r *AgentRecord) GetAIConfig() (*models.AgentAIConfig, error) {
+	if r.AIConfigJSON == "" {
+		return nil, nil
+	}
+
+	var config models.AgentAIConfig
+	if err := json.Unmarshal([]byte(r.AIConfigJSON), &config); err != nil {
+		return nil, err
+	}
+
+	return &config, nil
 }
 
 // AgentRepository defines the interface for agent data operations
