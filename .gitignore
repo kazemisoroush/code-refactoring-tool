@@ -11,3 +11,4 @@ api-server
 main
 build-test
 bin/
+app

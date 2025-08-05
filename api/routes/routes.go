@@ -93,36 +93,6 @@ func SetupCodebaseRoutes(router *gin.Engine, controller *controllers.CodebaseCon
 	}
 }
 
-// SetupAgentRoutes configures the agent routes with generic validation middleware
-func SetupAgentRoutes(router *gin.Engine, controller *controllers.AgentController) {
-	agentGroup := router.Group("/api/v1/agents")
-	{
-		// CREATE - validate JSON body using struct tags
-		agentGroup.POST("",
-			middleware.NewJSONValidationMiddleware[models.CreateAgentRequest]().Handle(),
-			controller.CreateAgent,
-		)
-
-		// LIST - validate query parameters using struct tags
-		agentGroup.GET("",
-			middleware.NewQueryValidationMiddleware[models.ListAgentsRequest]().Handle(),
-			controller.ListAgents,
-		)
-
-		// GET by ID - validate URI parameters using struct tags
-		agentGroup.GET("/:id",
-			middleware.NewURIValidationMiddleware[models.GetAgentRequest]().Handle(),
-			controller.GetAgent,
-		)
-
-		// DELETE - validate URI parameters using struct tags
-		agentGroup.DELETE("/:id",
-			middleware.NewURIValidationMiddleware[models.DeleteAgentRequest]().Handle(),
-			controller.DeleteAgent,
-		)
-	}
-}
-
 // SetupHealthRoutes configures the health routes with generic validation middleware
 func SetupHealthRoutes(router *gin.Engine, controller *controllers.HealthController) {
 	// Health check endpoint - no validation needed but follows the pattern

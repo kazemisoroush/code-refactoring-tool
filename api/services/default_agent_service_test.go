@@ -13,9 +13,7 @@ import (
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
 	"github.com/kazemisoroush/code-refactoring-tool/api/repository"
 	repoMocks "github.com/kazemisoroush/code-refactoring-tool/api/repository/mocks"
-	builderMocks "github.com/kazemisoroush/code-refactoring-tool/pkg/ai/builder/mocks"
-	gitRepoMocks "github.com/kazemisoroush/code-refactoring-tool/pkg/codebase/mocks"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
+	factoryMocks "github.com/kazemisoroush/code-refactoring-tool/pkg/factory/mocks"
 )
 
 func TestNewAgentService(t *testing.T) {
@@ -23,19 +21,11 @@ func TestNewAgentService(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	gitConfig := config.GitConfig{
-		CodebaseURL: "https://github.com/example/repo.git",
-		Token:       "test-token",
-		Author:      "Test Author",
-		Email:       "test@example.com",
-	}
-	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
-	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
-	mockGitRepo := gitRepoMocks.NewMockRepository(ctrl)
 	mockAgentRepo := repoMocks.NewMockAgentRepository(ctrl)
+	mockInfraFactory := factoryMocks.NewMockAIInfrastructureFactory(ctrl)
 
 	// Act
-	service := NewDefaultAgentService(gitConfig, mockRAGBuilder, mockAgentBuilder, mockGitRepo, mockAgentRepo)
+	service := NewDefaultAgentService(mockAgentRepo, mockInfraFactory)
 
 	// Assert
 	assert.NotNil(t, service)
@@ -47,11 +37,8 @@ func TestDefaultAgentService_GetAgent_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	gitConfig := config.GitConfig{}
-	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
-	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
-	mockGitRepo := gitRepoMocks.NewMockRepository(ctrl)
 	mockAgentRepo := repoMocks.NewMockAgentRepository(ctrl)
+	mockInfraFactory := factoryMocks.NewMockAIInfrastructureFactory(ctrl)
 
 	agentID := "test-agent-id"
 	expectedRecord := &repository.AgentRecord{
@@ -69,7 +56,7 @@ func TestDefaultAgentService_GetAgent_Success(t *testing.T) {
 		GetAgent(gomock.Any(), agentID).
 		Return(expectedRecord, nil)
 
-	service := NewDefaultAgentService(gitConfig, mockRAGBuilder, mockAgentBuilder, mockGitRepo, mockAgentRepo)
+	service := NewDefaultAgentService(mockAgentRepo, mockInfraFactory)
 
 	// Act
 	result, err := service.GetAgent(context.Background(), agentID)
@@ -86,11 +73,8 @@ func TestDefaultAgentService_GetAgent_NotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	gitConfig := config.GitConfig{}
-	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
-	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
-	mockGitRepo := gitRepoMocks.NewMockRepository(ctrl)
 	mockAgentRepo := repoMocks.NewMockAgentRepository(ctrl)
+	mockInfraFactory := factoryMocks.NewMockAIInfrastructureFactory(ctrl)
 
 	agentID := "non-existent-agent"
 	expectedError := errors.New("agent not found")
@@ -99,7 +83,7 @@ func TestDefaultAgentService_GetAgent_NotFound(t *testing.T) {
 		GetAgent(gomock.Any(), agentID).
 		Return(nil, expectedError)
 
-	service := NewDefaultAgentService(gitConfig, mockRAGBuilder, mockAgentBuilder, mockGitRepo, mockAgentRepo)
+	service := NewDefaultAgentService(mockAgentRepo, mockInfraFactory)
 
 	// Act
 	response, err := service.GetAgent(context.Background(), agentID)
@@ -115,10 +99,8 @@ func TestDefaultAgentService_ListAgents_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
-	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
-	mockGitRepo := gitRepoMocks.NewMockRepository(ctrl)
 	mockAgentRepo := repoMocks.NewMockAgentRepository(ctrl)
+	mockInfraFactory := factoryMocks.NewMockAIInfrastructureFactory(ctrl)
 
 	agentRecords := []*repository.AgentRecord{
 		{
@@ -146,8 +128,7 @@ func TestDefaultAgentService_ListAgents_Success(t *testing.T) {
 		Return(agentRecords, nil).
 		Times(1)
 
-	gitConfig := config.GitConfig{}
-	service := NewDefaultAgentService(gitConfig, mockRAGBuilder, mockAgentBuilder, mockGitRepo, mockAgentRepo)
+	service := NewDefaultAgentService(mockAgentRepo, mockInfraFactory)
 
 	// Act
 	request := models.ListAgentsRequest{}
@@ -166,10 +147,8 @@ func TestDefaultAgentService_ListAgents_RepositoryError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockRAGBuilder := builderMocks.NewMockRAGBuilder(ctrl)
-	mockAgentBuilder := builderMocks.NewMockAgentBuilder(ctrl)
-	mockGitRepo := gitRepoMocks.NewMockRepository(ctrl)
 	mockAgentRepo := repoMocks.NewMockAgentRepository(ctrl)
+	mockInfraFactory := factoryMocks.NewMockAIInfrastructureFactory(ctrl)
 
 	repoError := errors.New("DynamoDB error")
 
@@ -178,8 +157,7 @@ func TestDefaultAgentService_ListAgents_RepositoryError(t *testing.T) {
 		Return(nil, repoError).
 		Times(1)
 
-	gitConfig := config.GitConfig{}
-	service := NewDefaultAgentService(gitConfig, mockRAGBuilder, mockAgentBuilder, mockGitRepo, mockAgentRepo)
+	service := NewDefaultAgentService(mockAgentRepo, mockInfraFactory)
 
 	// Act
 	request := models.ListAgentsRequest{}

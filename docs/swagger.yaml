@@ -426,6 +426,66 @@ definitions:
         example: Operation completed successfully
         type: string
     type: object
+  UpdateAgentRequest:
+    properties:
+      agent_name:
+        description: Optional new agent name
+        example: updated-code-analyzer
+        minLength: 1
+        type: string
+      branch:
+        description: Optional updated branch name
+        example: develop
+        minLength: 1
+        type: string
+      repository_url:
+        description: Optional updated repository URL
+        example: https://github.com/user/updated-repo
+        type: string
+    type: object
+  UpdateAgentResponse:
+    properties:
+      agent_id:
+        description: Unique identifier for the agent
+        example: agent-12345
+        type: string
+      agent_name:
+        description: Agent name
+        example: updated-code-analyzer
+        type: string
+      agent_version:
+        description: Agent version
+        example: v1.1.0
+        type: string
+      branch:
+        description: Branch name
+        example: develop
+        type: string
+      created_at:
+        description: Timestamp when the agent was created
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      knowledge_base_id:
+        description: Knowledge base ID associated with the agent
+        example: kb-67890
+        type: string
+      repository_url:
+        description: Repository URL
+        example: https://github.com/user/updated-repo
+        type: string
+      status:
+        description: Agent status
+        example: ready
+        type: string
+      updated_at:
+        description: Timestamp when the agent was last updated
+        example: "2024-01-15T11:45:00Z"
+        type: string
+      vector_store_id:
+        description: Vector store ID for the knowledge base
+        example: vs-abcde
+        type: string
+    type: object
   UpdateProjectRequest:
     properties:
       description:
@@ -1449,6 +1509,45 @@ paths:
           schema:
             $ref: '#/definitions/ErrorResponse'
       summary: Create a new agent
+      tags:
+      - agents
+  /agents/{agent_id}:
+    put:
+      consumes:
+      - application/json
+      description: Update an agent's configuration and settings
+      parameters:
+      - description: Agent ID
+        in: path
+        name: agent_id
+        required: true
+        type: string
+      - description: Agent update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateAgentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Agent updated successfully
+          schema:
+            $ref: '#/definitions/UpdateAgentResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Agent not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Update an existing agent
       tags:
       - agents
   /agents/{id}:

@@ -110,6 +110,65 @@
                 }
             }
         },
+        "/agents/{agent_id}": {
+            "put": {
+                "description": "Update an agent's configuration and settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "agents"
+                ],
+                "summary": "Update an existing agent",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Agent ID",
+                        "name": "agent_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Agent update request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateAgentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Agent updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/UpdateAgentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Agent not found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/agents/{id}": {
             "get": {
                 "description": "Retrieve agent information by agent ID",
@@ -2134,6 +2193,83 @@
                     "description": "Success message",
                     "type": "string",
                     "example": "Operation completed successfully"
+                }
+            }
+        },
+        "UpdateAgentRequest": {
+            "type": "object",
+            "properties": {
+                "agent_name": {
+                    "description": "Optional new agent name",
+                    "type": "string",
+                    "minLength": 1,
+                    "example": "updated-code-analyzer"
+                },
+                "branch": {
+                    "description": "Optional updated branch name",
+                    "type": "string",
+                    "minLength": 1,
+                    "example": "develop"
+                },
+                "repository_url": {
+                    "description": "Optional updated repository URL",
+                    "type": "string",
+                    "example": "https://github.com/user/updated-repo"
+                }
+            }
+        },
+        "UpdateAgentResponse": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "description": "Unique identifier for the agent",
+                    "type": "string",
+                    "example": "agent-12345"
+                },
+                "agent_name": {
+                    "description": "Agent name",
+                    "type": "string",
+                    "example": "updated-code-analyzer"
+                },
+                "agent_version": {
+                    "description": "Agent version",
+                    "type": "string",
+                    "example": "v1.1.0"
+                },
+                "branch": {
+                    "description": "Branch name",
+                    "type": "string",
+                    "example": "develop"
+                },
+                "created_at": {
+                    "description": "Timestamp when the agent was created",
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "knowledge_base_id": {
+                    "description": "Knowledge base ID associated with the agent",
+                    "type": "string",
+                    "example": "kb-67890"
+                },
+                "repository_url": {
+                    "description": "Repository URL",
+                    "type": "string",
+                    "example": "https://github.com/user/updated-repo"
+                },
+                "status": {
+                    "description": "Agent status",
+                    "type": "string",
+                    "example": "ready"
+                },
+                "updated_at": {
+                    "description": "Timestamp when the agent was last updated",
+                    "type": "string",
+                    "example": "2024-01-15T11:45:00Z"
+                },
+                "vector_store_id": {
+                    "description": "Vector store ID for the knowledge base",
+                    "type": "string",
+                    "example": "vs-abcde"
                 }
             }
         },

@@ -17,6 +17,9 @@ type AgentService interface {
 	// GetAgent retrieves an agent by ID
 	GetAgent(ctx context.Context, agentID string) (*models.GetAgentResponse, error)
 
+	// UpdateAgent updates an existing agent
+	UpdateAgent(ctx context.Context, request models.UpdateAgentRequest) (*models.UpdateAgentResponse, error)
+
 	// DeleteAgent deletes an agent by ID
 	DeleteAgent(ctx context.Context, agentID string) (*models.DeleteAgentResponse, error)
 

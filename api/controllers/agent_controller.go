@@ -220,3 +220,62 @@ func (c *AgentController) ListAgents(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, response)
 }
+
+// UpdateAgent handles PUT /agents/:agent_id
+// @Summary Update an existing agent
+// @Description Update an agent's configuration and settings
+// @Tags agents
+// @Accept json
+// @Produce json
+// @Param agent_id path string true "Agent ID"
+// @Param request body models.UpdateAgentRequest true "Agent update request"
+// @Success 200 {object} models.UpdateAgentResponse "Agent updated successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid request"
+// @Failure 404 {object} models.ErrorResponse "Agent not found"
+// @Failure 500 {object} models.ErrorResponse "Internal server error"
+// @Router /agents/{agent_id} [put]
+func (c *AgentController) UpdateAgent(ctx *gin.Context) {
+	agentID := ctx.Param("agent_id")
+	if agentID == "" {
+		errorResponse := models.ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: "Agent ID is required",
+			Details: "Agent ID must be provided in the URL path",
+		}
+		ctx.JSON(http.StatusBadRequest, errorResponse)
+		return
+	}
+
+	// Try to get the validated request from context first (new pattern)
+	request, exists := middleware.GetValidatedRequest[models.UpdateAgentRequest](ctx)
+	if !exists {
+		// Fall back to manual binding for backward compatibility
+		var requestData models.UpdateAgentRequest
+		if err := ctx.ShouldBindJSON(&requestData); err != nil {
+			errorResponse := models.ErrorResponse{
+				Code:    http.StatusBadRequest,
+				Message: "Invalid request body",
+				Details: err.Error(),
+			}
+			ctx.JSON(http.StatusBadRequest, errorResponse)
+			return
+		}
+		request = requestData
+	}
+
+	// Set the agent ID from the URL path
+	request.AgentID = agentID
+
+	response, err := c.agentService.UpdateAgent(ctx.Request.Context(), request)
+	if err != nil {
+		errorResponse := models.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to update agent",
+			Details: err.Error(),
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}

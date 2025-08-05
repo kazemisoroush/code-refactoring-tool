@@ -199,6 +199,44 @@ type ListAgentsResponse struct {
 	NextToken string `json:"next_token,omitempty" example:"eyJ0aW1lc3RhbXAiOiIyMDI0LTAxLTE1VDEwOjMwOjAwWiJ9"`
 } //@name ListAgentsResponse
 
+// UpdateAgentRequest represents the request to update an agent
+type UpdateAgentRequest struct {
+	// Agent ID (set from URL path)
+	AgentID string `json:"-" uri:"agent_id" validate:"required"`
+	// Optional new agent name
+	AgentName *string `json:"agent_name,omitempty" validate:"omitempty,min=1" example:"updated-code-analyzer"`
+	// Optional updated repository URL
+	RepositoryURL *string `json:"repository_url,omitempty" validate:"omitempty,url" example:"https://github.com/user/updated-repo"`
+	// Optional updated branch name
+	Branch *string `json:"branch,omitempty" validate:"omitempty,min=1" example:"develop"`
+	// Optional AI configuration updates
+	// AIConfig *config.AIConfiguration `json:"ai_config,omitempty"` // TEMPORARILY DISABLED - will use new AgentAIConfig
+} //@name UpdateAgentRequest
+
+// UpdateAgentResponse represents the response when updating an agent
+type UpdateAgentResponse struct {
+	// Unique identifier for the agent
+	AgentID string `json:"agent_id" example:"agent-12345"`
+	// Agent version
+	AgentVersion string `json:"agent_version" example:"v1.1.0"`
+	// Knowledge base ID associated with the agent
+	KnowledgeBaseID string `json:"knowledge_base_id" example:"kb-67890"`
+	// Vector store ID for the knowledge base
+	VectorStoreID string `json:"vector_store_id" example:"vs-abcde"`
+	// Repository URL
+	RepositoryURL string `json:"repository_url" example:"https://github.com/user/updated-repo"`
+	// Branch name
+	Branch string `json:"branch" example:"develop"`
+	// Agent name
+	AgentName string `json:"agent_name" example:"updated-code-analyzer"`
+	// Agent status
+	Status string `json:"status" example:"ready"`
+	// Timestamp when the agent was created
+	CreatedAt time.Time `json:"created_at" example:"2024-01-15T10:30:00Z"`
+	// Timestamp when the agent was last updated
+	UpdatedAt time.Time `json:"updated_at" example:"2024-01-15T11:45:00Z"`
+} //@name UpdateAgentResponse
+
 // ErrorResponse represents an error response
 type ErrorResponse struct {
 	// Error code

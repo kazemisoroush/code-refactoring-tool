@@ -99,10 +99,19 @@ func main() {
 	// TODO: Git config needs to come from API or Database
 	aiFactory := factory.NewTaskExecutionFactory(cfg.AWSConfig, cfg.Git)
 
+	// Initialize AI infrastructure factory
+	aiInfraFactory := factory.NewAIInfrastructureFactory(cfg.AWSConfig, cfg.Git)
+
 	// Initialize services with full dependency injection
 	projectService := services.NewDefaultProjectService(projectRepository)
 	codebaseService := services.NewDefaultCodebaseService(codebaseRepository)
 	healthService := services.NewDefaultHealthService("code-refactor-tool-api", "1.0.0")
+
+	// Initialize agent service with infrastructure factory
+	agentService := services.NewDefaultAgentService(
+		agentRepository,
+		aiInfraFactory,
+	)
 
 	// Agent repository temporarily nil for API-first development
 	taskService := services.NewTaskService(
@@ -117,6 +126,7 @@ func main() {
 	codebaseController := controllers.NewCodebaseController(codebaseService)
 	taskController := controllers.NewTaskController(taskService)
 	healthController := controllers.NewHealthController(healthService)
+	agentController := controllers.NewAgentController(agentService)
 
 	// Initialize AWS config
 	awsConfig, err := config.LoadDefaultConfig(shutdownCtx, config.WithRegion(cfg.Cognito.Region))
@@ -165,6 +175,9 @@ func main() {
 
 	// Setup codebase routes with validation middleware
 	routes.SetupCodebaseRoutes(router, codebaseController)
+
+	// Setup agent routes with validation middleware
+	routes.SetupAgentRoutes(router, agentController)
 
 	// Setup task routes with validation middleware - NEW!
 	routes.SetupTaskRoutes(router, taskController)

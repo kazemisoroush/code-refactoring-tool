@@ -5,38 +5,27 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
 	"github.com/kazemisoroush/code-refactoring-tool/api/repository"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/ai/builder"
-	pkgRepo "github.com/kazemisoroush/code-refactoring-tool/pkg/codebase"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/workflow"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/factory"
 )
 
 // DefaultAgentService is the default implementation of AgentService
 type DefaultAgentService struct {
-	gitConfig       config.GitConfig
-	ragBuilder      builder.RAGBuilder
-	agentBuilder    builder.AgentBuilder
-	gitRepository   pkgRepo.Codebase
-	agentRepository repository.AgentRepository
+	agentRepository       repository.AgentRepository
+	infrastructureFactory factory.AIInfrastructureFactory
 }
 
 // NewDefaultAgentService creates a new instance of DefaultAgentService
 func NewDefaultAgentService(
-	gitConfig config.GitConfig,
-	ragBuilder builder.RAGBuilder,
-	agentBuilder builder.AgentBuilder,
-	gitRepo pkgRepo.Codebase,
 	agentRepo repository.AgentRepository,
+	infraFactory factory.AIInfrastructureFactory,
 ) AgentService {
 	return &DefaultAgentService{
-		gitConfig:       gitConfig,
-		ragBuilder:      ragBuilder,
-		agentBuilder:    agentBuilder,
-		gitRepository:   gitRepo,
-		agentRepository: agentRepo,
+		agentRepository:       agentRepo,
+		infrastructureFactory: infraFactory,
 	}
 }
 
@@ -44,50 +33,80 @@ func NewDefaultAgentService(
 func (s *DefaultAgentService) CreateAgent(ctx context.Context, request models.CreateAgentRequest) (*models.CreateAgentResponse, error) {
 	slog.Info("Creating agent", "repository_url", request.RepositoryURL, "branch", request.Branch)
 
-	// Create a new repository instance for this request
-	repoConfig := s.gitConfig
-	repoConfig.CodebaseURL = request.RepositoryURL
-	// Note: Branch handling would need to be implemented in repository layer if needed
-
-	repo := pkgRepo.NewGitHubCodebase(repoConfig)
-
-	// Create and run setup workflow
-	setupWorkflow, err := workflow.NewSetupWorkflow(repo, s.ragBuilder, s.agentBuilder)
-	if err != nil {
-		slog.Error("Failed to create setup workflow", "error", err)
-		return nil, fmt.Errorf("failed to create setup workflow: %w", err)
+	// For now, we'll use a default AI configuration since the request doesn't include one
+	// TODO: Update CreateAgentRequest to include AI configuration in a future iteration
+	defaultAIConfig := &models.AgentAIConfig{
+		Provider: models.AIProviderLocal, // Default to local for simplicity
+		Local: &models.LocalAgentConfig{
+			OllamaURL: "http://localhost:11434", // Default Ollama URL
+			Model:     "llama3.1:latest",        // Default model
+		},
 	}
 
-	err = setupWorkflow.Run(ctx)
-	if err != nil {
-		slog.Error("Failed to run setup workflow", "error", err)
-		return nil, fmt.Errorf("failed to setup agent: %w", err)
+	// Validate the AI configuration
+	if err := s.infrastructureFactory.ValidateAgentConfig(defaultAIConfig); err != nil {
+		return nil, fmt.Errorf("invalid AI configuration: %w", err)
 	}
 
-	// Extract resource IDs from the workflow
-	// Cast to concrete type to access GetResourceIDs method
-	concreteWorkflow := setupWorkflow.(*workflow.SetupWorkflow)
-	vectorStoreID, ragID, agentID, agentVersion := concreteWorkflow.GetResourceIDs()
+	// Create AI infrastructure
+	infraResult, err := s.infrastructureFactory.CreateAgentInfrastructure(ctx, defaultAIConfig, request.RepositoryURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create AI infrastructure: %w", err)
+	}
 
-	// Create agent record for storage
-	agentRecord := repository.NewAgentRecord(request, agentID, agentVersion, ragID, vectorStoreID)
+	// Create agent record to store in database
+	agentRecord := &repository.AgentRecord{
+		AgentID:         infraResult.AgentID,
+		AgentVersion:    infraResult.AgentVersion,
+		KnowledgeBaseID: infraResult.KnowledgeBaseID,
+		VectorStoreID:   infraResult.VectorStoreID,
+		RepositoryURL:   request.RepositoryURL,
+		Branch:          request.Branch,
+		AgentName:       request.AgentName,
+		Status:          string(infraResult.Status),
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+	}
 
-	// Store the agent record in DynamoDB
+	// Set default agent name if not provided
+	if agentRecord.AgentName == "" {
+		agentRecord.AgentName = fmt.Sprintf("agent-%s", infraResult.AgentID[:8])
+	}
+
+	// Set default branch if not provided
+	if agentRecord.Branch == "" {
+		agentRecord.Branch = "main"
+	}
+
+	// Save agent to repository
 	err = s.agentRepository.CreateAgent(ctx, agentRecord)
 	if err != nil {
-		slog.Error("Failed to store agent record", "error", err)
-		// Note: In production, we might want to trigger cleanup of AWS resources here
-		return nil, fmt.Errorf("failed to store agent record: %w", err)
+		// If saving fails, try to clean up the infrastructure
+		cleanupErr := s.infrastructureFactory.DestroyAgentInfrastructure(ctx, infraResult.AgentID)
+		if cleanupErr != nil {
+			slog.Error("Failed to cleanup infrastructure after database save failure",
+				"agent_id", infraResult.AgentID, "cleanup_error", cleanupErr)
+		}
+		return nil, fmt.Errorf("failed to save agent to database: %w", err)
 	}
 
-	response := agentRecord.ToResponse()
+	// Update status to ready after successful creation
+	err = s.agentRepository.UpdateAgentStatus(ctx, infraResult.AgentID, models.AgentStatusReady)
+	if err != nil {
+		slog.Error("Failed to update agent status to ready", "agent_id", infraResult.AgentID, "error", err)
+		// Don't fail the creation for this, just log it
+	}
 
-	slog.Info("Agent created successfully",
-		"agent_id", agentID,
-		"agent_version", agentVersion,
-		"knowledge_base_id", ragID,
-		"vector_store_id", vectorStoreID)
+	response := &models.CreateAgentResponse{
+		AgentID:         infraResult.AgentID,
+		AgentVersion:    infraResult.AgentVersion,
+		KnowledgeBaseID: infraResult.KnowledgeBaseID,
+		VectorStoreID:   infraResult.VectorStoreID,
+		Status:          string(models.AgentStatusReady),
+		CreatedAt:       agentRecord.CreatedAt,
+	}
 
+	slog.Info("Agent created successfully", "agent_id", infraResult.AgentID)
 	return response, nil
 }
 
@@ -114,10 +133,68 @@ func (s *DefaultAgentService) GetAgent(ctx context.Context, agentID string) (*mo
 	return response, nil
 }
 
+// UpdateAgent updates an existing agent
+func (s *DefaultAgentService) UpdateAgent(ctx context.Context, request models.UpdateAgentRequest) (*models.UpdateAgentResponse, error) {
+	slog.Info("Updating agent", "agent_id", request.AgentID)
+
+	// Get existing agent to ensure it exists
+	existingAgent, err := s.agentRepository.GetAgent(ctx, request.AgentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get existing agent: %w", err)
+	}
+
+	// Create update record with current values as defaults
+	updateRecord := &repository.AgentRecord{
+		AgentID:       existingAgent.AgentID,
+		AgentName:     existingAgent.AgentName,
+		RepositoryURL: existingAgent.RepositoryURL,
+		Branch:        existingAgent.Branch,
+		Status:        existingAgent.Status,
+	}
+
+	// Apply updates if provided
+	if request.AgentName != nil {
+		updateRecord.AgentName = *request.AgentName
+	}
+	if request.RepositoryURL != nil {
+		updateRecord.RepositoryURL = *request.RepositoryURL
+	}
+	if request.Branch != nil {
+		updateRecord.Branch = *request.Branch
+	}
+
+	// Update the agent in the repository
+	err = s.agentRepository.UpdateAgent(ctx, updateRecord)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update agent: %w", err)
+	}
+
+	// Get the updated agent to return current state
+	updatedAgent, err := s.agentRepository.GetAgent(ctx, request.AgentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get updated agent: %w", err)
+	}
+
+	response := &models.UpdateAgentResponse{
+		AgentID:         updatedAgent.AgentID,
+		AgentVersion:    updatedAgent.AgentVersion,
+		KnowledgeBaseID: updatedAgent.KnowledgeBaseID,
+		VectorStoreID:   updatedAgent.VectorStoreID,
+		RepositoryURL:   updatedAgent.RepositoryURL,
+		Branch:          updatedAgent.Branch,
+		AgentName:       updatedAgent.AgentName,
+		Status:          updatedAgent.Status,
+		CreatedAt:       updatedAgent.CreatedAt,
+		UpdatedAt:       updatedAgent.UpdatedAt,
+	}
+
+	return response, nil
+}
+
 // DeleteAgent deletes an agent by ID
 func (s *DefaultAgentService) DeleteAgent(ctx context.Context, agentID string) (*models.DeleteAgentResponse, error) {
-	// First get the agent to retrieve resource IDs for cleanup
-	agentRecord, err := s.agentRepository.GetAgent(ctx, agentID)
+	// Verify agent exists before attempting deletion
+	_, err := s.agentRepository.GetAgent(ctx, agentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get agent for deletion: %w", err)
 	}
@@ -129,24 +206,10 @@ func (s *DefaultAgentService) DeleteAgent(ctx context.Context, agentID string) (
 		// Continue with deletion anyway
 	}
 
-	// Create teardown workflow to clean up AWS resources
-	teardownWorkflow, err := workflow.NewTeardownWorkflowWithResources(
-		s.gitRepository, // Use a dummy repository for teardown
-		s.ragBuilder,
-		s.agentBuilder,
-		agentRecord.VectorStoreID,
-		agentRecord.KnowledgeBaseID,
-		agentRecord.AgentID,
-		agentRecord.AgentVersion,
-	)
+	// Use the infrastructure factory to clean up AI resources
+	err = s.infrastructureFactory.DestroyAgentInfrastructure(ctx, agentID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create teardown workflow: %w", err)
-	}
-
-	// Run teardown workflow
-	err = teardownWorkflow.Run(ctx)
-	if err != nil {
-		slog.Error("Failed to run teardown workflow", "error", err)
+		slog.Error("Failed to destroy AI infrastructure", "agent_id", agentID, "error", err)
 		// Don't return error here - we still want to delete from DB
 	}
 
