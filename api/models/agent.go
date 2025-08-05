@@ -5,31 +5,6 @@ import (
 	"time"
 )
 
-// AgentStatus represents the current status of an agent
-type AgentStatus string
-
-// Agent status constants define the possible states of an agent
-const (
-	// AgentStatusPending indicates the agent is waiting to be initialized
-	AgentStatusPending AgentStatus = "pending"
-	// AgentStatusInitializing indicates the agent is being set up
-	AgentStatusInitializing AgentStatus = "initializing"
-	// AgentStatusReady indicates the agent is ready to process tasks
-	AgentStatusReady AgentStatus = "ready"
-	// AgentStatusTraining indicates the agent is being trained or updated
-	AgentStatusTraining AgentStatus = "training"
-	// AgentStatusFailed indicates the agent failed to initialize or operate
-	AgentStatusFailed AgentStatus = "failed"
-	// AgentStatusInactive indicates the agent is temporarily disabled
-	AgentStatusInactive AgentStatus = "inactive"
-	// AgentStatusCreating indicates the agent is being created (legacy)
-	AgentStatusCreating AgentStatus = "creating"
-	// AgentStatusError indicates the agent encountered an error (legacy)
-	AgentStatusError AgentStatus = "error"
-	// AgentStatusDeleted indicates the agent has been deleted (legacy)
-	AgentStatusDeleted AgentStatus = "deleted"
-)
-
 // Agent represents a complete agent with its AI configuration
 type Agent struct {
 	AgentID     string      `json:"agent_id" db:"agent_id"`

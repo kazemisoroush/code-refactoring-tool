@@ -260,7 +260,7 @@ func TestPostgresAgentRepository_UpdateAgent(t *testing.T) {
 		RepositoryURL:   "https://github.com/test/repo",
 		Branch:          "develop",
 		AgentName:       "Updated Agent",
-		Status:          string(models.AgentStatusError),
+		Status:          string(models.AgentStatusFailed),
 		CreatedAt:       now,
 		UpdatedAt:       now,
 	}
@@ -398,7 +398,7 @@ func TestPostgresAgentRepository_UpdateAgentStatus(t *testing.T) {
 	repo := NewPostgresAgentRepositoryWithDB(db, "agents")
 	ctx := context.Background()
 	agentID := "test-agent-id"
-	status := models.AgentStatusError
+	status := models.AgentStatusFailed
 
 	t.Run("successful status update", func(t *testing.T) {
 		mock.ExpectExec(`UPDATE agents SET status`).

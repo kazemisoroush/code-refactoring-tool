@@ -2635,23 +2635,13 @@ const docTemplate = `{
                 "pending",
                 "initializing",
                 "ready",
-                "training",
-                "failed",
-                "inactive",
-                "creating",
-                "error",
-                "deleted"
+                "failed"
             ],
             "x-enum-varnames": [
                 "AgentStatusPending",
                 "AgentStatusInitializing",
                 "AgentStatusReady",
-                "AgentStatusTraining",
-                "AgentStatusFailed",
-                "AgentStatusInactive",
-                "AgentStatusCreating",
-                "AgentStatusError",
-                "AgentStatusDeleted"
+                "AgentStatusFailed"
             ]
         },
         "models.BedrockAgentConfig": {

@@ -731,23 +731,13 @@ definitions:
     - pending
     - initializing
     - ready
-    - training
     - failed
-    - inactive
-    - creating
-    - error
-    - deleted
     type: string
     x-enum-varnames:
     - AgentStatusPending
     - AgentStatusInitializing
     - AgentStatusReady
-    - AgentStatusTraining
     - AgentStatusFailed
-    - AgentStatusInactive
-    - AgentStatusCreating
-    - AgentStatusError
-    - AgentStatusDeleted
   models.BedrockAgentConfig:
     properties:
       agent_service_role_arn:

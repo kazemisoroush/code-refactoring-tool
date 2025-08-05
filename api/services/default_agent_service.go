@@ -143,6 +143,43 @@ func (s *DefaultAgentService) UpdateAgent(ctx context.Context, request models.Up
 		return nil, fmt.Errorf("failed to get existing agent: %w", err)
 	}
 
+	// Check if infrastructure-impacting changes are being made
+	infrastructureChangeRequired := false
+	newRepositoryURL := existingAgent.RepositoryURL
+
+	if request.RepositoryURL != nil && *request.RepositoryURL != existingAgent.RepositoryURL {
+		infrastructureChangeRequired = true
+		newRepositoryURL = *request.RepositoryURL
+	}
+	if request.Branch != nil && *request.Branch != existingAgent.Branch {
+		infrastructureChangeRequired = true
+	}
+
+	// If infrastructure changes are required, recreate the AI infrastructure
+	var infrastructureResult *factory.AIInfrastructureResult
+	if infrastructureChangeRequired {
+		slog.Info("Infrastructure changes detected, recreating AI infrastructure", "agent_id", request.AgentID)
+
+		// First, destroy existing infrastructure if it exists
+		if existingAgent.KnowledgeBaseID != "" {
+			slog.Info("Destroying existing infrastructure", "knowledge_base_id", existingAgent.KnowledgeBaseID)
+			if err := s.infrastructureFactory.DestroyAgentInfrastructure(ctx, existingAgent.KnowledgeBaseID); err != nil {
+				slog.Warn("Failed to destroy existing infrastructure", "error", err, "knowledge_base_id", existingAgent.KnowledgeBaseID)
+				// Continue with update even if destruction fails
+			}
+		}
+
+		// Create new infrastructure with updated configuration
+		agentConfig := &models.AgentAIConfig{
+			Provider: models.AIProviderBedrock, // Default to bedrock for now
+		}
+
+		infrastructureResult, err = s.infrastructureFactory.CreateAgentInfrastructure(ctx, agentConfig, newRepositoryURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create updated AI infrastructure: %w", err)
+		}
+	}
+
 	// Create update record with current values as defaults
 	updateRecord := &repository.AgentRecord{
 		AgentID:       existingAgent.AgentID,
@@ -163,9 +200,25 @@ func (s *DefaultAgentService) UpdateAgent(ctx context.Context, request models.Up
 		updateRecord.Branch = *request.Branch
 	}
 
+	// If infrastructure was recreated, update the infrastructure IDs
+	if infrastructureResult != nil {
+		updateRecord.KnowledgeBaseID = infrastructureResult.KnowledgeBaseID
+		updateRecord.VectorStoreID = infrastructureResult.VectorStoreID
+		updateRecord.AgentVersion = infrastructureResult.AgentVersion
+		updateRecord.Status = string(infrastructureResult.Status)
+	}
+
 	// Update the agent in the repository
 	err = s.agentRepository.UpdateAgent(ctx, updateRecord)
 	if err != nil {
+		// If database update fails but we created new infrastructure, we should clean it up
+		if infrastructureResult != nil {
+			slog.Warn("Database update failed after creating infrastructure, cleaning up",
+				"agent_id", request.AgentID, "knowledge_base_id", infrastructureResult.KnowledgeBaseID)
+			if cleanupErr := s.infrastructureFactory.DestroyAgentInfrastructure(ctx, infrastructureResult.KnowledgeBaseID); cleanupErr != nil {
+				slog.Error("Failed to cleanup infrastructure after database failure", "error", cleanupErr)
+			}
+		}
 		return nil, fmt.Errorf("failed to update agent: %w", err)
 	}
 
@@ -197,13 +250,6 @@ func (s *DefaultAgentService) DeleteAgent(ctx context.Context, agentID string) (
 	_, err := s.agentRepository.GetAgent(ctx, agentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get agent for deletion: %w", err)
-	}
-
-	// Update status to deleting
-	err = s.agentRepository.UpdateAgentStatus(ctx, agentID, models.AgentStatusDeleted)
-	if err != nil {
-		slog.Error("Failed to update agent status to deleting", "error", err)
-		// Continue with deletion anyway
 	}
 
 	// Use the infrastructure factory to clean up AI resources

@@ -71,3 +71,18 @@ const (
 	// PermissionUserDelete allows deleting users
 	PermissionUserDelete Permission = "user:delete"
 )
+
+// AgentStatus represents the current status of an agent
+type AgentStatus string
+
+// Agent status constants define the possible states of an agent
+const (
+	// AgentStatusPending indicates the agent is waiting to be initialized
+	AgentStatusPending AgentStatus = "pending"
+	// AgentStatusInitializing indicates the agent is being set up
+	AgentStatusInitializing AgentStatus = "initializing"
+	// AgentStatusReady indicates the agent is ready to process tasks
+	AgentStatusReady AgentStatus = "ready"
+	// AgentStatusFailed indicates the agent failed to initialize or operate
+	AgentStatusFailed AgentStatus = "failed"
+)
