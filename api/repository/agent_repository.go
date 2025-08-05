@@ -18,6 +18,7 @@ type AgentRecord struct {
 	Branch          string    `json:"branch,omitempty" db:"branch"`
 	AgentName       string    `json:"agent_name,omitempty" db:"agent_name"`
 	Status          string    `json:"status" db:"status"`
+	AIProvider      string    `json:"ai_provider,omitempty" db:"ai_provider"`
 	CreatedAt       time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
 }
@@ -37,7 +38,8 @@ func (r *AgentRecord) ToResponse() *models.CreateAgentResponse {
 // NewAgentRecord creates an AgentRecord from CreateAgentRequest
 func NewAgentRecord(request models.CreateAgentRequest, agentID, agentVersion, kbID, vectorStoreID string) *AgentRecord {
 	now := time.Now().UTC()
-	return &AgentRecord{
+	
+	record := &AgentRecord{
 		AgentID:         agentID,
 		AgentVersion:    agentVersion,
 		KnowledgeBaseID: kbID,
@@ -49,6 +51,13 @@ func NewAgentRecord(request models.CreateAgentRequest, agentID, agentVersion, kb
 		CreatedAt:       now,
 		UpdatedAt:       now,
 	}
+	
+	// Set AI provider if provided
+	if request.AIConfig != nil {
+		record.AIProvider = string(request.AIConfig.Provider)
+	}
+	
+	return record
 }
 
 // AgentRepository defines the interface for agent data operations

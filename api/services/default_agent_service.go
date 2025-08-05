@@ -33,23 +33,26 @@ func NewDefaultAgentService(
 func (s *DefaultAgentService) CreateAgent(ctx context.Context, request models.CreateAgentRequest) (*models.CreateAgentResponse, error) {
 	slog.Info("Creating agent", "repository_url", request.RepositoryURL, "branch", request.Branch)
 
-	// For now, we'll use a default AI configuration since the request doesn't include one
-	// TODO: Update CreateAgentRequest to include AI configuration in a future iteration
-	defaultAIConfig := &models.AgentAIConfig{
-		Provider: models.AIProviderLocal, // Default to local for simplicity
-		Local: &models.LocalAgentConfig{
-			OllamaURL: "http://localhost:11434", // Default Ollama URL
-			Model:     "llama3.1:latest",        // Default model
-		},
+	// Use provided AI config or default to local
+	var agentConfig *models.AgentAIConfig
+	if request.AIConfig != nil {
+		agentConfig = request.AIConfig
+	} else {
+		agentConfig = &models.AgentAIConfig{
+			Provider: models.AIProviderLocal,
+			Local: &models.LocalAgentConfig{
+				OllamaURL: "http://localhost:11434",
+				Model:     "llama3.1:latest",
+			},
+		}
 	}
 
-	// Validate the AI configuration
-	if err := s.infrastructureFactory.ValidateAgentConfig(defaultAIConfig); err != nil {
+	if err := s.infrastructureFactory.ValidateAgentConfig(agentConfig); err != nil {
 		return nil, fmt.Errorf("invalid AI configuration: %w", err)
 	}
 
 	// Create AI infrastructure
-	infraResult, err := s.infrastructureFactory.CreateAgentInfrastructure(ctx, defaultAIConfig, request.RepositoryURL)
+	infraResult, err := s.infrastructureFactory.CreateAgentInfrastructure(ctx, agentConfig, request.RepositoryURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AI infrastructure: %w", err)
 	}
@@ -154,18 +157,25 @@ func (s *DefaultAgentService) UpdateAgent(ctx context.Context, request models.Up
 	if request.Branch != nil && *request.Branch != existingAgent.Branch {
 		infrastructureChangeRequired = true
 	}
+	if request.AIConfig != nil {
+		infrastructureChangeRequired = true
+	}
 
 	// If infrastructure changes are required, update the AI infrastructure
 	var infrastructureResult *factory.AIInfrastructureResult
 	if infrastructureChangeRequired {
 		slog.Info("Infrastructure changes detected, updating AI infrastructure", "agent_id", request.AgentID)
 
-		// Create configuration for the update
-		agentConfig := &models.AgentAIConfig{
-			Provider: models.AIProviderBedrock, // Default to bedrock for now
+		// Use provided AI config or keep existing defaults
+		var agentConfig *models.AgentAIConfig
+		if request.AIConfig != nil {
+			agentConfig = request.AIConfig
+		} else {
+			agentConfig = &models.AgentAIConfig{
+				Provider: models.AIProviderBedrock,
+			}
 		}
 
-		// Use the new update method which handles the complexity internally
 		infrastructureResult, err = s.infrastructureFactory.UpdateAgentInfrastructure(ctx, existingAgent.KnowledgeBaseID, agentConfig, newRepositoryURL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update AI infrastructure: %w", err)
@@ -179,6 +189,7 @@ func (s *DefaultAgentService) UpdateAgent(ctx context.Context, request models.Up
 		RepositoryURL: existingAgent.RepositoryURL,
 		Branch:        existingAgent.Branch,
 		Status:        existingAgent.Status,
+		AIProvider:    existingAgent.AIProvider,
 	}
 
 	// Apply updates if provided
@@ -190,6 +201,9 @@ func (s *DefaultAgentService) UpdateAgent(ctx context.Context, request models.Up
 	}
 	if request.Branch != nil {
 		updateRecord.Branch = *request.Branch
+	}
+	if request.AIConfig != nil {
+		updateRecord.AIProvider = string(request.AIConfig.Provider)
 	}
 
 	// If infrastructure was recreated, update the infrastructure IDs

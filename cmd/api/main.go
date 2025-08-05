@@ -96,10 +96,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// TODO: Git config needs to come from API or Database
-	aiFactory := factory.NewTaskExecutionFactory(cfg.AWSConfig, cfg.Git)
-
-	// Initialize AI infrastructure factory
 	aiInfraFactory := factory.NewAIInfrastructureFactory(cfg.AWSConfig, cfg.Git)
 
 	// Initialize services with full dependency injection
@@ -113,13 +109,11 @@ func main() {
 		aiInfraFactory,
 	)
 
-	// Agent repository temporarily nil for API-first development
 	taskService := services.NewTaskService(
 		taskRepository,
 		projectRepository,
 		agentRepository,
 		codebaseRepository,
-		aiFactory,
 	)
 
 	projectController := controllers.NewProjectController(projectService)

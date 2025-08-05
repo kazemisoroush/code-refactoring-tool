@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
 	"github.com/kazemisoroush/code-refactoring-tool/api/repository"
-	"github.com/kazemisoroush/code-refactoring-tool/pkg/factory"
 )
 
 // TaskServiceImpl implements TaskService with dynamic AI capabilities
@@ -19,7 +18,6 @@ type TaskServiceImpl struct {
 	projectRepo  repository.ProjectRepository
 	agentRepo    repository.AgentRepository
 	codebaseRepo repository.CodebaseRepository
-	aiFactory    factory.TaskExecutionFactory
 }
 
 // NewTaskService creates a new task service with dependency injection
@@ -28,14 +26,12 @@ func NewTaskService(
 	projectRepo repository.ProjectRepository,
 	agentRepo repository.AgentRepository,
 	codebaseRepo repository.CodebaseRepository,
-	aiFactory factory.TaskExecutionFactory,
 ) TaskService {
 	return &TaskServiceImpl{
 		taskRepo:     taskRepo,
 		projectRepo:  projectRepo,
 		agentRepo:    agentRepo,
 		codebaseRepo: codebaseRepo,
-		aiFactory:    aiFactory,
 	}
 }
 
@@ -218,31 +214,32 @@ func (s *TaskServiceImpl) executeTaskSync(ctx context.Context, taskID string, re
 		return nil, fmt.Errorf("failed to load task context: %w", err)
 	}
 
-	// Validate agent configuration
-	if err := s.aiFactory.ValidateAgentConfig(taskWithContext.Agent.AIConfig); err != nil {
-		s.updateTaskError(ctx, taskID, fmt.Sprintf("invalid agent config: %v", err))
-		return nil, fmt.Errorf("agent configuration validation failed: %w", err)
+	// Verify the agent exists and is ready (instead of creating it dynamically)
+	if taskWithContext.Agent == nil {
+		s.updateTaskError(ctx, taskID, "task has no associated agent")
+		return nil, fmt.Errorf("task must have an associated agent")
 	}
 
-	// Create AI agent dynamically
-	agentID, agentVersion, err := s.aiFactory.CreateAgentForTask(ctx, taskWithContext)
-	if err != nil {
-		s.updateTaskError(ctx, taskID, fmt.Sprintf("AI agent creation failed: %v", err))
-		return nil, fmt.Errorf("failed to create AI agent: %w", err)
+	// Check if agent is in ready state
+	if taskWithContext.Agent.Status != models.AgentStatusReady {
+		s.updateTaskError(ctx, taskID, fmt.Sprintf("agent not ready: %s", taskWithContext.Agent.Status))
+		return nil, fmt.Errorf("agent %s is not ready (status: %s)", taskWithContext.Agent.AgentID, taskWithContext.Agent.Status)
 	}
 
-	// Execute task with AI agent
+	// Execute task with the pre-existing agent
 	results := map[string]any{
-		"task_id":             taskID,
-		"agent_id":            agentID,
-		"agent_version":       agentVersion,
-		"ai_provider":         taskWithContext.Agent.AIConfig.Provider,
-		"execution_method":    "dynamic_ai_factory",
-		"supported_providers": s.aiFactory.GetSupportedProviders(),
-		"prompt":              req.Description,
-		"task_type":           req.Type,
-		"message":             "Task executed successfully with dynamic AI resources",
-		"executed_at":         time.Now().Format(time.RFC3339),
+		"task_id":           taskID,
+		"agent_id":          taskWithContext.Agent.AgentID,
+		"agent_version":     taskWithContext.Agent.Version,
+		"agent_name":        taskWithContext.Agent.Name,
+		"ai_provider":       taskWithContext.Agent.AIConfig.Provider,
+		"execution_method":  "manual_agent",
+		"prompt":            req.Description,
+		"task_type":         req.Type,
+		"message":           "Task executed successfully with manually created agent",
+		"executed_at":       time.Now().Format(time.RFC3339),
+		"knowledge_base_id": taskWithContext.Agent.KnowledgeBaseID,
+		"vector_store_id":   taskWithContext.Agent.VectorStoreID,
 	}
 
 	// Update task with results

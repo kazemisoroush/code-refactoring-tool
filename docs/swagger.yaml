@@ -30,6 +30,10 @@ definitions:
         example: my-code-analyzer
         minLength: 1
         type: string
+      ai_config:
+        allOf:
+        - $ref: '#/definitions/models.AgentAIConfig'
+        description: AI configuration for the agent
       branch:
         description: Optional branch name, defaults to main
         example: main
@@ -433,6 +437,10 @@ definitions:
         example: updated-code-analyzer
         minLength: 1
         type: string
+      ai_config:
+        allOf:
+        - $ref: '#/definitions/models.AgentAIConfig'
+        description: Optional AI configuration updates
       branch:
         description: Optional updated branch name
         example: develop

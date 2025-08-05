@@ -1660,6 +1660,14 @@ const docTemplate = `{
                     "minLength": 1,
                     "example": "my-code-analyzer"
                 },
+                "ai_config": {
+                    "description": "AI configuration for the agent",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.AgentAIConfig"
+                        }
+                    ]
+                },
                 "branch": {
                     "description": "Optional branch name, defaults to main",
                     "type": "string",
@@ -2210,6 +2218,14 @@ const docTemplate = `{
                     "type": "string",
                     "minLength": 1,
                     "example": "updated-code-analyzer"
+                },
+                "ai_config": {
+                    "description": "Optional AI configuration updates",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.AgentAIConfig"
+                        }
+                    ]
                 },
                 "branch": {
                     "description": "Optional updated branch name",

@@ -80,8 +80,8 @@ type CreateAgentRequest struct {
 	Branch string `json:"branch,omitempty" validate:"omitempty,min=1" example:"main"`
 	// Optional custom agent name
 	AgentName string `json:"agent_name,omitempty" validate:"omitempty,min=1" example:"my-code-analyzer"`
-	// Optional AI configuration (defaults to platform default if not provided)
-	// AIConfig *config.AIConfiguration `json:"ai_config,omitempty"` // TEMPORARILY DISABLED - will use new AgentAIConfig
+	// AI configuration for the agent
+	AIConfig *AgentAIConfig `json:"ai_config,omitempty"`
 } //@name CreateAgentRequest
 
 // CreateAgentResponse represents the response when creating an agent
@@ -185,7 +185,7 @@ type UpdateAgentRequest struct {
 	// Optional updated branch name
 	Branch *string `json:"branch,omitempty" validate:"omitempty,min=1" example:"develop"`
 	// Optional AI configuration updates
-	// AIConfig *config.AIConfiguration `json:"ai_config,omitempty"` // TEMPORARILY DISABLED - will use new AgentAIConfig
+	AIConfig *AgentAIConfig `json:"ai_config,omitempty"`
 } //@name UpdateAgentRequest
 
 // UpdateAgentResponse represents the response when updating an agent
