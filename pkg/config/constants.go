@@ -58,10 +58,17 @@ const (
 
 	// DefaultUsersTableName is the default name for the users table
 	DefaultUsersTableName = "users"
+
+	// DefaultOllamaURL is the default URL for local Ollama server
+	DefaultOllamaURL = "http://localhost:11434"
+	// DefaultOllamaModel is the default Ollama model for local AI processing
+	DefaultOllamaModel = "llama3.1:latest"
+	// DefaultGitBranch is the default Git branch when none is specified
+	DefaultGitBranch = "main"
 )
 
 var (
-	// FoundationModels is a list of foundation models to be used in the application.
+	// FoundationModels is a list of AWS Bedrock foundation models to be used in the application.
 	FoundationModels = []string{
 		// Anthropic Claude
 		"anthropic.claude-instant-v1",
@@ -91,5 +98,27 @@ var (
 		"amazon.titan-text-lite-v1",
 		"amazon.titan-text-express-v1",
 		"amazon.titan-embed-text-v1",
+	}
+
+	// OllamaModels is a list of commonly available Ollama models - these are SEPARATE from AWS Bedrock
+	OllamaModels = []string{
+		"llama3.1:latest",
+		"llama3.1:8b",
+		"llama3.1:70b",
+		"llama3:latest",
+		"llama3:8b",
+		"llama3:70b",
+		"codellama:latest",
+		"codellama:7b",
+		"codellama:13b",
+		"codellama:34b",
+		"mistral:latest",
+		"mistral:7b",
+		"gemma:latest",
+		"gemma:7b",
+		"phi3:latest",
+		"qwen:latest",
+		"deepseek-coder:latest",
+		"starcoder2:latest",
 	}
 )

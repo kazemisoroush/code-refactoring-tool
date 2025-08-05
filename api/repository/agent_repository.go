@@ -38,7 +38,7 @@ func (r *AgentRecord) ToResponse() *models.CreateAgentResponse {
 // NewAgentRecord creates an AgentRecord from CreateAgentRequest
 func NewAgentRecord(request models.CreateAgentRequest, agentID, agentVersion, kbID, vectorStoreID string) *AgentRecord {
 	now := time.Now().UTC()
-	
+
 	record := &AgentRecord{
 		AgentID:         agentID,
 		AgentVersion:    agentVersion,
@@ -51,12 +51,12 @@ func NewAgentRecord(request models.CreateAgentRequest, agentID, agentVersion, kb
 		CreatedAt:       now,
 		UpdatedAt:       now,
 	}
-	
+
 	// Set AI provider if provided
 	if request.AIConfig != nil {
 		record.AIProvider = string(request.AIConfig.Provider)
 	}
-	
+
 	return record
 }
 

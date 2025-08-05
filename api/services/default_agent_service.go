@@ -9,6 +9,7 @@ import (
 
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
 	"github.com/kazemisoroush/code-refactoring-tool/api/repository"
+	"github.com/kazemisoroush/code-refactoring-tool/pkg/config"
 	"github.com/kazemisoroush/code-refactoring-tool/pkg/factory"
 )
 
@@ -41,8 +42,8 @@ func (s *DefaultAgentService) CreateAgent(ctx context.Context, request models.Cr
 		agentConfig = &models.AgentAIConfig{
 			Provider: models.AIProviderLocal,
 			Local: &models.LocalAgentConfig{
-				OllamaURL: "http://localhost:11434",
-				Model:     "llama3.1:latest",
+				OllamaURL: config.DefaultOllamaURL,
+				Model:     config.DefaultOllamaModel,
 			},
 		}
 	}
@@ -78,7 +79,7 @@ func (s *DefaultAgentService) CreateAgent(ctx context.Context, request models.Cr
 
 	// Set default branch if not provided
 	if agentRecord.Branch == "" {
-		agentRecord.Branch = "main"
+		agentRecord.Branch = config.DefaultGitBranch
 	}
 
 	// Save agent to repository
