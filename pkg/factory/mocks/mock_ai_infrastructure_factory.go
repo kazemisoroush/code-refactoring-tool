@@ -79,6 +79,21 @@ func (mr *MockAIInfrastructureFactoryMockRecorder) GetSupportedProviders() *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSupportedProviders", reflect.TypeOf((*MockAIInfrastructureFactory)(nil).GetSupportedProviders))
 }
 
+// UpdateAgentInfrastructure mocks base method.
+func (m *MockAIInfrastructureFactory) UpdateAgentInfrastructure(arg0 context.Context, arg1 string, arg2 *models.AgentAIConfig, arg3 string) (*factory.AIInfrastructureResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateAgentInfrastructure", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(*factory.AIInfrastructureResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateAgentInfrastructure indicates an expected call of UpdateAgentInfrastructure.
+func (mr *MockAIInfrastructureFactoryMockRecorder) UpdateAgentInfrastructure(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAgentInfrastructure", reflect.TypeOf((*MockAIInfrastructureFactory)(nil).UpdateAgentInfrastructure), arg0, arg1, arg2, arg3)
+}
+
 // ValidateAgentConfig mocks base method.
 func (m *MockAIInfrastructureFactory) ValidateAgentConfig(arg0 *models.AgentAIConfig) error {
 	m.ctrl.T.Helper()

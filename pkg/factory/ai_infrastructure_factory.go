@@ -13,6 +13,9 @@ type AIInfrastructureFactory interface {
 	// CreateAgentInfrastructure creates AI infrastructure for an agent
 	CreateAgentInfrastructure(ctx context.Context, config *models.AgentAIConfig, repositoryURL string) (*AIInfrastructureResult, error)
 
+	// UpdateAgentInfrastructure updates existing AI infrastructure for an agent
+	UpdateAgentInfrastructure(ctx context.Context, infrastructureID string, config *models.AgentAIConfig, repositoryURL string) (*AIInfrastructureResult, error)
+
 	// ValidateAgentConfig validates an agent's AI configuration
 	ValidateAgentConfig(config *models.AgentAIConfig) error
 

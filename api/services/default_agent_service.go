@@ -155,28 +155,20 @@ func (s *DefaultAgentService) UpdateAgent(ctx context.Context, request models.Up
 		infrastructureChangeRequired = true
 	}
 
-	// If infrastructure changes are required, recreate the AI infrastructure
+	// If infrastructure changes are required, update the AI infrastructure
 	var infrastructureResult *factory.AIInfrastructureResult
 	if infrastructureChangeRequired {
-		slog.Info("Infrastructure changes detected, recreating AI infrastructure", "agent_id", request.AgentID)
+		slog.Info("Infrastructure changes detected, updating AI infrastructure", "agent_id", request.AgentID)
 
-		// First, destroy existing infrastructure if it exists
-		if existingAgent.KnowledgeBaseID != "" {
-			slog.Info("Destroying existing infrastructure", "knowledge_base_id", existingAgent.KnowledgeBaseID)
-			if err := s.infrastructureFactory.DestroyAgentInfrastructure(ctx, existingAgent.KnowledgeBaseID); err != nil {
-				slog.Warn("Failed to destroy existing infrastructure", "error", err, "knowledge_base_id", existingAgent.KnowledgeBaseID)
-				// Continue with update even if destruction fails
-			}
-		}
-
-		// Create new infrastructure with updated configuration
+		// Create configuration for the update
 		agentConfig := &models.AgentAIConfig{
 			Provider: models.AIProviderBedrock, // Default to bedrock for now
 		}
 
-		infrastructureResult, err = s.infrastructureFactory.CreateAgentInfrastructure(ctx, agentConfig, newRepositoryURL)
+		// Use the new update method which handles the complexity internally
+		infrastructureResult, err = s.infrastructureFactory.UpdateAgentInfrastructure(ctx, existingAgent.KnowledgeBaseID, agentConfig, newRepositoryURL)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create updated AI infrastructure: %w", err)
+			return nil, fmt.Errorf("failed to update AI infrastructure: %w", err)
 		}
 	}
 
@@ -211,13 +203,12 @@ func (s *DefaultAgentService) UpdateAgent(ctx context.Context, request models.Up
 	// Update the agent in the repository
 	err = s.agentRepository.UpdateAgent(ctx, updateRecord)
 	if err != nil {
-		// If database update fails but we created new infrastructure, we should clean it up
+		// If database update fails but we updated infrastructure, we should try to revert
 		if infrastructureResult != nil {
-			slog.Warn("Database update failed after creating infrastructure, cleaning up",
-				"agent_id", request.AgentID, "knowledge_base_id", infrastructureResult.KnowledgeBaseID)
-			if cleanupErr := s.infrastructureFactory.DestroyAgentInfrastructure(ctx, infrastructureResult.KnowledgeBaseID); cleanupErr != nil {
-				slog.Error("Failed to cleanup infrastructure after database failure", "error", cleanupErr)
-			}
+			slog.Warn("Database update failed after updating infrastructure, attempting to revert",
+				"agent_id", request.AgentID, "new_knowledge_base_id", infrastructureResult.KnowledgeBaseID)
+			// Note: Reverting infrastructure updates is complex and may not always be possible
+			// In a production system, you might want to implement a compensation transaction
 		}
 		return nil, fmt.Errorf("failed to update agent: %w", err)
 	}

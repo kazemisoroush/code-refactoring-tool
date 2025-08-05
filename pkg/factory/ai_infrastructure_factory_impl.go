@@ -3,6 +3,7 @@ package factory
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
@@ -182,4 +183,37 @@ func (f *DefaultAIInfrastructureFactory) validateLocalConfig(config *models.Loca
 		return fmt.Errorf("local model is required")
 	}
 	return nil
+}
+
+// UpdateAgentInfrastructure updates existing AI infrastructure for an agent
+func (f *DefaultAIInfrastructureFactory) UpdateAgentInfrastructure(ctx context.Context, infrastructureID string, config *models.AgentAIConfig, repositoryURL string) (*AIInfrastructureResult, error) {
+	slog.Info("Updating AI infrastructure", "infrastructure_id", infrastructureID, "provider", config.Provider)
+
+	// Validate the configuration first
+	if err := f.ValidateAgentConfig(config); err != nil {
+		return nil, fmt.Errorf("invalid agent configuration: %w", err)
+	}
+
+	// For now, we'll implement update by destroying and recreating
+	// TODO: In the future, this can be optimized to do in-place updates where possible
+
+	// First, try to destroy existing infrastructure
+	if err := f.DestroyAgentInfrastructure(ctx, infrastructureID); err != nil {
+		slog.Warn("Failed to destroy existing infrastructure during update",
+			"infrastructure_id", infrastructureID, "error", err)
+		// Continue with creation anyway
+	}
+
+	// Create new infrastructure with updated configuration
+	result, err := f.CreateAgentInfrastructure(ctx, config, repositoryURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create updated infrastructure: %w", err)
+	}
+
+	slog.Info("AI infrastructure updated successfully",
+		"old_infrastructure_id", infrastructureID,
+		"new_infrastructure_id", result.AgentID,
+		"provider", config.Provider)
+
+	return result, nil
 }
