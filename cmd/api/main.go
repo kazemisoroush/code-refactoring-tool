@@ -96,7 +96,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	aiInfraFactory := factory.NewAIInfrastructureFactory(cfg.AWSConfig, cfg.Git)
+	aiInfraFactory := factory.NewAIInfrastructureFactory(cfg.AWSConfig, cfg.AI, cfg.Git)
 
 	// Initialize services with full dependency injection
 	projectService := services.NewDefaultProjectService(projectRepository)

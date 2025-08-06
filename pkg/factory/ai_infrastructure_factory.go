@@ -1,3 +1,4 @@
+// Package factory provides interfaces and implementations for creating and managing AI infrastructure.
 package factory
 
 import (
@@ -11,13 +12,13 @@ import (
 //go:generate mockgen -destination=./mocks/mock_ai_infrastructure_factory.go -mock_names=AIInfrastructureFactory=MockAIInfrastructureFactory -package=mocks . AIInfrastructureFactory
 type AIInfrastructureFactory interface {
 	// CreateAgentInfrastructure creates AI infrastructure for an agent
-	CreateAgentInfrastructure(ctx context.Context, config *models.AgentAIConfig, repositoryURL string) (*AIInfrastructureResult, error)
+	CreateAgentInfrastructure(ctx context.Context, provider models.AIProvider, repositoryURL string) (*AIInfrastructureResult, error)
 
 	// UpdateAgentInfrastructure updates existing AI infrastructure for an agent
-	UpdateAgentInfrastructure(ctx context.Context, infrastructureID string, config *models.AgentAIConfig, repositoryURL string) (*AIInfrastructureResult, error)
+	UpdateAgentInfrastructure(ctx context.Context, infrastructureID string, provider models.AIProvider, repositoryURL string) (*AIInfrastructureResult, error)
 
-	// ValidateAgentConfig validates an agent's AI configuration
-	ValidateAgentConfig(config *models.AgentAIConfig) error
+	// ValidateAgentConfig validates an agent's AI provider configuration
+	ValidateAgentConfig(provider models.AIProvider) error
 
 	// GetSupportedProviders returns list of supported AI providers
 	GetSupportedProviders() []string
@@ -52,5 +53,5 @@ type AgentCreationRequest struct {
 	AgentName     string
 	RepositoryURL string
 	Branch        string
-	AIConfig      *models.AgentAIConfig
+	AIProvider    models.AIProvider
 }

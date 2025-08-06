@@ -30,10 +30,15 @@ definitions:
         example: my-code-analyzer
         minLength: 1
         type: string
-      ai_config:
+      ai_provider:
         allOf:
-        - $ref: '#/definitions/models.AgentAIConfig'
-        description: AI configuration for the agent
+        - $ref: '#/definitions/models.AIProvider'
+        description: AI provider to use for the agent
+        enum:
+        - bedrock
+        - local
+        - openai
+        example: bedrock
       branch:
         description: Optional branch name, defaults to main
         example: main
@@ -437,10 +442,15 @@ definitions:
         example: updated-code-analyzer
         minLength: 1
         type: string
-      ai_config:
+      ai_provider:
         allOf:
-        - $ref: '#/definitions/models.AgentAIConfig'
-        description: Optional AI configuration updates
+        - $ref: '#/definitions/models.AIProvider'
+        description: Optional AI provider update
+        enum:
+        - bedrock
+        - local
+        - openai
+        example: bedrock
       branch:
         description: Optional updated branch name
         example: develop
@@ -679,10 +689,10 @@ definitions:
     properties:
       agent_id:
         type: string
-      ai_config:
+      ai_provider:
         allOf:
-        - $ref: '#/definitions/models.AgentAIConfig'
-        description: AI Configuration - this is per-agent, not global
+        - $ref: '#/definitions/models.AIProvider'
+        description: AI Provider - determines which AI service to use
       capabilities:
         description: Agent capabilities and metadata
         items:
@@ -719,21 +729,6 @@ definitions:
       version:
         type: string
     type: object
-  models.AgentAIConfig:
-    properties:
-      bedrock:
-        $ref: '#/definitions/models.BedrockAgentConfig'
-      local:
-        allOf:
-        - $ref: '#/definitions/models.LocalAgentConfig'
-        description: Provider-specific configurations
-      openai:
-        $ref: '#/definitions/models.OpenAIAgentConfig'
-      provider:
-        allOf:
-        - $ref: '#/definitions/models.AIProvider'
-        description: bedrock, local, openai
-    type: object
   models.AgentStatus:
     enum:
     - pending
@@ -746,25 +741,6 @@ definitions:
     - AgentStatusInitializing
     - AgentStatusReady
     - AgentStatusFailed
-  models.BedrockAgentConfig:
-    properties:
-      agent_service_role_arn:
-        type: string
-      embedding_model:
-        type: string
-      foundation_model:
-        type: string
-      knowledge_base_service_role_arn:
-        type: string
-      max_tokens:
-        type: integer
-      region:
-        type: string
-      s3_bucket_name:
-        type: string
-      temperature:
-        type: number
-    type: object
   models.BitbucketConfig:
     properties:
       app_password:
@@ -1062,33 +1038,6 @@ definitions:
         items:
           $ref: '#/definitions/models.APIUser'
         type: array
-    type: object
-  models.LocalAgentConfig:
-    properties:
-      chroma_url:
-        type: string
-      embedding_model:
-        type: string
-      max_tokens:
-        type: integer
-      model:
-        type: string
-      ollama_url:
-        type: string
-      temperature:
-        type: number
-    type: object
-  models.OpenAIAgentConfig:
-    properties:
-      api_key_ref:
-        description: Reference to secret, not the secret itself
-        type: string
-      max_tokens:
-        type: integer
-      model:
-        type: string
-      temperature:
-        type: number
     type: object
   models.Project:
     properties:

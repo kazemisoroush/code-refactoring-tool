@@ -3,7 +3,6 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
@@ -35,26 +34,18 @@ func NewDefaultAgentService(
 func (s *DefaultAgentService) CreateAgent(ctx context.Context, request models.CreateAgentRequest) (*models.CreateAgentResponse, error) {
 	slog.Info("Creating agent", "repository_url", request.RepositoryURL, "branch", request.Branch)
 
-	// Use provided AI config or default to local
-	var agentConfig *models.AgentAIConfig
-	if request.AIConfig != nil {
-		agentConfig = request.AIConfig
-	} else {
-		agentConfig = &models.AgentAIConfig{
-			Provider: models.AIProviderLocal,
-			Local: &models.LocalAgentConfig{
-				OllamaURL: config.DefaultOllamaURL,
-				Model:     config.DefaultOllamaModel,
-			},
-		}
+	// Use provided AI provider or default to local
+	aiProvider := request.AIProvider
+	if aiProvider == "" {
+		aiProvider = models.AIProviderLocal
 	}
 
-	if err := s.infrastructureFactory.ValidateAgentConfig(agentConfig); err != nil {
-		return nil, fmt.Errorf("invalid AI configuration: %w", err)
+	if err := s.infrastructureFactory.ValidateAgentConfig(aiProvider); err != nil {
+		return nil, fmt.Errorf("invalid AI provider: %w", err)
 	}
 
 	// Create AI infrastructure
-	infraResult, err := s.infrastructureFactory.CreateAgentInfrastructure(ctx, agentConfig, request.RepositoryURL)
+	infraResult, err := s.infrastructureFactory.CreateAgentInfrastructure(ctx, aiProvider, request.RepositoryURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AI infrastructure: %w", err)
 	}
@@ -151,7 +142,7 @@ func (s *DefaultAgentService) UpdateAgent(ctx context.Context, request models.Up
 	if request.Branch != nil && *request.Branch != existingAgent.Branch {
 		infrastructureChangeRequired = true
 	}
-	if request.AIConfig != nil {
+	if request.AIProvider != nil {
 		infrastructureChangeRequired = true
 	}
 
@@ -160,23 +151,15 @@ func (s *DefaultAgentService) UpdateAgent(ctx context.Context, request models.Up
 	if infrastructureChangeRequired {
 		slog.Info("Infrastructure changes detected, updating AI infrastructure", "agent_id", request.AgentID)
 
-		// Use provided AI config or keep existing agent's configuration
-		var agentConfig *models.AgentAIConfig
-		if request.AIConfig != nil {
-			agentConfig = request.AIConfig
+		// Use provided AI provider or keep existing agent's provider
+		var aiProvider models.AIProvider
+		if request.AIProvider != nil {
+			aiProvider = *request.AIProvider
 		} else {
-			// Try to get full existing AI config from repository
-			if existingConfig, err := existingAgent.GetAIConfig(); err == nil && existingConfig != nil {
-				agentConfig = existingConfig
-			} else {
-				// Fallback to minimal config with just provider
-				agentConfig = &models.AgentAIConfig{
-					Provider: models.AIProvider(existingAgent.AIProvider),
-				}
-			}
+			aiProvider = models.AIProvider(existingAgent.AIProvider)
 		}
 
-		infrastructureResult, err = s.infrastructureFactory.UpdateAgentInfrastructure(ctx, existingAgent.KnowledgeBaseID, agentConfig, newRepositoryURL)
+		infrastructureResult, err = s.infrastructureFactory.UpdateAgentInfrastructure(ctx, existingAgent.KnowledgeBaseID, aiProvider, newRepositoryURL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update AI infrastructure: %w", err)
 		}
@@ -203,12 +186,8 @@ func (s *DefaultAgentService) UpdateAgent(ctx context.Context, request models.Up
 	if request.Branch != nil {
 		updateRecord.Branch = *request.Branch
 	}
-	if request.AIConfig != nil {
-		updateRecord.AIProvider = string(request.AIConfig.Provider)
-		// Serialize and store the full AI config
-		if configJSON, err := json.Marshal(request.AIConfig); err == nil {
-			updateRecord.AIConfigJSON = string(configJSON)
-		}
+	if request.AIProvider != nil {
+		updateRecord.AIProvider = string(*request.AIProvider)
 	}
 
 	// If infrastructure was recreated, update the infrastructure IDs

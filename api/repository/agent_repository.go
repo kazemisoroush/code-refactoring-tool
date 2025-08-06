@@ -3,8 +3,6 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
@@ -55,31 +53,17 @@ func NewAgentRecord(request models.CreateAgentRequest, agentID, agentVersion, kb
 		UpdatedAt:       now,
 	}
 
-	// Set AI config if provided
-	if request.AIConfig != nil {
-		record.AIProvider = string(request.AIConfig.Provider)
-
-		// Serialize AI config to JSON for storage
-		if configJSON, err := json.Marshal(request.AIConfig); err == nil {
-			record.AIConfigJSON = string(configJSON)
-		}
+	// Set AI provider if provided
+	if request.AIProvider != "" {
+		record.AIProvider = string(request.AIProvider)
 	}
 
 	return record
 }
 
-// GetAIConfig deserializes the stored AI configuration
-func (r *AgentRecord) GetAIConfig() (*models.AgentAIConfig, error) {
-	if r.AIConfigJSON == "" {
-		return nil, nil
-	}
-
-	var config models.AgentAIConfig
-	if err := json.Unmarshal([]byte(r.AIConfigJSON), &config); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal AI config JSON: %w", err)
-	}
-
-	return &config, nil
+// GetAIProvider returns the AI provider for the agent
+func (r *AgentRecord) GetAIProvider() models.AIProvider {
+	return models.AIProvider(r.AIProvider)
 }
 
 // AgentRepository defines the interface for agent data operations

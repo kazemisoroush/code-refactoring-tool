@@ -16,6 +16,9 @@ type DefaultAIInfrastructureFactory struct {
 	// AWS configuration for Bedrock
 	awsConfig aws.Config
 
+	// Base AI configuration from program config
+	aiConfig config.AIConfig
+
 	// Git configuration
 	gitConfig config.GitConfig
 
@@ -25,42 +28,35 @@ type DefaultAIInfrastructureFactory struct {
 }
 
 // NewAIInfrastructureFactory creates a new AI infrastructure factory
-func NewAIInfrastructureFactory(awsConfig aws.Config, gitConfig config.GitConfig) AIInfrastructureFactory {
+func NewAIInfrastructureFactory(awsConfig aws.Config, aiConfig config.AIConfig, gitConfig config.GitConfig) AIInfrastructureFactory {
 	return &DefaultAIInfrastructureFactory{
 		awsConfig: awsConfig,
+		aiConfig:  aiConfig,
 		gitConfig: gitConfig,
 	}
 }
 
 // CreateAgentInfrastructure creates AI infrastructure for an agent
-func (f *DefaultAIInfrastructureFactory) CreateAgentInfrastructure(ctx context.Context, config *models.AgentAIConfig, repositoryURL string) (*AIInfrastructureResult, error) {
-	if config == nil {
-		return nil, fmt.Errorf("agent AI configuration is required")
-	}
-
-	switch config.Provider {
+func (f *DefaultAIInfrastructureFactory) CreateAgentInfrastructure(ctx context.Context, provider models.AIProvider, repositoryURL string) (*AIInfrastructureResult, error) {
+	switch provider {
 	case models.AIProviderBedrock:
-		return f.createBedrockInfrastructure(ctx, config.Bedrock, repositoryURL)
+		return f.createBedrockInfrastructure(ctx, repositoryURL)
 	case models.AIProviderLocal:
-		return f.createLocalInfrastructure(ctx, config.Local, repositoryURL)
+		return f.createLocalInfrastructure(ctx, repositoryURL)
 	default:
-		return nil, fmt.Errorf("unsupported AI provider: %s", config.Provider)
+		return nil, fmt.Errorf("unsupported AI provider: %s", provider)
 	}
 }
 
-// ValidateAgentConfig validates an agent's AI configuration
-func (f *DefaultAIInfrastructureFactory) ValidateAgentConfig(config *models.AgentAIConfig) error {
-	if config == nil {
-		return fmt.Errorf("agent AI configuration is required")
-	}
-
-	switch config.Provider {
+// ValidateAgentConfig validates an agent's AI provider configuration
+func (f *DefaultAIInfrastructureFactory) ValidateAgentConfig(provider models.AIProvider) error {
+	switch provider {
 	case models.AIProviderBedrock:
-		return f.validateBedrockConfig(config.Bedrock)
+		return f.validateBedrockConfig()
 	case models.AIProviderLocal:
-		return f.validateLocalConfig(config.Local)
+		return f.validateLocalConfig()
 	default:
-		return fmt.Errorf("unsupported AI provider: %s", config.Provider)
+		return fmt.Errorf("unsupported AI provider: %s", provider)
 	}
 }
 
@@ -81,10 +77,8 @@ func (f *DefaultAIInfrastructureFactory) DestroyAgentInfrastructure(_ context.Co
 
 // Private helper methods for creating provider-specific infrastructure
 
-func (f *DefaultAIInfrastructureFactory) createBedrockInfrastructure(ctx context.Context, config *models.BedrockAgentConfig, repositoryURL string) (*AIInfrastructureResult, error) {
-	if config == nil {
-		return nil, fmt.Errorf("bedrock configuration is required")
-	}
+func (f *DefaultAIInfrastructureFactory) createBedrockInfrastructure(ctx context.Context, repositoryURL string) (*AIInfrastructureResult, error) {
+	config := f.aiConfig.Bedrock
 
 	// Initialize Bedrock agent builder if not already done
 	if f.bedrockAgentBuilder == nil {
@@ -125,10 +119,8 @@ func (f *DefaultAIInfrastructureFactory) createBedrockInfrastructure(ctx context
 	}, nil
 }
 
-func (f *DefaultAIInfrastructureFactory) createLocalInfrastructure(ctx context.Context, config *models.LocalAgentConfig, repositoryURL string) (*AIInfrastructureResult, error) {
-	if config == nil {
-		return nil, fmt.Errorf("local configuration is required")
-	}
+func (f *DefaultAIInfrastructureFactory) createLocalInfrastructure(ctx context.Context, repositoryURL string) (*AIInfrastructureResult, error) {
+	config := f.aiConfig.Local
 
 	// Use existing LocalAgentBuilder
 	builder := builder.NewLocalAgentBuilder(config.OllamaURL, config.Model)
@@ -156,10 +148,8 @@ func (f *DefaultAIInfrastructureFactory) createLocalInfrastructure(ctx context.C
 }
 
 // Private validation methods
-func (f *DefaultAIInfrastructureFactory) validateBedrockConfig(config *models.BedrockAgentConfig) error {
-	if config == nil {
-		return fmt.Errorf("bedrock configuration is required")
-	}
+func (f *DefaultAIInfrastructureFactory) validateBedrockConfig() error {
+	config := f.aiConfig.Bedrock
 	if config.Region == "" {
 		return fmt.Errorf("bedrock region is required")
 	}
@@ -172,10 +162,8 @@ func (f *DefaultAIInfrastructureFactory) validateBedrockConfig(config *models.Be
 	return nil
 }
 
-func (f *DefaultAIInfrastructureFactory) validateLocalConfig(config *models.LocalAgentConfig) error {
-	if config == nil {
-		return fmt.Errorf("local configuration is required")
-	}
+func (f *DefaultAIInfrastructureFactory) validateLocalConfig() error {
+	config := f.aiConfig.Local
 	if config.OllamaURL == "" {
 		return fmt.Errorf("ollama URL is required")
 	}
@@ -186,11 +174,11 @@ func (f *DefaultAIInfrastructureFactory) validateLocalConfig(config *models.Loca
 }
 
 // UpdateAgentInfrastructure updates existing AI infrastructure for an agent
-func (f *DefaultAIInfrastructureFactory) UpdateAgentInfrastructure(ctx context.Context, infrastructureID string, config *models.AgentAIConfig, repositoryURL string) (*AIInfrastructureResult, error) {
-	slog.Info("Updating AI infrastructure", "infrastructure_id", infrastructureID, "provider", config.Provider)
+func (f *DefaultAIInfrastructureFactory) UpdateAgentInfrastructure(ctx context.Context, infrastructureID string, provider models.AIProvider, repositoryURL string) (*AIInfrastructureResult, error) {
+	slog.Info("Updating AI infrastructure", "infrastructure_id", infrastructureID, "provider", provider)
 
 	// Validate the configuration first
-	if err := f.ValidateAgentConfig(config); err != nil {
+	if err := f.ValidateAgentConfig(provider); err != nil {
 		return nil, fmt.Errorf("invalid agent configuration: %w", err)
 	}
 
@@ -205,7 +193,7 @@ func (f *DefaultAIInfrastructureFactory) UpdateAgentInfrastructure(ctx context.C
 	}
 
 	// Create new infrastructure with updated configuration
-	result, err := f.CreateAgentInfrastructure(ctx, config, repositoryURL)
+	result, err := f.CreateAgentInfrastructure(ctx, provider, repositoryURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create updated infrastructure: %w", err)
 	}
@@ -213,7 +201,7 @@ func (f *DefaultAIInfrastructureFactory) UpdateAgentInfrastructure(ctx context.C
 	slog.Info("AI infrastructure updated successfully",
 		"old_infrastructure_id", infrastructureID,
 		"new_infrastructure_id", result.AgentID,
-		"provider", config.Provider)
+		"provider", provider)
 
 	return result, nil
 }

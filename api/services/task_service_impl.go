@@ -232,7 +232,7 @@ func (s *TaskServiceImpl) executeTaskSync(ctx context.Context, taskID string, re
 		"agent_id":          taskWithContext.Agent.AgentID,
 		"agent_version":     taskWithContext.Agent.Version,
 		"agent_name":        taskWithContext.Agent.Name,
-		"ai_provider":       taskWithContext.Agent.AIConfig.Provider,
+		"ai_provider":       taskWithContext.Agent.AIProvider,
 		"execution_method":  "manual_agent",
 		"prompt":            req.Description,
 		"task_type":         req.Type,
@@ -326,13 +326,14 @@ func (s *TaskServiceImpl) loadTaskWithFullContext(ctx context.Context, taskID st
 	var agentModel *models.Agent
 	if agent != nil {
 		agentModel = &models.Agent{
-			AgentID:   agent.AgentID,
-			ProjectID: task.ProjectID, // From task context
-			Name:      agent.AgentName,
-			Status:    models.AgentStatus(agent.Status),
-			Version:   agent.AgentVersion,
-			CreatedAt: agent.CreatedAt,
-			UpdatedAt: agent.UpdatedAt,
+			AgentID:    agent.AgentID,
+			ProjectID:  task.ProjectID, // From task context
+			Name:       agent.AgentName,
+			Status:     models.AgentStatus(agent.Status),
+			AIProvider: models.AIProvider(agent.AIProvider),
+			Version:    agent.AgentVersion,
+			CreatedAt:  agent.CreatedAt,
+			UpdatedAt:  agent.UpdatedAt,
 		}
 		if agent.KnowledgeBaseID != "" {
 			agentModel.KnowledgeBaseID = &agent.KnowledgeBaseID

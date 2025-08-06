@@ -37,7 +37,7 @@ func (m *MockAIInfrastructureFactory) EXPECT() *MockAIInfrastructureFactoryMockR
 }
 
 // CreateAgentInfrastructure mocks base method.
-func (m *MockAIInfrastructureFactory) CreateAgentInfrastructure(arg0 context.Context, arg1 *models.AgentAIConfig, arg2 string) (*factory.AIInfrastructureResult, error) {
+func (m *MockAIInfrastructureFactory) CreateAgentInfrastructure(arg0 context.Context, arg1 models.AIProvider, arg2 string) (*factory.AIInfrastructureResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateAgentInfrastructure", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*factory.AIInfrastructureResult)
@@ -80,7 +80,7 @@ func (mr *MockAIInfrastructureFactoryMockRecorder) GetSupportedProviders() *gomo
 }
 
 // UpdateAgentInfrastructure mocks base method.
-func (m *MockAIInfrastructureFactory) UpdateAgentInfrastructure(arg0 context.Context, arg1 string, arg2 *models.AgentAIConfig, arg3 string) (*factory.AIInfrastructureResult, error) {
+func (m *MockAIInfrastructureFactory) UpdateAgentInfrastructure(arg0 context.Context, arg1 string, arg2 models.AIProvider, arg3 string) (*factory.AIInfrastructureResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateAgentInfrastructure", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(*factory.AIInfrastructureResult)
@@ -95,7 +95,7 @@ func (mr *MockAIInfrastructureFactoryMockRecorder) UpdateAgentInfrastructure(arg
 }
 
 // ValidateAgentConfig mocks base method.
-func (m *MockAIInfrastructureFactory) ValidateAgentConfig(arg0 *models.AgentAIConfig) error {
+func (m *MockAIInfrastructureFactory) ValidateAgentConfig(arg0 models.AIProvider) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ValidateAgentConfig", arg0)
 	ret0, _ := ret[0].(error)

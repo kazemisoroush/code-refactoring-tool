@@ -13,8 +13,8 @@ type Agent struct {
 	Description *string     `json:"description,omitempty" db:"description"`
 	Status      AgentStatus `json:"status" db:"status"`
 
-	// AI Configuration - this is per-agent, not global
-	AIConfig AgentAIConfig `json:"ai_config" db:"ai_config"`
+	// AI Provider - determines which AI service to use
+	AIProvider AIProvider `json:"ai_provider" db:"ai_provider"`
 
 	// Agent capabilities and metadata
 	Capabilities []string `json:"capabilities" db:"capabilities"` // e.g., ["code_analysis", "refactoring", "review"]
@@ -32,46 +32,6 @@ type Agent struct {
 	Tags       map[string]string `json:"tags,omitempty" db:"tags"`
 }
 
-// AgentAIConfig represents AI configuration specific to an agent
-type AgentAIConfig struct {
-	Provider AIProvider `json:"provider" db:"provider"` // bedrock, local, openai
-
-	// Provider-specific configurations
-	Local   *LocalAgentConfig   `json:"local,omitempty" db:"local"`
-	Bedrock *BedrockAgentConfig `json:"bedrock,omitempty" db:"bedrock"`
-	OpenAI  *OpenAIAgentConfig  `json:"openai,omitempty" db:"openai"`
-}
-
-// LocalAgentConfig represents local AI configuration for an agent
-type LocalAgentConfig struct {
-	OllamaURL      string  `json:"ollama_url" db:"ollama_url"`
-	Model          string  `json:"model" db:"model"`
-	ChromaURL      string  `json:"chroma_url" db:"chroma_url"`
-	EmbeddingModel string  `json:"embedding_model" db:"embedding_model"`
-	Temperature    float64 `json:"temperature,omitempty" db:"temperature"`
-	MaxTokens      int     `json:"max_tokens,omitempty" db:"max_tokens"`
-}
-
-// BedrockAgentConfig represents AWS Bedrock configuration for an agent
-type BedrockAgentConfig struct {
-	Region                      string  `json:"region" db:"region"`
-	FoundationModel             string  `json:"foundation_model" db:"foundation_model"`
-	EmbeddingModel              string  `json:"embedding_model" db:"embedding_model"`
-	KnowledgeBaseServiceRoleARN string  `json:"knowledge_base_service_role_arn" db:"knowledge_base_service_role_arn"`
-	AgentServiceRoleARN         string  `json:"agent_service_role_arn" db:"agent_service_role_arn"`
-	S3BucketName                string  `json:"s3_bucket_name" db:"s3_bucket_name"`
-	Temperature                 float64 `json:"temperature,omitempty" db:"temperature"`
-	MaxTokens                   int     `json:"max_tokens,omitempty" db:"max_tokens"`
-}
-
-// OpenAIAgentConfig represents OpenAI configuration for an agent (future extension)
-type OpenAIAgentConfig struct {
-	APIKeyRef   string  `json:"api_key_ref,omitempty" db:"api_key_ref"` // Reference to secret, not the secret itself
-	Model       string  `json:"model" db:"model"`
-	Temperature float64 `json:"temperature,omitempty" db:"temperature"`
-	MaxTokens   int     `json:"max_tokens,omitempty" db:"max_tokens"`
-}
-
 // CreateAgentRequest represents the request to create a new agent
 type CreateAgentRequest struct {
 	// Repository URL to analyze
@@ -80,8 +40,8 @@ type CreateAgentRequest struct {
 	Branch string `json:"branch,omitempty" validate:"omitempty,min=1" example:"main"`
 	// Optional custom agent name
 	AgentName string `json:"agent_name,omitempty" validate:"omitempty,min=1" example:"my-code-analyzer"`
-	// AI configuration for the agent
-	AIConfig *AgentAIConfig `json:"ai_config,omitempty"`
+	// AI provider to use for the agent
+	AIProvider AIProvider `json:"ai_provider,omitempty" validate:"omitempty,oneof=bedrock local openai" example:"bedrock"`
 } //@name CreateAgentRequest
 
 // CreateAgentResponse represents the response when creating an agent
@@ -184,8 +144,8 @@ type UpdateAgentRequest struct {
 	RepositoryURL *string `json:"repository_url,omitempty" validate:"omitempty,url" example:"https://github.com/user/updated-repo"`
 	// Optional updated branch name
 	Branch *string `json:"branch,omitempty" validate:"omitempty,min=1" example:"develop"`
-	// Optional AI configuration updates
-	AIConfig *AgentAIConfig `json:"ai_config,omitempty"`
+	// Optional AI provider update
+	AIProvider *AIProvider `json:"ai_provider,omitempty" validate:"omitempty,oneof=bedrock local openai" example:"bedrock"`
 } //@name UpdateAgentRequest
 
 // UpdateAgentResponse represents the response when updating an agent

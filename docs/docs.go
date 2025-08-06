@@ -1660,13 +1660,19 @@ const docTemplate = `{
                     "minLength": 1,
                     "example": "my-code-analyzer"
                 },
-                "ai_config": {
-                    "description": "AI configuration for the agent",
+                "ai_provider": {
+                    "description": "AI provider to use for the agent",
+                    "enum": [
+                        "bedrock",
+                        "local",
+                        "openai"
+                    ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/models.AgentAIConfig"
+                            "$ref": "#/definitions/models.AIProvider"
                         }
-                    ]
+                    ],
+                    "example": "bedrock"
                 },
                 "branch": {
                     "description": "Optional branch name, defaults to main",
@@ -2219,13 +2225,19 @@ const docTemplate = `{
                     "minLength": 1,
                     "example": "updated-code-analyzer"
                 },
-                "ai_config": {
-                    "description": "Optional AI configuration updates",
+                "ai_provider": {
+                    "description": "Optional AI provider update",
+                    "enum": [
+                        "bedrock",
+                        "local",
+                        "openai"
+                    ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/models.AgentAIConfig"
+                            "$ref": "#/definitions/models.AIProvider"
                         }
-                    ]
+                    ],
+                    "example": "bedrock"
                 },
                 "branch": {
                     "description": "Optional updated branch name",
@@ -2557,11 +2569,11 @@ const docTemplate = `{
                 "agent_id": {
                     "type": "string"
                 },
-                "ai_config": {
-                    "description": "AI Configuration - this is per-agent, not global",
+                "ai_provider": {
+                    "description": "AI Provider - determines which AI service to use",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/models.AgentAIConfig"
+                            "$ref": "#/definitions/models.AIProvider"
                         }
                     ]
                 },
@@ -2618,33 +2630,6 @@ const docTemplate = `{
                 }
             }
         },
-        "models.AgentAIConfig": {
-            "type": "object",
-            "properties": {
-                "bedrock": {
-                    "$ref": "#/definitions/models.BedrockAgentConfig"
-                },
-                "local": {
-                    "description": "Provider-specific configurations",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.LocalAgentConfig"
-                        }
-                    ]
-                },
-                "openai": {
-                    "$ref": "#/definitions/models.OpenAIAgentConfig"
-                },
-                "provider": {
-                    "description": "bedrock, local, openai",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.AIProvider"
-                        }
-                    ]
-                }
-            }
-        },
         "models.AgentStatus": {
             "type": "string",
             "enum": [
@@ -2659,35 +2644,6 @@ const docTemplate = `{
                 "AgentStatusReady",
                 "AgentStatusFailed"
             ]
-        },
-        "models.BedrockAgentConfig": {
-            "type": "object",
-            "properties": {
-                "agent_service_role_arn": {
-                    "type": "string"
-                },
-                "embedding_model": {
-                    "type": "string"
-                },
-                "foundation_model": {
-                    "type": "string"
-                },
-                "knowledge_base_service_role_arn": {
-                    "type": "string"
-                },
-                "max_tokens": {
-                    "type": "integer"
-                },
-                "region": {
-                    "type": "string"
-                },
-                "s3_bucket_name": {
-                    "type": "string"
-                },
-                "temperature": {
-                    "type": "number"
-                }
-            }
         },
         "models.BitbucketConfig": {
             "type": "object",
@@ -3134,47 +3090,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/models.APIUser"
                     }
-                }
-            }
-        },
-        "models.LocalAgentConfig": {
-            "type": "object",
-            "properties": {
-                "chroma_url": {
-                    "type": "string"
-                },
-                "embedding_model": {
-                    "type": "string"
-                },
-                "max_tokens": {
-                    "type": "integer"
-                },
-                "model": {
-                    "type": "string"
-                },
-                "ollama_url": {
-                    "type": "string"
-                },
-                "temperature": {
-                    "type": "number"
-                }
-            }
-        },
-        "models.OpenAIAgentConfig": {
-            "type": "object",
-            "properties": {
-                "api_key_ref": {
-                    "description": "Reference to secret, not the secret itself",
-                    "type": "string"
-                },
-                "max_tokens": {
-                    "type": "integer"
-                },
-                "model": {
-                    "type": "string"
-                },
-                "temperature": {
-                    "type": "number"
                 }
             }
         },
