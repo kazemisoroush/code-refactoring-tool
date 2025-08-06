@@ -3163,7 +3163,8 @@ const docTemplate = `{
         "models.OpenAIAgentConfig": {
             "type": "object",
             "properties": {
-                "api_key": {
+                "api_key_ref": {
+                    "description": "Reference to secret, not the secret itself",
                     "type": "string"
                 },
                 "max_tokens": {

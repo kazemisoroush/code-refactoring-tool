@@ -1080,7 +1080,8 @@ definitions:
     type: object
   models.OpenAIAgentConfig:
     properties:
-      api_key:
+      api_key_ref:
+        description: Reference to secret, not the secret itself
         type: string
       max_tokens:
         type: integer

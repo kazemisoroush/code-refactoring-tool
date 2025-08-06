@@ -4,6 +4,7 @@ package repository
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/kazemisoroush/code-refactoring-tool/api/models"
@@ -75,7 +76,7 @@ func (r *AgentRecord) GetAIConfig() (*models.AgentAIConfig, error) {
 
 	var config models.AgentAIConfig
 	if err := json.Unmarshal([]byte(r.AIConfigJSON), &config); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal AI config JSON: %w", err)
 	}
 
 	return &config, nil

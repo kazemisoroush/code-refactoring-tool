@@ -66,7 +66,7 @@ type BedrockAgentConfig struct {
 
 // OpenAIAgentConfig represents OpenAI configuration for an agent (future extension)
 type OpenAIAgentConfig struct {
-	APIKey      string  `json:"api_key" db:"api_key"`
+	APIKeyRef   string  `json:"api_key_ref,omitempty" db:"api_key_ref"` // Reference to secret, not the secret itself
 	Model       string  `json:"model" db:"model"`
 	Temperature float64 `json:"temperature,omitempty" db:"temperature"`
 	MaxTokens   int     `json:"max_tokens,omitempty" db:"max_tokens"`
