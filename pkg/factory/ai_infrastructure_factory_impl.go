@@ -205,3 +205,7 @@ func (f *DefaultAIInfrastructureFactory) UpdateAgentInfrastructure(ctx context.C
 
 	return result, nil
 }
+
+// TODO: Implement the destroy method to clean up resources
+// TODO: Probably use workflow for those operations
+// TODO: Git config should be passed from API
