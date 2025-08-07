@@ -12,3 +12,4 @@ main
 build-test
 bin/
 app
+.claude

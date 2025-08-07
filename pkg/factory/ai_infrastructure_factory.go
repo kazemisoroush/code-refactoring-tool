@@ -12,10 +12,10 @@ import (
 //go:generate mockgen -destination=./mocks/mock_ai_infrastructure_factory.go -mock_names=AIInfrastructureFactory=MockAIInfrastructureFactory -package=mocks . AIInfrastructureFactory
 type AIInfrastructureFactory interface {
 	// CreateAgentInfrastructure creates AI infrastructure for an agent
-	CreateAgentInfrastructure(ctx context.Context, provider models.AIProvider, repositoryURL string) (*AIInfrastructureResult, error)
+	CreateAgentInfrastructure(ctx context.Context, provider models.AIProvider) (*AIInfrastructureResult, error)
 
 	// UpdateAgentInfrastructure updates existing AI infrastructure for an agent
-	UpdateAgentInfrastructure(ctx context.Context, infrastructureID string, provider models.AIProvider, repositoryURL string) (*AIInfrastructureResult, error)
+	UpdateAgentInfrastructure(ctx context.Context, infrastructureID string, provider models.AIProvider) (*AIInfrastructureResult, error)
 
 	// ValidateAgentConfig validates an agent's AI provider configuration
 	ValidateAgentConfig(provider models.AIProvider) error
@@ -50,8 +50,7 @@ type AIInfrastructureResult struct {
 
 // AgentCreationRequest contains parameters for creating an agent
 type AgentCreationRequest struct {
-	AgentName     string
-	RepositoryURL string
-	Branch        string
-	AIProvider    models.AIProvider
+	AgentName  string
+	Branch     string
+	AIProvider models.AIProvider
 }

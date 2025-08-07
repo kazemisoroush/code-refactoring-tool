@@ -12,15 +12,15 @@ import (
 
 // CreateBedrockSetupWorkflow represents a workflow for setting up Bedrock AI resources
 type CreateBedrockSetupWorkflow struct {
-	Repository   codebase.Codebase
-	RAGBuilder   builder.RAGBuilder
-	AgentBuilder builder.AgentBuilder
+	repository   codebase.Codebase
+	ragBuilder   builder.RAGBuilder
+	agentBuilder builder.AgentBuilder
 
 	// Resource IDs created during setup
-	VectorStoreID string
-	RAGID         string
-	AgentID       string
-	AgentVersion  string
+	vectorStoreID string
+	ragID         string
+	agentID       string
+	agentVersion  string
 }
 
 // NewCreateBedrockSetupWorkflow creates a new CreateBedrockSetupWorkflow instance
@@ -30,9 +30,9 @@ func NewCreateBedrockSetupWorkflow(
 	agentBuilder builder.AgentBuilder,
 ) (Workflow, error) {
 	return &CreateBedrockSetupWorkflow{
-		Repository:   repo,
-		RAGBuilder:   ragBuilder,
-		AgentBuilder: agentBuilder,
+		repository:   repo,
+		ragBuilder:   ragBuilder,
+		agentBuilder: agentBuilder,
 	}, nil
 }
 
@@ -41,7 +41,7 @@ func (s *CreateBedrockSetupWorkflow) Run(ctx context.Context) error {
 	slog.Info("Running Bedrock setup workflow")
 
 	defer func() {
-		err := s.Repository.Cleanup()
+		err := s.repository.Cleanup()
 		if err != nil {
 			slog.Error("failed to cleanup repository", "error", err)
 		}
@@ -49,7 +49,7 @@ func (s *CreateBedrockSetupWorkflow) Run(ctx context.Context) error {
 
 	// 1. Clone the repository
 	slog.Info("Cloning repository for Bedrock setup")
-	err := s.Repository.Clone(ctx)
+	err := s.repository.Clone(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to clone repository: %w", err)
 	}
@@ -57,22 +57,22 @@ func (s *CreateBedrockSetupWorkflow) Run(ctx context.Context) error {
 
 	// 2. Build the RAG pipeline using Bedrock
 	slog.Info("Building Bedrock RAG pipeline")
-	ragID, err := s.RAGBuilder.Build(ctx)
+	ragID, err := s.ragBuilder.Build(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to build Bedrock RAG pipeline: %w", err)
 	}
-	s.RAGID = ragID
-	s.VectorStoreID = ragID // In Bedrock, the KB ID serves as both RAG ID and vector store ID
+	s.ragID = ragID
+	s.vectorStoreID = ragID // In Bedrock, the KB ID serves as both RAG ID and vector store ID
 	slog.Info("Bedrock RAG pipeline built successfully", "ragID", ragID)
 
 	// 3. Build the Bedrock agent
 	slog.Info("Building Bedrock agent", "ragID", ragID)
-	agentID, agentVersion, err := s.AgentBuilder.Build(ctx, ragID)
+	agentID, agentVersion, err := s.agentBuilder.Build(ctx, ragID)
 	if err != nil {
 		return fmt.Errorf("failed to build Bedrock agent: %w", err)
 	}
-	s.AgentID = agentID
-	s.AgentVersion = agentVersion
+	s.agentID = agentID
+	s.agentVersion = agentVersion
 	slog.Info("Bedrock agent built successfully", "agentID", agentID, "version", agentVersion)
 
 	slog.Info("Bedrock setup workflow completed successfully")
@@ -81,5 +81,5 @@ func (s *CreateBedrockSetupWorkflow) Run(ctx context.Context) error {
 
 // GetResourceIDs returns the resource IDs created during Bedrock setup
 func (s *CreateBedrockSetupWorkflow) GetResourceIDs() (vectorStoreID, ragID, agentID, agentVersion string) {
-	return s.VectorStoreID, s.RAGID, s.AgentID, s.AgentVersion
+	return s.vectorStoreID, s.ragID, s.agentID, s.agentVersion
 }

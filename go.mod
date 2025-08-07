@@ -13,6 +13,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.44.2
 	github.com/aws/aws-sdk-go-v2/service/bedrockagentruntime v1.45.2
 	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.26.1
+	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.54.1
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.44.1
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.72.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.82.0
@@ -20,7 +21,6 @@ require (
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-git/go-git/v5 v5.14.0
 	github.com/go-playground/validator/v10 v10.27.0
-	github.com/golang-jwt/jwt/v5 v5.2.3
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -33,7 +33,6 @@ require (
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.54.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.26.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.10.18 // indirect
 	github.com/bytedance/sonic v1.14.0 // indirect

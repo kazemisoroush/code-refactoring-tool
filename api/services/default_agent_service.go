@@ -45,7 +45,7 @@ func (s *DefaultAgentService) CreateAgent(ctx context.Context, request models.Cr
 	}
 
 	// Create AI infrastructure
-	infraResult, err := s.infrastructureFactory.CreateAgentInfrastructure(ctx, aiProvider, request.RepositoryURL)
+	infraResult, err := s.infrastructureFactory.CreateAgentInfrastructure(ctx, aiProvider)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AI infrastructure: %w", err)
 	}
@@ -132,19 +132,7 @@ func (s *DefaultAgentService) UpdateAgent(ctx context.Context, request models.Up
 	}
 
 	// Check if infrastructure-impacting changes are being made
-	infrastructureChangeRequired := false
-	newRepositoryURL := existingAgent.RepositoryURL
-
-	if request.RepositoryURL != nil && *request.RepositoryURL != existingAgent.RepositoryURL {
-		infrastructureChangeRequired = true
-		newRepositoryURL = *request.RepositoryURL
-	}
-	if request.Branch != nil && *request.Branch != existingAgent.Branch {
-		infrastructureChangeRequired = true
-	}
-	if request.AIProvider != nil {
-		infrastructureChangeRequired = true
-	}
+	infrastructureChangeRequired := s.requiresInfrastructureUpdate(request, existingAgent)
 
 	// If infrastructure changes are required, update the AI infrastructure
 	var infrastructureResult *factory.AIInfrastructureResult
@@ -159,7 +147,7 @@ func (s *DefaultAgentService) UpdateAgent(ctx context.Context, request models.Up
 			aiProvider = models.AIProvider(existingAgent.AIProvider)
 		}
 
-		infrastructureResult, err = s.infrastructureFactory.UpdateAgentInfrastructure(ctx, existingAgent.KnowledgeBaseID, aiProvider, newRepositoryURL)
+		infrastructureResult, err = s.infrastructureFactory.UpdateAgentInfrastructure(ctx, existingAgent.KnowledgeBaseID, aiProvider)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update AI infrastructure: %w", err)
 		}
@@ -261,6 +249,31 @@ func (s *DefaultAgentService) DeleteAgent(ctx context.Context, agentID string) (
 
 	slog.Info("Agent deleted successfully", "agent_id", agentID)
 	return response, nil
+}
+
+// RequiresInfrastructureUpdate determines if an agent update requires infrastructure changes
+func RequiresInfrastructureUpdate(request models.UpdateAgentRequest, existingAgent *repository.AgentRecord) bool {
+	// Check if repository URL is being changed
+	if request.RepositoryURL != nil && *request.RepositoryURL != existingAgent.RepositoryURL {
+		return true
+	}
+
+	// Check if branch is being changed
+	if request.Branch != nil && *request.Branch != existingAgent.Branch {
+		return true
+	}
+
+	// Check if AI provider is being changed
+	if request.AIProvider != nil && string(*request.AIProvider) != existingAgent.AIProvider {
+		return true
+	}
+
+	return false
+}
+
+// requiresInfrastructureUpdate is a wrapper for the package-level function for backward compatibility
+func (s *DefaultAgentService) requiresInfrastructureUpdate(request models.UpdateAgentRequest, existingAgent *repository.AgentRecord) bool {
+	return RequiresInfrastructureUpdate(request, existingAgent)
 }
 
 // ListAgents lists all agents with optional pagination
