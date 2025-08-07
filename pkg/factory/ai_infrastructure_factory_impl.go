@@ -191,14 +191,6 @@ func (f *DefaultAIInfrastructureFactory) validateLocalConfig() error {
 	return nil
 }
 
-// GetSupportedProviders returns list of supported AI providers
-func (f *DefaultAIInfrastructureFactory) GetSupportedProviders() []string {
-	return []string{
-		string(models.AIProviderBedrock),
-		string(models.AIProviderLocal),
-	}
-}
-
 // DestroyAgentInfrastructure cleans up AI infrastructure for an agent
 func (f *DefaultAIInfrastructureFactory) DestroyAgentInfrastructure(ctx context.Context, infrastructureID string) error {
 	slog.Info("Destroying AI infrastructure", "infrastructure_id", infrastructureID)

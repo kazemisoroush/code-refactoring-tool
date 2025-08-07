@@ -65,20 +65,6 @@ func (mr *MockAIInfrastructureFactoryMockRecorder) DestroyAgentInfrastructure(ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyAgentInfrastructure", reflect.TypeOf((*MockAIInfrastructureFactory)(nil).DestroyAgentInfrastructure), arg0, arg1)
 }
 
-// GetSupportedProviders mocks base method.
-func (m *MockAIInfrastructureFactory) GetSupportedProviders() []string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSupportedProviders")
-	ret0, _ := ret[0].([]string)
-	return ret0
-}
-
-// GetSupportedProviders indicates an expected call of GetSupportedProviders.
-func (mr *MockAIInfrastructureFactoryMockRecorder) GetSupportedProviders() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSupportedProviders", reflect.TypeOf((*MockAIInfrastructureFactory)(nil).GetSupportedProviders))
-}
-
 // UpdateAgentInfrastructure mocks base method.
 func (m *MockAIInfrastructureFactory) UpdateAgentInfrastructure(arg0 context.Context, arg1 string, arg2 models.AIProvider) (*factory.AIInfrastructureResult, error) {
 	m.ctrl.T.Helper()

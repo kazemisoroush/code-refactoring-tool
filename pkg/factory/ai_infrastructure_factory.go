@@ -20,9 +20,6 @@ type AIInfrastructureFactory interface {
 	// ValidateAgentConfig validates an agent's AI provider configuration
 	ValidateAgentConfig(provider models.AIProvider) error
 
-	// GetSupportedProviders returns list of supported AI providers
-	GetSupportedProviders() []string
-
 	// DestroyAgentInfrastructure cleans up AI infrastructure for an agent
 	DestroyAgentInfrastructure(ctx context.Context, infrastructureID string) error
 }
