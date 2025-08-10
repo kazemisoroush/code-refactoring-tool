@@ -1081,6 +1081,259 @@ const docTemplate = `{
                 }
             }
         },
+        "/codebase-configs": {
+            "get": {
+                "description": "Retrieve a list of codebase configurations with optional pagination and filtering",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "codebase-configs"
+                ],
+                "summary": "List codebase configurations",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token for pagination",
+                        "name": "next_token",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Maximum number of results to return",
+                        "name": "max_results",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by provider (github, gitlab, bitbucket, custom)",
+                        "name": "provider_filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Tag filter in format key:value",
+                        "name": "tag_filter",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Codebase configurations retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/ListCodebaseConfigsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new codebase configuration profile for reusing across projects",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "codebase-configs"
+                ],
+                "summary": "Create a new codebase configuration",
+                "parameters": [
+                    {
+                        "description": "Codebase configuration creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateCodebaseConfigRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Codebase configuration created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/CreateCodebaseConfigResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/codebase-configs/{config_id}": {
+            "get": {
+                "description": "Retrieve a codebase configuration by its unique identifier",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "codebase-configs"
+                ],
+                "summary": "Get a codebase configuration by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Codebase Configuration ID",
+                        "name": "config_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Codebase configuration retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/GetCodebaseConfigResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid configuration ID",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Codebase configuration not found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update an existing codebase configuration's details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "codebase-configs"
+                ],
+                "summary": "Update a codebase configuration",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Codebase Configuration ID",
+                        "name": "config_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Codebase configuration update request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateCodebaseConfigRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Codebase configuration updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/UpdateCodebaseConfigResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Codebase configuration not found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a codebase configuration by its unique identifier",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "codebase-configs"
+                ],
+                "summary": "Delete a codebase configuration",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Codebase Configuration ID",
+                        "name": "config_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Codebase configuration deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/DeleteCodebaseConfigResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid configuration ID",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Codebase configuration not found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/codebases": {
             "get": {
                 "description": "Retrieve a list of codebases with optional pagination and filtering",
@@ -1648,6 +1901,60 @@ const docTemplate = `{
                 }
             }
         },
+        "CodebaseConfigSummary": {
+            "type": "object",
+            "properties": {
+                "config_id": {
+                    "description": "Unique identifier for the configuration",
+                    "type": "string",
+                    "example": "config-12345-abcde"
+                },
+                "created_at": {
+                    "description": "Timestamp when the configuration was created",
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "name": {
+                    "description": "Human-readable configuration name",
+                    "type": "string",
+                    "example": "my-github-config"
+                },
+                "provider": {
+                    "description": "Repository provider type",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Provider"
+                        }
+                    ],
+                    "example": "github"
+                },
+                "status": {
+                    "description": "Configuration status",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.CodebaseConfigStatus"
+                        }
+                    ],
+                    "example": "active"
+                },
+                "tags": {
+                    "description": "Optional user-defined key-value tags",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "env": "prod",
+                        "team": "backend"
+                    }
+                },
+                "url": {
+                    "description": "Repository URL",
+                    "type": "string",
+                    "example": "https://github.com/owner/repo.git"
+                }
+            }
+        },
         "CreateAgentRequest": {
             "type": "object",
             "required": [
@@ -1719,6 +2026,97 @@ const docTemplate = `{
                     "description": "Vector store ID for the knowledge base",
                     "type": "string",
                     "example": "vs-abcde"
+                }
+            }
+        },
+        "CreateCodebaseConfigRequest": {
+            "type": "object",
+            "required": [
+                "config",
+                "default_branch",
+                "name",
+                "provider",
+                "url"
+            ],
+            "properties": {
+                "config": {
+                    "description": "Provider-specific configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.GitProviderConfig"
+                        }
+                    ]
+                },
+                "default_branch": {
+                    "description": "Default branch to use",
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1,
+                    "example": "main"
+                },
+                "description": {
+                    "description": "Optional configuration description",
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "GitHub configuration for production repositories"
+                },
+                "metadata": {
+                    "description": "Optional metadata",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "owner": "team-lead"
+                    }
+                },
+                "name": {
+                    "description": "Human-readable configuration name",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "example": "my-github-config"
+                },
+                "provider": {
+                    "description": "Repository provider type",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Provider"
+                        }
+                    ],
+                    "example": "github"
+                },
+                "tags": {
+                    "description": "Optional user-defined key-value tags",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "env": "prod",
+                        "team": "backend"
+                    }
+                },
+                "url": {
+                    "description": "Repository URL",
+                    "type": "string",
+                    "maxLength": 2048,
+                    "example": "https://github.com/owner/repo.git"
+                }
+            }
+        },
+        "CreateCodebaseConfigResponse": {
+            "type": "object",
+            "properties": {
+                "config_id": {
+                    "description": "Unique identifier for the configuration",
+                    "type": "string",
+                    "example": "config-12345-abcde"
+                },
+                "created_at": {
+                    "description": "Timestamp when the configuration was created",
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
                 }
             }
         },
@@ -1825,6 +2223,16 @@ const docTemplate = `{
                 },
                 "success": {
                     "description": "Success indicator",
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "DeleteCodebaseConfigResponse": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "description": "Indicates whether the deletion was successful",
                     "type": "boolean",
                     "example": true
                 }
@@ -1944,6 +2352,93 @@ const docTemplate = `{
                     "description": "Vector store ID for the knowledge base",
                     "type": "string",
                     "example": "vs-abcde"
+                }
+            }
+        },
+        "GetCodebaseConfigResponse": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "description": "Provider-specific configuration (sensitive data redacted)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.GitProviderConfigRedacted"
+                        }
+                    ]
+                },
+                "config_id": {
+                    "description": "Unique identifier for the configuration",
+                    "type": "string",
+                    "example": "config-12345-abcde"
+                },
+                "created_at": {
+                    "description": "Timestamp when the configuration was created",
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "default_branch": {
+                    "description": "Default branch to use",
+                    "type": "string",
+                    "example": "main"
+                },
+                "description": {
+                    "description": "Optional configuration description",
+                    "type": "string",
+                    "example": "GitHub configuration for production repositories"
+                },
+                "metadata": {
+                    "description": "Optional metadata",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "owner": "team-lead"
+                    }
+                },
+                "name": {
+                    "description": "Human-readable configuration name",
+                    "type": "string",
+                    "example": "my-github-config"
+                },
+                "provider": {
+                    "description": "Repository provider type",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Provider"
+                        }
+                    ],
+                    "example": "github"
+                },
+                "status": {
+                    "description": "Configuration status",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.CodebaseConfigStatus"
+                        }
+                    ],
+                    "example": "active"
+                },
+                "tags": {
+                    "description": "Optional user-defined key-value tags",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "env": "prod",
+                        "team": "backend"
+                    }
+                },
+                "updated_at": {
+                    "description": "Timestamp when the configuration was last updated",
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "url": {
+                    "description": "Repository URL",
+                    "type": "string",
+                    "example": "https://github.com/owner/repo.git"
                 }
             }
         },
@@ -2138,6 +2633,23 @@ const docTemplate = `{
                 }
             }
         },
+        "ListCodebaseConfigsResponse": {
+            "type": "object",
+            "properties": {
+                "configs": {
+                    "description": "List of configuration summaries",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CodebaseConfigSummary"
+                    }
+                },
+                "next_token": {
+                    "description": "Token for next page of results",
+                    "type": "string",
+                    "example": "eyJpZCI6ImNvbmZpZy02Nzg5MCJ9"
+                }
+            }
+        },
         "ListProjectsResponse": {
             "type": "object",
             "properties": {
@@ -2304,6 +2816,89 @@ const docTemplate = `{
                     "description": "Vector store ID for the knowledge base",
                     "type": "string",
                     "example": "vs-abcde"
+                }
+            }
+        },
+        "UpdateCodebaseConfigRequest": {
+            "type": "object",
+            "required": [
+                "configID"
+            ],
+            "properties": {
+                "config": {
+                    "description": "Optional provider-specific configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.GitProviderConfig"
+                        }
+                    ]
+                },
+                "configID": {
+                    "description": "Unique identifier for the configuration",
+                    "type": "string",
+                    "example": "config-12345-abcde"
+                },
+                "default_branch": {
+                    "description": "Optional default branch to use",
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1,
+                    "example": "develop"
+                },
+                "description": {
+                    "description": "Optional configuration description",
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Updated GitHub configuration"
+                },
+                "metadata": {
+                    "description": "Optional metadata",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "owner": "new-team-lead"
+                    }
+                },
+                "name": {
+                    "description": "Optional human-readable configuration name",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "example": "updated-github-config"
+                },
+                "tags": {
+                    "description": "Optional user-defined key-value tags",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "env": "staging",
+                        "team": "frontend"
+                    }
+                },
+                "url": {
+                    "description": "Optional repository URL",
+                    "type": "string",
+                    "maxLength": 2048,
+                    "example": "https://github.com/owner/new-repo.git"
+                }
+            }
+        },
+        "UpdateCodebaseConfigResponse": {
+            "type": "object",
+            "properties": {
+                "config_id": {
+                    "description": "Unique identifier for the configuration",
+                    "type": "string",
+                    "example": "config-12345-abcde"
+                },
+                "updated_at": {
+                    "description": "Timestamp when the configuration was last updated",
+                    "type": "string",
+                    "example": "2024-01-15T11:30:00Z"
                 }
             }
         },
@@ -2666,6 +3261,24 @@ const docTemplate = `{
                 }
             }
         },
+        "models.BitbucketConfigRedacted": {
+            "type": "object",
+            "properties": {
+                "has_app_password": {
+                    "description": "AppPassword is redacted for security",
+                    "type": "boolean"
+                },
+                "repository": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                },
+                "workspace": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Codebase": {
             "type": "object",
             "properties": {
@@ -2725,6 +3338,19 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "models.CodebaseConfigStatus": {
+            "type": "string",
+            "enum": [
+                "active",
+                "inactive",
+                "deleted"
+            ],
+            "x-enum-varnames": [
+                "CodebaseConfigStatusActive",
+                "CodebaseConfigStatusInactive",
+                "CodebaseConfigStatusDeleted"
+            ]
         },
         "models.CodebaseStatus": {
             "type": "string",
@@ -2900,6 +3526,33 @@ const docTemplate = `{
                 }
             }
         },
+        "models.CustomGitConfigRedacted": {
+            "type": "object",
+            "properties": {
+                "base_url": {
+                    "type": "string"
+                },
+                "has_password": {
+                    "type": "boolean"
+                },
+                "has_ssh_key": {
+                    "type": "boolean"
+                },
+                "has_token": {
+                    "description": "Sensitive fields are redacted for security",
+                    "type": "boolean"
+                },
+                "has_username": {
+                    "type": "boolean"
+                },
+                "headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "models.DeleteCodebaseResponse": {
             "type": "object",
             "properties": {
@@ -2993,6 +3646,24 @@ const docTemplate = `{
                 }
             }
         },
+        "models.GitHubConfigRedacted": {
+            "type": "object",
+            "properties": {
+                "has_token": {
+                    "description": "Token is redacted for security",
+                    "type": "boolean"
+                },
+                "organization": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "repository": {
+                    "type": "string"
+                }
+            }
+        },
         "models.GitLabConfig": {
             "type": "object",
             "properties": {
@@ -3010,6 +3681,24 @@ const docTemplate = `{
                 },
                 "token": {
                     "description": "PAT or OAuth token",
+                    "type": "string"
+                }
+            }
+        },
+        "models.GitLabConfigRedacted": {
+            "type": "object",
+            "properties": {
+                "base_url": {
+                    "type": "string"
+                },
+                "has_token": {
+                    "description": "Token is redacted for security",
+                    "type": "boolean"
+                },
+                "namespace": {
+                    "type": "string"
+                },
+                "project_id": {
                     "type": "string"
                 }
             }
@@ -3054,6 +3743,51 @@ const docTemplate = `{
                     "allOf": [
                         {
                             "$ref": "#/definitions/models.GitLabConfig"
+                        }
+                    ]
+                }
+            }
+        },
+        "models.GitProviderConfigRedacted": {
+            "type": "object",
+            "properties": {
+                "auth_type": {
+                    "description": "Authentication method",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.GitAuthType"
+                        }
+                    ]
+                },
+                "bitbucket": {
+                    "description": "For Bitbucket (with sensitive fields redacted)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.BitbucketConfigRedacted"
+                        }
+                    ]
+                },
+                "custom": {
+                    "description": "For custom Git providers (with sensitive fields redacted)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.CustomGitConfigRedacted"
+                        }
+                    ]
+                },
+                "github": {
+                    "description": "For GitHub (with sensitive fields redacted)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.GitHubConfigRedacted"
+                        }
+                    ]
+                },
+                "gitlab": {
+                    "description": "For GitLab (with sensitive fields redacted)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.GitLabConfigRedacted"
                         }
                     ]
                 }

@@ -202,104 +202,142 @@ func (s *DefaultCodebaseConfigService) ListCodebaseConfigs(ctx context.Context, 
 
 // validateProviderConfig validates provider-specific configuration
 func (s *DefaultCodebaseConfigService) validateProviderConfig(provider models.Provider, config models.GitProviderConfig) error {
+	// Validate provider-specific fields
+	if err := s.validateProviderFields(provider, config); err != nil {
+		return err
+	}
+
+	// Validate authentication configuration
+	return s.validateAuthConfig(provider, config)
+}
+
+// validateProviderFields validates provider-specific required fields
+func (s *DefaultCodebaseConfigService) validateProviderFields(provider models.Provider, config models.GitProviderConfig) error {
 	switch provider {
 	case models.ProviderGitHub:
-		if config.GitHub == nil {
-			return fmt.Errorf("GitHub configuration is required for GitHub provider")
-		}
-		if config.GitHub.Owner == "" {
-			return fmt.Errorf("GitHub owner is required")
-		}
-		if config.GitHub.Repository == "" {
-			return fmt.Errorf("GitHub repository is required")
-		}
-		// Note: Token validation could be enhanced to check if it's a valid format
-
+		return s.validateGitHubConfig(config)
 	case models.ProviderGitLab:
-		if config.GitLab == nil {
-			return fmt.Errorf("GitLab configuration is required for GitLab provider")
-		}
-		if config.GitLab.ProjectID == "" {
-			return fmt.Errorf("GitLab project ID is required")
-		}
-		if config.GitLab.Namespace == "" {
-			return fmt.Errorf("GitLab namespace is required")
-		}
-
+		return s.validateGitLabConfig(config)
 	case models.ProviderBitbucket:
-		if config.Bitbucket == nil {
-			return fmt.Errorf("Bitbucket configuration is required for Bitbucket provider")
-		}
-		if config.Bitbucket.Workspace == "" {
-			return fmt.Errorf("Bitbucket workspace is required")
-		}
-		if config.Bitbucket.Repository == "" {
-			return fmt.Errorf("Bitbucket repository is required")
-		}
-
+		return s.validateBitbucketConfig(config)
 	case models.ProviderCustom:
-		if config.Custom == nil {
-			return fmt.Errorf("custom configuration is required for custom provider")
-		}
-		if config.Custom.BaseURL == "" {
-			return fmt.Errorf("custom base URL is required")
-		}
-
+		return s.validateCustomConfig(config)
 	default:
 		return fmt.Errorf("unsupported provider: %s", provider)
 	}
+}
 
-	// Validate auth type
+// validateGitHubConfig validates GitHub-specific configuration
+func (s *DefaultCodebaseConfigService) validateGitHubConfig(config models.GitProviderConfig) error {
+	if config.GitHub == nil {
+		return fmt.Errorf("GitHub configuration is required for GitHub provider")
+	}
+	if config.GitHub.Owner == "" {
+		return fmt.Errorf("GitHub owner is required")
+	}
+	if config.GitHub.Repository == "" {
+		return fmt.Errorf("GitHub repository is required")
+	}
+	return nil
+}
+
+// validateGitLabConfig validates GitLab-specific configuration
+func (s *DefaultCodebaseConfigService) validateGitLabConfig(config models.GitProviderConfig) error {
+	if config.GitLab == nil {
+		return fmt.Errorf("GitLab configuration is required for GitLab provider")
+	}
+	if config.GitLab.ProjectID == "" {
+		return fmt.Errorf("GitLab project ID is required")
+	}
+	if config.GitLab.Namespace == "" {
+		return fmt.Errorf("GitLab namespace is required")
+	}
+	return nil
+}
+
+// validateBitbucketConfig validates Bitbucket-specific configuration
+func (s *DefaultCodebaseConfigService) validateBitbucketConfig(config models.GitProviderConfig) error {
+	if config.Bitbucket == nil {
+		return fmt.Errorf("bitbucket configuration is required for Bitbucket provider")
+	}
+	if config.Bitbucket.Workspace == "" {
+		return fmt.Errorf("bitbucket workspace is required")
+	}
+	if config.Bitbucket.Repository == "" {
+		return fmt.Errorf("bitbucket repository is required")
+	}
+	return nil
+}
+
+// validateCustomConfig validates custom provider configuration
+func (s *DefaultCodebaseConfigService) validateCustomConfig(config models.GitProviderConfig) error {
+	if config.Custom == nil {
+		return fmt.Errorf("custom configuration is required for custom provider")
+	}
+	if config.Custom.BaseURL == "" {
+		return fmt.Errorf("custom base URL is required")
+	}
+	return nil
+}
+
+// validateAuthConfig validates authentication configuration
+func (s *DefaultCodebaseConfigService) validateAuthConfig(provider models.Provider, config models.GitProviderConfig) error {
 	switch config.AuthType {
 	case models.GitAuthTypeToken:
-		// Token-based auth validation
-		switch provider {
-		case models.ProviderGitHub:
-			if config.GitHub.Token == "" {
-				return fmt.Errorf("token is required for GitHub token authentication")
-			}
-		case models.ProviderGitLab:
-			if config.GitLab.Token == "" {
-				return fmt.Errorf("token is required for GitLab token authentication")
-			}
-		case models.ProviderBitbucket:
-			if config.Bitbucket.AppPassword == "" {
-				return fmt.Errorf("app password is required for Bitbucket token authentication")
-			}
-		case models.ProviderCustom:
-			if config.Custom.Token == "" {
-				return fmt.Errorf("token is required for custom token authentication")
-			}
-		}
-
+		return s.validateTokenAuth(provider, config)
 	case models.GitAuthTypeBasic:
-		// Basic auth validation
-		if provider == models.ProviderCustom {
-			if config.Custom.Username == "" || config.Custom.Password == "" {
-				return fmt.Errorf("username and password are required for basic authentication")
-			}
-		} else {
-			return fmt.Errorf("basic authentication is only supported for custom providers")
-		}
-
+		return s.validateBasicAuth(provider, config)
 	case models.GitAuthTypeSSH:
-		// SSH key validation
-		if provider == models.ProviderCustom {
-			if config.Custom.SSHKey == "" {
-				return fmt.Errorf("SSH key is required for SSH authentication")
-			}
-		} else {
-			return fmt.Errorf("SSH authentication is only supported for custom providers")
-		}
-
+		return s.validateSSHAuth(provider, config)
 	case models.GitAuthTypeOAuth:
-		// OAuth validation (placeholder for future implementation)
 		return fmt.Errorf("OAuth authentication is not yet supported")
-
 	default:
 		return fmt.Errorf("unsupported authentication type: %s", config.AuthType)
 	}
+}
 
+// validateTokenAuth validates token-based authentication
+func (s *DefaultCodebaseConfigService) validateTokenAuth(provider models.Provider, config models.GitProviderConfig) error {
+	switch provider {
+	case models.ProviderGitHub:
+		if config.GitHub.Token == "" {
+			return fmt.Errorf("token is required for GitHub token authentication")
+		}
+	case models.ProviderGitLab:
+		if config.GitLab.Token == "" {
+			return fmt.Errorf("token is required for GitLab token authentication")
+		}
+	case models.ProviderBitbucket:
+		if config.Bitbucket.AppPassword == "" {
+			return fmt.Errorf("app password is required for Bitbucket token authentication")
+		}
+	case models.ProviderCustom:
+		if config.Custom.Token == "" {
+			return fmt.Errorf("token is required for custom token authentication")
+		}
+	}
+	return nil
+}
+
+// validateBasicAuth validates basic authentication
+func (s *DefaultCodebaseConfigService) validateBasicAuth(provider models.Provider, config models.GitProviderConfig) error {
+	if provider != models.ProviderCustom {
+		return fmt.Errorf("basic authentication is only supported for custom providers")
+	}
+	if config.Custom.Username == "" || config.Custom.Password == "" {
+		return fmt.Errorf("username and password are required for basic authentication")
+	}
+	return nil
+}
+
+// validateSSHAuth validates SSH key authentication
+func (s *DefaultCodebaseConfigService) validateSSHAuth(provider models.Provider, config models.GitProviderConfig) error {
+	if provider != models.ProviderCustom {
+		return fmt.Errorf("SSH authentication is only supported for custom providers")
+	}
+	if config.Custom.SSHKey == "" {
+		return fmt.Errorf("SSH key is required for SSH authentication")
+	}
 	return nil
 }
 

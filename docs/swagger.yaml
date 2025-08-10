@@ -23,6 +23,43 @@ definitions:
         example: ready
         type: string
     type: object
+  CodebaseConfigSummary:
+    properties:
+      config_id:
+        description: Unique identifier for the configuration
+        example: config-12345-abcde
+        type: string
+      created_at:
+        description: Timestamp when the configuration was created
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      name:
+        description: Human-readable configuration name
+        example: my-github-config
+        type: string
+      provider:
+        allOf:
+        - $ref: '#/definitions/models.Provider'
+        description: Repository provider type
+        example: github
+      status:
+        allOf:
+        - $ref: '#/definitions/models.CodebaseConfigStatus'
+        description: Configuration status
+        example: active
+      tags:
+        additionalProperties:
+          type: string
+        description: Optional user-defined key-value tags
+        example:
+          env: prod
+          team: backend
+        type: object
+      url:
+        description: Repository URL
+        example: https://github.com/owner/repo.git
+        type: string
+    type: object
   CreateAgentRequest:
     properties:
       agent_name:
@@ -76,6 +113,72 @@ definitions:
       vector_store_id:
         description: Vector store ID for the knowledge base
         example: vs-abcde
+        type: string
+    type: object
+  CreateCodebaseConfigRequest:
+    properties:
+      config:
+        allOf:
+        - $ref: '#/definitions/models.GitProviderConfig'
+        description: Provider-specific configuration
+      default_branch:
+        description: Default branch to use
+        example: main
+        maxLength: 255
+        minLength: 1
+        type: string
+      description:
+        description: Optional configuration description
+        example: GitHub configuration for production repositories
+        maxLength: 500
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        description: Optional metadata
+        example:
+          owner: team-lead
+        type: object
+      name:
+        description: Human-readable configuration name
+        example: my-github-config
+        maxLength: 100
+        minLength: 1
+        type: string
+      provider:
+        allOf:
+        - $ref: '#/definitions/models.Provider'
+        description: Repository provider type
+        example: github
+      tags:
+        additionalProperties:
+          type: string
+        description: Optional user-defined key-value tags
+        example:
+          env: prod
+          team: backend
+        type: object
+      url:
+        description: Repository URL
+        example: https://github.com/owner/repo.git
+        maxLength: 2048
+        type: string
+    required:
+    - config
+    - default_branch
+    - name
+    - provider
+    - url
+    type: object
+  CreateCodebaseConfigResponse:
+    properties:
+      config_id:
+        description: Unique identifier for the configuration
+        example: config-12345-abcde
+        type: string
+      created_at:
+        description: Timestamp when the configuration was created
+        example: "2024-01-15T10:30:00Z"
         type: string
     type: object
   CreateProjectRequest:
@@ -156,6 +259,13 @@ definitions:
         type: string
       success:
         description: Success indicator
+        example: true
+        type: boolean
+    type: object
+  DeleteCodebaseConfigResponse:
+    properties:
+      success:
+        description: Indicates whether the deletion was successful
         example: true
         type: boolean
     type: object
@@ -243,6 +353,66 @@ definitions:
       vector_store_id:
         description: Vector store ID for the knowledge base
         example: vs-abcde
+        type: string
+    type: object
+  GetCodebaseConfigResponse:
+    properties:
+      config:
+        allOf:
+        - $ref: '#/definitions/models.GitProviderConfigRedacted'
+        description: Provider-specific configuration (sensitive data redacted)
+      config_id:
+        description: Unique identifier for the configuration
+        example: config-12345-abcde
+        type: string
+      created_at:
+        description: Timestamp when the configuration was created
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      default_branch:
+        description: Default branch to use
+        example: main
+        type: string
+      description:
+        description: Optional configuration description
+        example: GitHub configuration for production repositories
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        description: Optional metadata
+        example:
+          owner: team-lead
+        type: object
+      name:
+        description: Human-readable configuration name
+        example: my-github-config
+        type: string
+      provider:
+        allOf:
+        - $ref: '#/definitions/models.Provider'
+        description: Repository provider type
+        example: github
+      status:
+        allOf:
+        - $ref: '#/definitions/models.CodebaseConfigStatus'
+        description: Configuration status
+        example: active
+      tags:
+        additionalProperties:
+          type: string
+        description: Optional user-defined key-value tags
+        example:
+          env: prod
+          team: backend
+        type: object
+      updated_at:
+        description: Timestamp when the configuration was last updated
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      url:
+        description: Repository URL
+        example: https://github.com/owner/repo.git
         type: string
     type: object
   GetProjectResponse:
@@ -380,6 +550,18 @@ definitions:
         example: eyJ0aW1lc3RhbXAiOiIyMDI0LTAxLTE1VDEwOjMwOjAwWiJ9
         type: string
     type: object
+  ListCodebaseConfigsResponse:
+    properties:
+      configs:
+        description: List of configuration summaries
+        items:
+          $ref: '#/definitions/CodebaseConfigSummary'
+        type: array
+      next_token:
+        description: Token for next page of results
+        example: eyJpZCI6ImNvbmZpZy02Nzg5MCJ9
+        type: string
+    type: object
   ListProjectsResponse:
     properties:
       next_token:
@@ -502,6 +684,67 @@ definitions:
       vector_store_id:
         description: Vector store ID for the knowledge base
         example: vs-abcde
+        type: string
+    type: object
+  UpdateCodebaseConfigRequest:
+    properties:
+      config:
+        allOf:
+        - $ref: '#/definitions/models.GitProviderConfig'
+        description: Optional provider-specific configuration
+      configID:
+        description: Unique identifier for the configuration
+        example: config-12345-abcde
+        type: string
+      default_branch:
+        description: Optional default branch to use
+        example: develop
+        maxLength: 255
+        minLength: 1
+        type: string
+      description:
+        description: Optional configuration description
+        example: Updated GitHub configuration
+        maxLength: 500
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        description: Optional metadata
+        example:
+          owner: new-team-lead
+        type: object
+      name:
+        description: Optional human-readable configuration name
+        example: updated-github-config
+        maxLength: 100
+        minLength: 1
+        type: string
+      tags:
+        additionalProperties:
+          type: string
+        description: Optional user-defined key-value tags
+        example:
+          env: staging
+          team: frontend
+        type: object
+      url:
+        description: Optional repository URL
+        example: https://github.com/owner/new-repo.git
+        maxLength: 2048
+        type: string
+    required:
+    - configID
+    type: object
+  UpdateCodebaseConfigResponse:
+    properties:
+      config_id:
+        description: Unique identifier for the configuration
+        example: config-12345-abcde
+        type: string
+      updated_at:
+        description: Timestamp when the configuration was last updated
+        example: "2024-01-15T11:30:00Z"
         type: string
     type: object
   UpdateProjectRequest:
@@ -756,6 +999,18 @@ definitions:
         description: Bitbucket workspace
         type: string
     type: object
+  models.BitbucketConfigRedacted:
+    properties:
+      has_app_password:
+        description: AppPassword is redacted for security
+        type: boolean
+      repository:
+        type: string
+      username:
+        type: string
+      workspace:
+        type: string
+    type: object
   models.Codebase:
     properties:
       codebase_id:
@@ -793,6 +1048,16 @@ definitions:
       url:
         type: string
     type: object
+  models.CodebaseConfigStatus:
+    enum:
+    - active
+    - inactive
+    - deleted
+    type: string
+    x-enum-varnames:
+    - CodebaseConfigStatusActive
+    - CodebaseConfigStatusInactive
+    - CodebaseConfigStatusDeleted
   models.CodebaseStatus:
     enum:
     - active
@@ -915,6 +1180,24 @@ definitions:
         description: Username for basic auth
         type: string
     type: object
+  models.CustomGitConfigRedacted:
+    properties:
+      base_url:
+        type: string
+      has_password:
+        type: boolean
+      has_ssh_key:
+        type: boolean
+      has_token:
+        description: Sensitive fields are redacted for security
+        type: boolean
+      has_username:
+        type: boolean
+      headers:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
   models.DeleteCodebaseResponse:
     properties:
       success:
@@ -979,6 +1262,18 @@ definitions:
         description: PAT or OAuth token
         type: string
     type: object
+  models.GitHubConfigRedacted:
+    properties:
+      has_token:
+        description: Token is redacted for security
+        type: boolean
+      organization:
+        type: string
+      owner:
+        type: string
+      repository:
+        type: string
+    type: object
   models.GitLabConfig:
     properties:
       base_url:
@@ -992,6 +1287,18 @@ definitions:
         type: string
       token:
         description: PAT or OAuth token
+        type: string
+    type: object
+  models.GitLabConfigRedacted:
+    properties:
+      base_url:
+        type: string
+      has_token:
+        description: Token is redacted for security
+        type: boolean
+      namespace:
+        type: string
+      project_id:
         type: string
     type: object
   models.GitProviderConfig:
@@ -1016,6 +1323,29 @@ definitions:
         allOf:
         - $ref: '#/definitions/models.GitLabConfig'
         description: For GitLab
+    type: object
+  models.GitProviderConfigRedacted:
+    properties:
+      auth_type:
+        allOf:
+        - $ref: '#/definitions/models.GitAuthType'
+        description: Authentication method
+      bitbucket:
+        allOf:
+        - $ref: '#/definitions/models.BitbucketConfigRedacted'
+        description: For Bitbucket (with sensitive fields redacted)
+      custom:
+        allOf:
+        - $ref: '#/definitions/models.CustomGitConfigRedacted'
+        description: For custom Git providers (with sensitive fields redacted)
+      github:
+        allOf:
+        - $ref: '#/definitions/models.GitHubConfigRedacted'
+        description: For GitHub (with sensitive fields redacted)
+      gitlab:
+        allOf:
+        - $ref: '#/definitions/models.GitLabConfigRedacted'
+        description: For GitLab (with sensitive fields redacted)
     type: object
   models.ListCodebasesResponse:
     properties:
@@ -2100,6 +2430,176 @@ paths:
       summary: Update user
       tags:
       - authentication
+  /codebase-configs:
+    get:
+      description: Retrieve a list of codebase configurations with optional pagination
+        and filtering
+      parameters:
+      - description: Token for pagination
+        in: query
+        name: next_token
+        type: string
+      - description: Maximum number of results to return
+        in: query
+        maximum: 100
+        minimum: 1
+        name: max_results
+        type: integer
+      - description: Filter by provider (github, gitlab, bitbucket, custom)
+        in: query
+        name: provider_filter
+        type: string
+      - description: Tag filter in format key:value
+        in: query
+        name: tag_filter
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Codebase configurations retrieved successfully
+          schema:
+            $ref: '#/definitions/ListCodebaseConfigsResponse'
+        "400":
+          description: Invalid request parameters
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: List codebase configurations
+      tags:
+      - codebase-configs
+    post:
+      consumes:
+      - application/json
+      description: Create a new codebase configuration profile for reusing across
+        projects
+      parameters:
+      - description: Codebase configuration creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateCodebaseConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Codebase configuration created successfully
+          schema:
+            $ref: '#/definitions/CreateCodebaseConfigResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Create a new codebase configuration
+      tags:
+      - codebase-configs
+  /codebase-configs/{config_id}:
+    delete:
+      description: Delete a codebase configuration by its unique identifier
+      parameters:
+      - description: Codebase Configuration ID
+        in: path
+        name: config_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Codebase configuration deleted successfully
+          schema:
+            $ref: '#/definitions/DeleteCodebaseConfigResponse'
+        "400":
+          description: Invalid configuration ID
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Codebase configuration not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Delete a codebase configuration
+      tags:
+      - codebase-configs
+    get:
+      description: Retrieve a codebase configuration by its unique identifier
+      parameters:
+      - description: Codebase Configuration ID
+        in: path
+        name: config_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Codebase configuration retrieved successfully
+          schema:
+            $ref: '#/definitions/GetCodebaseConfigResponse'
+        "400":
+          description: Invalid configuration ID
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Codebase configuration not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get a codebase configuration by ID
+      tags:
+      - codebase-configs
+    put:
+      consumes:
+      - application/json
+      description: Update an existing codebase configuration's details
+      parameters:
+      - description: Codebase Configuration ID
+        in: path
+        name: config_id
+        required: true
+        type: string
+      - description: Codebase configuration update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateCodebaseConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Codebase configuration updated successfully
+          schema:
+            $ref: '#/definitions/UpdateCodebaseConfigResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Codebase configuration not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Update a codebase configuration
+      tags:
+      - codebase-configs
   /codebases:
     get:
       description: Retrieve a list of codebases with optional pagination and filtering
