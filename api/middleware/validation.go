@@ -19,6 +19,7 @@ func init() {
 
 	// Register custom validations
 	_ = validate.RegisterValidation("project_id", validateProjectID)
+	_ = validate.RegisterValidation("config_id", validateConfigID)
 	_ = validate.RegisterValidation("provider", validateProvider)
 	_ = validate.RegisterValidation("tag_filter", validateTagFilter)
 
@@ -232,6 +233,12 @@ func NewCombinedValidationMiddleware[T any]() Middleware {
 func validateProjectID(fl validator.FieldLevel) bool {
 	projectID := fl.Field().String()
 	return len(projectID) > 0
+}
+
+// validateConfigID validates config ID format - just ensures it's a non-empty string
+func validateConfigID(fl validator.FieldLevel) bool {
+	configID := fl.Field().String()
+	return len(configID) > 0
 }
 
 // validateProvider validates that the provider is one of the supported types

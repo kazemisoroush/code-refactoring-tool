@@ -96,11 +96,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize codebase configuration repository
+	codebaseConfigRepository, err := repository.NewPostgresCodebaseConfigRepository(postgresConfig, appconfig.DefaultCodebaseConfigsTableName)
+	if err != nil {
+		slog.Error("failed to initialize codebase configuration repository", "error", err)
+		os.Exit(1)
+	}
+
 	aiInfraFactory := factory.NewAIInfrastructureFactory(cfg.AWSConfig, cfg.AI, cfg.Git)
 
 	// Initialize services with full dependency injection
 	projectService := services.NewDefaultProjectService(projectRepository)
 	codebaseService := services.NewDefaultCodebaseService(codebaseRepository)
+	codebaseConfigService := services.NewDefaultCodebaseConfigService(codebaseConfigRepository)
 	healthService := services.NewDefaultHealthService("code-refactor-tool-api", "1.0.0")
 
 	// Initialize agent service with infrastructure factory
@@ -118,6 +126,7 @@ func main() {
 
 	projectController := controllers.NewProjectController(projectService)
 	codebaseController := controllers.NewCodebaseController(codebaseService)
+	codebaseConfigController := controllers.NewCodebaseConfigController(codebaseConfigService)
 	taskController := controllers.NewTaskController(taskService)
 	healthController := controllers.NewHealthController(healthService)
 	agentController := controllers.NewAgentController(agentService)
@@ -169,6 +178,9 @@ func main() {
 
 	// Setup codebase routes with validation middleware
 	routes.SetupCodebaseRoutes(router, codebaseController)
+
+	// Setup codebase configuration routes with validation middleware
+	routes.SetupCodebaseConfigRoutes(router, codebaseConfigController)
 
 	// Setup agent routes with validation middleware
 	routes.SetupAgentRoutes(router, agentController)

@@ -53,6 +53,9 @@ const (
 	// DefaultCodebasesTableName is the default name for the codebases table
 	DefaultCodebasesTableName = "codebases"
 
+	// DefaultCodebaseConfigsTableName is the default name for the codebase configurations table
+	DefaultCodebaseConfigsTableName = "codebase_configs"
+
 	// DefaultTasksTableName is the default name for the tasks table
 	DefaultTasksTableName = "tasks"
 
