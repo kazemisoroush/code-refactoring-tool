@@ -49,8 +49,76 @@ func (f *DefaultAIInfrastructureFactory) CreateAgentInfrastructure(ctx context.C
 	}
 }
 
-// Private helper methods for creating provider-specific infrastructure
+// ValidateAgentConfig validates an agent's AI provider configuration
+func (f *DefaultAIInfrastructureFactory) ValidateAgentConfig(provider models.AIProvider) error {
+	switch provider {
+	case models.AIProviderBedrock:
+		return f.validateBedrockConfig()
+	case models.AIProviderLocal:
+		return f.validateLocalConfig()
+	default:
+		return fmt.Errorf("unsupported AI provider: %s", provider)
+	}
+}
 
+// DestroyAgentInfrastructure cleans up AI infrastructure for an agent
+func (f *DefaultAIInfrastructureFactory) DestroyAgentInfrastructure(ctx context.Context, infrastructureID string) error {
+	slog.Info("Destroying AI infrastructure", "infrastructure_id", infrastructureID)
+
+	// In a real implementation, we would:
+	// 1. Query the database to get the infrastructure metadata (provider, resource IDs, etc.)
+	// 2. Create the appropriate teardown workflow based on the provider
+	// 3. Run the teardown workflow
+
+	// For now, we'll assume we can determine the provider from the infrastructureID format
+	// This is a simplified implementation
+
+	provider := f.determineProviderFromID(infrastructureID)
+
+	switch provider {
+	case models.AIProviderBedrock:
+		return f.teardownBedrockInfrastructure(ctx, infrastructureID)
+	case models.AIProviderLocal:
+		return f.teardownLocalInfrastructure(ctx, infrastructureID)
+	default:
+		return fmt.Errorf("cannot determine provider for infrastructure ID: %s", infrastructureID)
+	}
+}
+
+// UpdateAgentInfrastructure updates existing AI infrastructure for an agent
+func (f *DefaultAIInfrastructureFactory) UpdateAgentInfrastructure(ctx context.Context, infrastructureID string, provider models.AIProvider) (*AIInfrastructureResult, error) {
+	slog.Info("Updating AI infrastructure", "infrastructure_id", infrastructureID, "provider", provider)
+
+	// Validate the configuration first
+	if err := f.ValidateAgentConfig(provider); err != nil {
+		return nil, fmt.Errorf("invalid agent configuration: %w", err)
+	}
+
+	// For now, we'll implement update by destroying and recreating
+	// TODO: In the future, this can be optimized to do in-place updates where possible
+
+	// First, try to destroy existing infrastructure
+	if err := f.DestroyAgentInfrastructure(ctx, infrastructureID); err != nil {
+		slog.Warn("Failed to destroy existing infrastructure during update",
+			"infrastructure_id", infrastructureID, "error", err)
+		// Continue with creation anyway
+	}
+
+	// Create new infrastructure with updated configuration
+	result, err := f.CreateAgentInfrastructure(ctx, provider)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create updated infrastructure: %w", err)
+	}
+
+	slog.Info("AI infrastructure updated successfully",
+		"old_infrastructure_id", infrastructureID,
+		"new_infrastructure_id", result.AgentID,
+		"provider", provider)
+
+	return result, nil
+}
+
+// createBedrockInfrastructure creates AWS Bedrock infrastructure
 func (f *DefaultAIInfrastructureFactory) createBedrockInfrastructure(ctx context.Context) (*AIInfrastructureResult, error) {
 	config := f.aiConfig.Bedrock
 
@@ -108,6 +176,7 @@ func (f *DefaultAIInfrastructureFactory) createBedrockInfrastructure(ctx context
 	}, nil
 }
 
+// createLocalInfrastructure creates local Ollama + ChromaDB infrastructure
 func (f *DefaultAIInfrastructureFactory) createLocalInfrastructure(ctx context.Context) (*AIInfrastructureResult, error) {
 	config := f.aiConfig.Local
 
@@ -153,19 +222,7 @@ func (f *DefaultAIInfrastructureFactory) createLocalInfrastructure(ctx context.C
 	}, nil
 }
 
-// ValidateAgentConfig validates an agent's AI provider configuration
-func (f *DefaultAIInfrastructureFactory) ValidateAgentConfig(provider models.AIProvider) error {
-	switch provider {
-	case models.AIProviderBedrock:
-		return f.validateBedrockConfig()
-	case models.AIProviderLocal:
-		return f.validateLocalConfig()
-	default:
-		return fmt.Errorf("unsupported AI provider: %s", provider)
-	}
-}
-
-// Private validation methods
+// validateRepositoryURL validates the GitHub repository URL
 func (f *DefaultAIInfrastructureFactory) validateBedrockConfig() error {
 	config := f.aiConfig.Bedrock
 	if config.Region == "" {
@@ -180,6 +237,7 @@ func (f *DefaultAIInfrastructureFactory) validateBedrockConfig() error {
 	return nil
 }
 
+// validateLocalConfig validates the local AI configuration
 func (f *DefaultAIInfrastructureFactory) validateLocalConfig() error {
 	config := f.aiConfig.Local
 	if config.OllamaURL == "" {
@@ -191,32 +249,7 @@ func (f *DefaultAIInfrastructureFactory) validateLocalConfig() error {
 	return nil
 }
 
-// DestroyAgentInfrastructure cleans up AI infrastructure for an agent
-func (f *DefaultAIInfrastructureFactory) DestroyAgentInfrastructure(ctx context.Context, infrastructureID string) error {
-	slog.Info("Destroying AI infrastructure", "infrastructure_id", infrastructureID)
-
-	// In a real implementation, we would:
-	// 1. Query the database to get the infrastructure metadata (provider, resource IDs, etc.)
-	// 2. Create the appropriate teardown workflow based on the provider
-	// 3. Run the teardown workflow
-
-	// For now, we'll assume we can determine the provider from the infrastructureID format
-	// This is a simplified implementation
-
-	provider := f.determineProviderFromID(infrastructureID)
-
-	switch provider {
-	case models.AIProviderBedrock:
-		return f.teardownBedrockInfrastructure(ctx, infrastructureID)
-	case models.AIProviderLocal:
-		return f.teardownLocalInfrastructure(ctx, infrastructureID)
-	default:
-		return fmt.Errorf("cannot determine provider for infrastructure ID: %s", infrastructureID)
-	}
-}
-
-// determineProviderFromID attempts to determine the provider from the infrastructure ID
-// In a real implementation, this would query a database
+// determineProviderFromID is a simple heuristic to guess the provider from the infrastructure ID
 func (f *DefaultAIInfrastructureFactory) determineProviderFromID(infrastructureID string) models.AIProvider {
 	// Simple heuristic based on ID format - in reality this would come from database
 	if strings.Contains(infrastructureID, "bedrock") || strings.Contains(infrastructureID, "aws") {
@@ -303,37 +336,4 @@ func (f *DefaultAIInfrastructureFactory) teardownLocalInfrastructure(ctx context
 
 	slog.Info("Local infrastructure destroyed successfully", "infrastructure_id", infrastructureID)
 	return nil
-}
-
-// UpdateAgentInfrastructure updates existing AI infrastructure for an agent
-func (f *DefaultAIInfrastructureFactory) UpdateAgentInfrastructure(ctx context.Context, infrastructureID string, provider models.AIProvider) (*AIInfrastructureResult, error) {
-	slog.Info("Updating AI infrastructure", "infrastructure_id", infrastructureID, "provider", provider)
-
-	// Validate the configuration first
-	if err := f.ValidateAgentConfig(provider); err != nil {
-		return nil, fmt.Errorf("invalid agent configuration: %w", err)
-	}
-
-	// For now, we'll implement update by destroying and recreating
-	// TODO: In the future, this can be optimized to do in-place updates where possible
-
-	// First, try to destroy existing infrastructure
-	if err := f.DestroyAgentInfrastructure(ctx, infrastructureID); err != nil {
-		slog.Warn("Failed to destroy existing infrastructure during update",
-			"infrastructure_id", infrastructureID, "error", err)
-		// Continue with creation anyway
-	}
-
-	// Create new infrastructure with updated configuration
-	result, err := f.CreateAgentInfrastructure(ctx, provider)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create updated infrastructure: %w", err)
-	}
-
-	slog.Info("AI infrastructure updated successfully",
-		"old_infrastructure_id", infrastructureID,
-		"new_infrastructure_id", result.AgentID,
-		"provider", provider)
-
-	return result, nil
 }
