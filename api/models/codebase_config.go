@@ -5,34 +5,91 @@ import (
 	"time"
 )
 
-// CodebaseConfigStatus represents the status of a codebase configuration
-type CodebaseConfigStatus string
+// GitProviderConfig represents provider-specific configuration
+type GitProviderConfig struct {
+	// Authentication method
+	AuthType GitAuthType `json:"auth_type" db:"auth_type"`
 
-// Codebase configuration status constants
+	// For GitHub
+	GitHub *GitHubConfig `json:"github,omitempty" db:"github"`
+
+	// For GitLab
+	GitLab *GitLabConfig `json:"gitlab,omitempty" db:"gitlab"`
+
+	// For Bitbucket
+	Bitbucket *BitbucketConfig `json:"bitbucket,omitempty" db:"bitbucket"`
+
+	// For custom Git providers
+	Custom *CustomGitConfig `json:"custom,omitempty" db:"custom"`
+}
+
+// GitAuthType represents the type of authentication for Git providers
+type GitAuthType string
+
 const (
-	// CodebaseConfigStatusActive indicates the configuration is active
-	CodebaseConfigStatusActive CodebaseConfigStatus = "active"
-	// CodebaseConfigStatusInactive indicates the configuration is inactive
-	CodebaseConfigStatusInactive CodebaseConfigStatus = "inactive"
-	// CodebaseConfigStatusDeleted indicates the configuration has been deleted
-	CodebaseConfigStatusDeleted CodebaseConfigStatus = "deleted"
+	// GitAuthTypeToken represents a personal access token
+	GitAuthTypeToken GitAuthType = "token"
+
+	// GitAuthTypeOAuth represents an OAuth app
+	GitAuthTypeOAuth GitAuthType = "oauth"
+
+	// GitAuthTypeSSH SSH key
+	GitAuthTypeSSH GitAuthType = "ssh"
+
+	// GitAuthTypeBasic Username/password
+	GitAuthTypeBasic GitAuthType = "basic"
 )
+
+// GitHubConfig represents GitHub-specific configuration
+type GitHubConfig struct {
+	Token         string `json:"token,omitempty" db:"token"`                   // PAT or OAuth token
+	Organization  string `json:"organization,omitempty" db:"organization"`     // GitHub org (if applicable)
+	Repository    string `json:"repository" db:"repository"`                   // Repository name
+	Owner         string `json:"owner" db:"owner"`                             // Repository owner
+	DefaultBranch string `json:"default_branch,omitempty" db:"default_branch"` // Default branch to use
+}
+
+// GitLabConfig represents GitLab-specific configuration
+type GitLabConfig struct {
+	Token         string `json:"token,omitempty" db:"token"`                   // PAT or OAuth token
+	BaseURL       string `json:"base_url,omitempty" db:"base_url"`             // For self-hosted GitLab
+	ProjectID     string `json:"project_id" db:"project_id"`                   // GitLab project ID
+	Namespace     string `json:"namespace" db:"namespace"`                     // GitLab namespace
+	DefaultBranch string `json:"default_branch,omitempty" db:"default_branch"` // Default branch to use
+}
+
+// BitbucketConfig represents Bitbucket-specific configuration
+type BitbucketConfig struct {
+	Username      string `json:"username,omitempty" db:"username"`             // Bitbucket username
+	AppPassword   string `json:"app_password,omitempty" db:"app_password"`     // App password
+	Workspace     string `json:"workspace" db:"workspace"`                     // Bitbucket workspace
+	Repository    string `json:"repository" db:"repository"`                   // Repository name
+	DefaultBranch string `json:"default_branch,omitempty" db:"default_branch"` // Default branch to use
+}
+
+// CustomGitConfig represents configuration for custom Git providers
+type CustomGitConfig struct {
+	BaseURL       string            `json:"base_url" db:"base_url"`                       // Git provider base URL
+	Token         string            `json:"token,omitempty" db:"token"`                   // Authentication token
+	Username      string            `json:"username,omitempty" db:"username"`             // Username for basic auth
+	Password      string            `json:"password,omitempty" db:"password"`             // Password for basic auth
+	SSHKey        string            `json:"ssh_key,omitempty" db:"ssh_key"`               // SSH private key
+	Headers       map[string]string `json:"headers,omitempty" db:"headers"`               // Custom headers
+	DefaultBranch string            `json:"default_branch,omitempty" db:"default_branch"` // Default branch to use
+}
 
 // CodebaseConfig represents a codebase configuration profile that can be reused across projects
 type CodebaseConfig struct {
-	ConfigID      string               `json:"config_id" db:"config_id"`
-	Name          string               `json:"name" db:"name"`
-	Description   *string              `json:"description,omitempty" db:"description"`
-	Provider      Provider             `json:"provider" db:"provider"`
-	URL           string               `json:"url" db:"url"`
-	DefaultBranch string               `json:"default_branch" db:"default_branch"`
-	Status        CodebaseConfigStatus `json:"status" db:"status"`
-	CreatedAt     time.Time            `json:"created_at" db:"created_at"`
-	UpdatedAt     time.Time            `json:"updated_at" db:"updated_at"`
-	Tags          map[string]string    `json:"tags,omitempty" db:"tags"`
-	Metadata      map[string]string    `json:"metadata,omitempty" db:"metadata"`
+	ConfigID    string            `json:"config_id" db:"config_id"`
+	Name        string            `json:"name" db:"name"`
+	Description *string           `json:"description,omitempty" db:"description"`
+	Provider    Provider          `json:"provider" db:"provider"`
+	URL         string            `json:"url" db:"url"`
+	CreatedAt   time.Time         `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time         `json:"updated_at" db:"updated_at"`
+	Tags        map[string]string `json:"tags,omitempty" db:"tags"`
 
-	// Git provider configuration (contains sensitive data)
+	// Git provider configuration (contains sensitive data and default branch)
 	Config GitProviderConfig `json:"config" db:"config"`
 }
 
@@ -46,14 +103,10 @@ type CreateCodebaseConfigRequest struct {
 	Provider Provider `json:"provider" validate:"required,provider" example:"github"`
 	// Repository URL
 	URL string `json:"url" validate:"required,url,max=2048" example:"https://github.com/owner/repo.git"`
-	// Default branch to use
-	DefaultBranch string `json:"default_branch" validate:"required,min=1,max=255" example:"main"`
-	// Provider-specific configuration
+	// Provider-specific configuration (includes default branch)
 	Config GitProviderConfig `json:"config" validate:"required"`
 	// Optional user-defined key-value tags
 	Tags map[string]string `json:"tags,omitempty" validate:"omitempty,max=10,dive,keys,min=1,max=50,endkeys,min=1,max=100" example:"env:prod,team:backend"`
-	// Optional metadata
-	Metadata map[string]string `json:"metadata,omitempty" validate:"omitempty,max=20,dive,keys,min=1,max=100,endkeys,min=1,max=500" example:"owner:team-lead"`
 } //@name CreateCodebaseConfigRequest
 
 // CreateCodebaseConfigResponse represents the response when creating a codebase configuration
@@ -82,18 +135,12 @@ type GetCodebaseConfigResponse struct {
 	Provider Provider `json:"provider" example:"github"`
 	// Repository URL
 	URL string `json:"url" example:"https://github.com/owner/repo.git"`
-	// Default branch to use
-	DefaultBranch string `json:"default_branch" example:"main"`
-	// Configuration status
-	Status CodebaseConfigStatus `json:"status" example:"active"`
 	// Timestamp when the configuration was created
 	CreatedAt string `json:"created_at" example:"2024-01-15T10:30:00Z"`
 	// Timestamp when the configuration was last updated
 	UpdatedAt string `json:"updated_at" example:"2024-01-15T10:30:00Z"`
 	// Optional user-defined key-value tags
 	Tags map[string]string `json:"tags,omitempty" example:"env:prod,team:backend"`
-	// Optional metadata
-	Metadata map[string]string `json:"metadata,omitempty" example:"owner:team-lead"`
 	// Provider-specific configuration (sensitive data redacted)
 	Config GitProviderConfigRedacted `json:"config"`
 } //@name GetCodebaseConfigResponse
@@ -114,35 +161,39 @@ type GitProviderConfigRedacted struct {
 
 // GitHubConfigRedacted represents GitHub-specific configuration with sensitive data redacted
 type GitHubConfigRedacted struct {
-	Organization string `json:"organization,omitempty"`
-	Repository   string `json:"repository"`
-	Owner        string `json:"owner"`
+	Organization  string `json:"organization,omitempty"`
+	Repository    string `json:"repository"`
+	Owner         string `json:"owner"`
+	DefaultBranch string `json:"default_branch,omitempty"`
 	// Token is redacted for security
 	HasToken bool `json:"has_token"`
 }
 
 // GitLabConfigRedacted represents GitLab-specific configuration with sensitive data redacted
 type GitLabConfigRedacted struct {
-	BaseURL   string `json:"base_url,omitempty"`
-	ProjectID string `json:"project_id"`
-	Namespace string `json:"namespace"`
+	BaseURL       string `json:"base_url,omitempty"`
+	ProjectID     string `json:"project_id"`
+	Namespace     string `json:"namespace"`
+	DefaultBranch string `json:"default_branch,omitempty"`
 	// Token is redacted for security
 	HasToken bool `json:"has_token"`
 }
 
 // BitbucketConfigRedacted represents Bitbucket-specific configuration with sensitive data redacted
 type BitbucketConfigRedacted struct {
-	Username   string `json:"username,omitempty"`
-	Workspace  string `json:"workspace"`
-	Repository string `json:"repository"`
+	Username      string `json:"username,omitempty"`
+	Workspace     string `json:"workspace"`
+	Repository    string `json:"repository"`
+	DefaultBranch string `json:"default_branch,omitempty"`
 	// AppPassword is redacted for security
 	HasAppPassword bool `json:"has_app_password"`
 }
 
 // CustomGitConfigRedacted represents configuration for custom Git providers with sensitive data redacted
 type CustomGitConfigRedacted struct {
-	BaseURL string            `json:"base_url"`
-	Headers map[string]string `json:"headers,omitempty"`
+	BaseURL       string            `json:"base_url"`
+	Headers       map[string]string `json:"headers,omitempty"`
+	DefaultBranch string            `json:"default_branch,omitempty"`
 	// Sensitive fields are redacted for security
 	HasToken    bool `json:"has_token"`
 	HasUsername bool `json:"has_username"`
@@ -160,14 +211,10 @@ type UpdateCodebaseConfigRequest struct {
 	Description *string `json:"description,omitempty" validate:"omitempty,max=500" example:"Updated GitHub configuration"`
 	// Optional repository URL
 	URL *string `json:"url,omitempty" validate:"omitempty,url,max=2048" example:"https://github.com/owner/new-repo.git"`
-	// Optional default branch to use
-	DefaultBranch *string `json:"default_branch,omitempty" validate:"omitempty,min=1,max=255" example:"develop"`
-	// Optional provider-specific configuration
+	// Optional provider-specific configuration (includes default branch)
 	Config *GitProviderConfig `json:"config,omitempty"`
 	// Optional user-defined key-value tags
 	Tags map[string]string `json:"tags,omitempty" validate:"omitempty,max=10,dive,keys,min=1,max=50,endkeys,min=1,max=100" example:"env:staging,team:frontend"`
-	// Optional metadata
-	Metadata map[string]string `json:"metadata,omitempty" validate:"omitempty,max=20,dive,keys,min=1,max=100,endkeys,min=1,max=500" example:"owner:new-team-lead"`
 } //@name UpdateCodebaseConfigRequest
 
 // UpdateCodebaseConfigResponse represents the response when updating a codebase configuration
@@ -220,8 +267,6 @@ type CodebaseConfigSummary struct {
 	Provider Provider `json:"provider" example:"github"`
 	// Repository URL
 	URL string `json:"url" example:"https://github.com/owner/repo.git"`
-	// Configuration status
-	Status CodebaseConfigStatus `json:"status" example:"active"`
 	// Timestamp when the configuration was created
 	CreatedAt string `json:"created_at" example:"2024-01-15T10:30:00Z"`
 	// Optional user-defined key-value tags

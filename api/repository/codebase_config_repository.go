@@ -10,35 +10,29 @@ import (
 
 // CodebaseConfigRecord represents the codebase configuration data stored in the database
 type CodebaseConfigRecord struct {
-	ConfigID      string                   `json:"config_id" db:"config_id"`
-	Name          string                   `json:"name" db:"name"`
-	Description   *string                  `json:"description,omitempty" db:"description"`
-	Provider      string                   `json:"provider" db:"provider"`
-	URL           string                   `json:"url" db:"url"`
-	DefaultBranch string                   `json:"default_branch" db:"default_branch"`
-	Status        string                   `json:"status" db:"status"`
-	CreatedAt     time.Time                `json:"created_at" db:"created_at"`
-	UpdatedAt     time.Time                `json:"updated_at" db:"updated_at"`
-	Tags          map[string]string        `json:"tags,omitempty" db:"tags"`
-	Metadata      map[string]string        `json:"metadata,omitempty" db:"metadata"`
-	Config        models.GitProviderConfig `json:"config" db:"config"`
+	ConfigID    string                   `json:"config_id" db:"config_id"`
+	Name        string                   `json:"name" db:"name"`
+	Description *string                  `json:"description,omitempty" db:"description"`
+	Provider    string                   `json:"provider" db:"provider"`
+	URL         string                   `json:"url" db:"url"`
+	CreatedAt   time.Time                `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time                `json:"updated_at" db:"updated_at"`
+	Tags        map[string]string        `json:"tags,omitempty" db:"tags"`
+	Config      models.GitProviderConfig `json:"config" db:"config"`
 }
 
 // ToGetCodebaseConfigResponse converts CodebaseConfigRecord to GetCodebaseConfigResponse
 func (r *CodebaseConfigRecord) ToGetCodebaseConfigResponse() *models.GetCodebaseConfigResponse {
 	return &models.GetCodebaseConfigResponse{
-		ConfigID:      r.ConfigID,
-		Name:          r.Name,
-		Description:   r.Description,
-		Provider:      models.Provider(r.Provider),
-		URL:           r.URL,
-		DefaultBranch: r.DefaultBranch,
-		Status:        models.CodebaseConfigStatus(r.Status),
-		CreatedAt:     r.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:     r.UpdatedAt.UTC().Format(time.RFC3339),
-		Tags:          r.Tags,
-		Metadata:      r.Metadata,
-		Config:        r.redactSensitiveConfig(),
+		ConfigID:    r.ConfigID,
+		Name:        r.Name,
+		Description: r.Description,
+		Provider:    models.Provider(r.Provider),
+		URL:         r.URL,
+		CreatedAt:   r.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:   r.UpdatedAt.UTC().Format(time.RFC3339),
+		Tags:        r.Tags,
+		Config:      r.redactSensitiveConfig(),
 	}
 }
 
@@ -49,7 +43,6 @@ func (r *CodebaseConfigRecord) ToCodebaseConfigSummary() models.CodebaseConfigSu
 		Name:      r.Name,
 		Provider:  models.Provider(r.Provider),
 		URL:       r.URL,
-		Status:    models.CodebaseConfigStatus(r.Status),
 		CreatedAt: r.CreatedAt.UTC().Format(time.RFC3339),
 		Tags:      r.Tags,
 	}
@@ -63,19 +56,21 @@ func (r *CodebaseConfigRecord) redactSensitiveConfig() models.GitProviderConfigR
 
 	if r.Config.GitHub != nil {
 		redacted.GitHub = &models.GitHubConfigRedacted{
-			Organization: r.Config.GitHub.Organization,
-			Repository:   r.Config.GitHub.Repository,
-			Owner:        r.Config.GitHub.Owner,
-			HasToken:     r.Config.GitHub.Token != "",
+			Organization:  r.Config.GitHub.Organization,
+			Repository:    r.Config.GitHub.Repository,
+			Owner:         r.Config.GitHub.Owner,
+			DefaultBranch: r.Config.GitHub.DefaultBranch,
+			HasToken:      r.Config.GitHub.Token != "",
 		}
 	}
 
 	if r.Config.GitLab != nil {
 		redacted.GitLab = &models.GitLabConfigRedacted{
-			BaseURL:   r.Config.GitLab.BaseURL,
-			ProjectID: r.Config.GitLab.ProjectID,
-			Namespace: r.Config.GitLab.Namespace,
-			HasToken:  r.Config.GitLab.Token != "",
+			BaseURL:       r.Config.GitLab.BaseURL,
+			ProjectID:     r.Config.GitLab.ProjectID,
+			Namespace:     r.Config.GitLab.Namespace,
+			DefaultBranch: r.Config.GitLab.DefaultBranch,
+			HasToken:      r.Config.GitLab.Token != "",
 		}
 	}
 
@@ -84,18 +79,20 @@ func (r *CodebaseConfigRecord) redactSensitiveConfig() models.GitProviderConfigR
 			Username:       r.Config.Bitbucket.Username,
 			Workspace:      r.Config.Bitbucket.Workspace,
 			Repository:     r.Config.Bitbucket.Repository,
+			DefaultBranch:  r.Config.Bitbucket.DefaultBranch,
 			HasAppPassword: r.Config.Bitbucket.AppPassword != "",
 		}
 	}
 
 	if r.Config.Custom != nil {
 		redacted.Custom = &models.CustomGitConfigRedacted{
-			BaseURL:     r.Config.Custom.BaseURL,
-			Headers:     r.Config.Custom.Headers,
-			HasToken:    r.Config.Custom.Token != "",
-			HasUsername: r.Config.Custom.Username != "",
-			HasPassword: r.Config.Custom.Password != "",
-			HasSSHKey:   r.Config.Custom.SSHKey != "",
+			BaseURL:       r.Config.Custom.BaseURL,
+			Headers:       r.Config.Custom.Headers,
+			DefaultBranch: r.Config.Custom.DefaultBranch,
+			HasToken:      r.Config.Custom.Token != "",
+			HasUsername:   r.Config.Custom.Username != "",
+			HasPassword:   r.Config.Custom.Password != "",
+			HasSSHKey:     r.Config.Custom.SSHKey != "",
 		}
 	}
 

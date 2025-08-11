@@ -42,11 +42,6 @@ definitions:
         - $ref: '#/definitions/models.Provider'
         description: Repository provider type
         example: github
-      status:
-        allOf:
-        - $ref: '#/definitions/models.CodebaseConfigStatus'
-        description: Configuration status
-        example: active
       tags:
         additionalProperties:
           type: string
@@ -120,25 +115,12 @@ definitions:
       config:
         allOf:
         - $ref: '#/definitions/models.GitProviderConfig'
-        description: Provider-specific configuration
-      default_branch:
-        description: Default branch to use
-        example: main
-        maxLength: 255
-        minLength: 1
-        type: string
+        description: Provider-specific configuration (includes default branch)
       description:
         description: Optional configuration description
         example: GitHub configuration for production repositories
         maxLength: 500
         type: string
-      metadata:
-        additionalProperties:
-          type: string
-        description: Optional metadata
-        example:
-          owner: team-lead
-        type: object
       name:
         description: Human-readable configuration name
         example: my-github-config
@@ -165,7 +147,6 @@ definitions:
         type: string
     required:
     - config
-    - default_branch
     - name
     - provider
     - url
@@ -369,21 +350,10 @@ definitions:
         description: Timestamp when the configuration was created
         example: "2024-01-15T10:30:00Z"
         type: string
-      default_branch:
-        description: Default branch to use
-        example: main
-        type: string
       description:
         description: Optional configuration description
         example: GitHub configuration for production repositories
         type: string
-      metadata:
-        additionalProperties:
-          type: string
-        description: Optional metadata
-        example:
-          owner: team-lead
-        type: object
       name:
         description: Human-readable configuration name
         example: my-github-config
@@ -393,11 +363,6 @@ definitions:
         - $ref: '#/definitions/models.Provider'
         description: Repository provider type
         example: github
-      status:
-        allOf:
-        - $ref: '#/definitions/models.CodebaseConfigStatus'
-        description: Configuration status
-        example: active
       tags:
         additionalProperties:
           type: string
@@ -691,29 +656,16 @@ definitions:
       config:
         allOf:
         - $ref: '#/definitions/models.GitProviderConfig'
-        description: Optional provider-specific configuration
+        description: Optional provider-specific configuration (includes default branch)
       configID:
         description: Unique identifier for the configuration
         example: config-12345-abcde
-        type: string
-      default_branch:
-        description: Optional default branch to use
-        example: develop
-        maxLength: 255
-        minLength: 1
         type: string
       description:
         description: Optional configuration description
         example: Updated GitHub configuration
         maxLength: 500
         type: string
-      metadata:
-        additionalProperties:
-          type: string
-        description: Optional metadata
-        example:
-          owner: new-team-lead
-        type: object
       name:
         description: Optional human-readable configuration name
         example: updated-github-config
@@ -989,6 +941,9 @@ definitions:
       app_password:
         description: App password
         type: string
+      default_branch:
+        description: Default branch to use
+        type: string
       repository:
         description: Repository name
         type: string
@@ -1001,6 +956,8 @@ definitions:
     type: object
   models.BitbucketConfigRedacted:
     properties:
+      default_branch:
+        type: string
       has_app_password:
         description: AppPassword is redacted for security
         type: boolean
@@ -1015,13 +972,10 @@ definitions:
     properties:
       codebase_id:
         type: string
-      config:
-        allOf:
-        - $ref: '#/definitions/models.GitProviderConfig'
-        description: Git provider configuration
-      created_at:
+      config_id:
+        description: Reference to codebase configuration
         type: string
-      default_branch:
+      created_at:
         type: string
       last_sync_at:
         type: string
@@ -1048,16 +1002,6 @@ definitions:
       url:
         type: string
     type: object
-  models.CodebaseConfigStatus:
-    enum:
-    - active
-    - inactive
-    - deleted
-    type: string
-    x-enum-varnames:
-    - CodebaseConfigStatusActive
-    - CodebaseConfigStatusInactive
-    - CodebaseConfigStatusDeleted
   models.CodebaseStatus:
     enum:
     - active
@@ -1074,9 +1018,9 @@ definitions:
     properties:
       codebaseId:
         type: string
-      createdAt:
+      config_id:
         type: string
-      defaultBranch:
+      createdAt:
         type: string
       name:
         type: string
@@ -1093,9 +1037,7 @@ definitions:
     type: object
   models.CreateCodebaseRequest:
     properties:
-      defaultBranch:
-        maxLength: 255
-        minLength: 1
+      config_id:
         type: string
       name:
         maxLength: 255
@@ -1113,7 +1055,7 @@ definitions:
         maxLength: 2048
         type: string
     required:
-    - defaultBranch
+    - config_id
     - name
     - projectId
     - provider
@@ -1162,6 +1104,9 @@ definitions:
       base_url:
         description: Git provider base URL
         type: string
+      default_branch:
+        description: Default branch to use
+        type: string
       headers:
         additionalProperties:
           type: string
@@ -1183,6 +1128,8 @@ definitions:
   models.CustomGitConfigRedacted:
     properties:
       base_url:
+        type: string
+      default_branch:
         type: string
       has_password:
         type: boolean
@@ -1207,9 +1154,9 @@ definitions:
     properties:
       codebaseId:
         type: string
-      createdAt:
+      config_id:
         type: string
-      defaultBranch:
+      createdAt:
         type: string
       metadata:
         additionalProperties:
@@ -1249,6 +1196,9 @@ definitions:
     - GitAuthTypeBasic
   models.GitHubConfig:
     properties:
+      default_branch:
+        description: Default branch to use
+        type: string
       organization:
         description: GitHub org (if applicable)
         type: string
@@ -1264,6 +1214,8 @@ definitions:
     type: object
   models.GitHubConfigRedacted:
     properties:
+      default_branch:
+        type: string
       has_token:
         description: Token is redacted for security
         type: boolean
@@ -1279,6 +1231,9 @@ definitions:
       base_url:
         description: For self-hosted GitLab
         type: string
+      default_branch:
+        description: Default branch to use
+        type: string
       namespace:
         description: GitLab namespace
         type: string
@@ -1292,6 +1247,8 @@ definitions:
   models.GitLabConfigRedacted:
     properties:
       base_url:
+        type: string
+      default_branch:
         type: string
       has_token:
         description: Token is redacted for security
@@ -1626,9 +1583,7 @@ definitions:
     properties:
       codebaseId:
         type: string
-      defaultBranch:
-        maxLength: 255
-        minLength: 1
+      config_id:
         type: string
       metadata:
         additionalProperties:

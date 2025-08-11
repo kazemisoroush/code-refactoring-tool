@@ -80,11 +80,6 @@ func (r *PostgresCodebaseConfigRepository) CreateCodebaseConfig(ctx context.Cont
 		return fmt.Errorf("failed to marshal tags: %w", err)
 	}
 
-	metadataJSON, err := json.Marshal(config.Metadata)
-	if err != nil {
-		return fmt.Errorf("failed to marshal metadata: %w", err)
-	}
-
 	configJSON, err := json.Marshal(config.Config)
 	if err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
@@ -92,9 +87,9 @@ func (r *PostgresCodebaseConfigRepository) CreateCodebaseConfig(ctx context.Cont
 
 	query := fmt.Sprintf(`
 		INSERT INTO %s (
-			config_id, name, description, provider, url, default_branch,
-			status, created_at, updated_at, tags, metadata, config
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+			config_id, name, description, provider, url,
+			created_at, updated_at, tags, config
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`, r.tableName)
 
 	_, err = r.db.ExecContext(ctx, query,
@@ -103,12 +98,9 @@ func (r *PostgresCodebaseConfigRepository) CreateCodebaseConfig(ctx context.Cont
 		config.Description,
 		config.Provider,
 		config.URL,
-		config.DefaultBranch,
-		config.Status,
 		config.CreatedAt,
 		config.UpdatedAt,
 		tagsJSON,
-		metadataJSON,
 		configJSON,
 	)
 	if err != nil {
@@ -125,8 +117,8 @@ func (r *PostgresCodebaseConfigRepository) CreateCodebaseConfig(ctx context.Cont
 // GetCodebaseConfig retrieves a codebase configuration by ID from PostgreSQL
 func (r *PostgresCodebaseConfigRepository) GetCodebaseConfig(ctx context.Context, configID string) (*CodebaseConfigRecord, error) {
 	query := fmt.Sprintf(`
-		SELECT config_id, name, description, provider, url, default_branch,
-			   status, created_at, updated_at, tags, metadata, config
+		SELECT config_id, name, description, provider, url,
+			   created_at, updated_at, tags, config
 		FROM %s WHERE config_id = $1
 	`, r.tableName)
 
@@ -134,7 +126,7 @@ func (r *PostgresCodebaseConfigRepository) GetCodebaseConfig(ctx context.Context
 
 	var config CodebaseConfigRecord
 	var description sql.NullString
-	var tagsJSON, metadataJSON, configJSON []byte
+	var tagsJSON, configJSON []byte
 
 	err := row.Scan(
 		&config.ConfigID,
@@ -142,12 +134,9 @@ func (r *PostgresCodebaseConfigRepository) GetCodebaseConfig(ctx context.Context
 		&description,
 		&config.Provider,
 		&config.URL,
-		&config.DefaultBranch,
-		&config.Status,
 		&config.CreatedAt,
 		&config.UpdatedAt,
 		&tagsJSON,
-		&metadataJSON,
 		&configJSON,
 	)
 	if err != nil {
@@ -168,11 +157,6 @@ func (r *PostgresCodebaseConfigRepository) GetCodebaseConfig(ctx context.Context
 			return nil, fmt.Errorf("failed to unmarshal tags: %w", err)
 		}
 	}
-	if len(metadataJSON) > 0 {
-		if err := json.Unmarshal(metadataJSON, &config.Metadata); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal metadata: %w", err)
-		}
-	}
 	if len(configJSON) > 0 {
 		if err := json.Unmarshal(configJSON, &config.Config); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal config: %w", err)
@@ -190,11 +174,6 @@ func (r *PostgresCodebaseConfigRepository) UpdateCodebaseConfig(ctx context.Cont
 		return fmt.Errorf("failed to marshal tags: %w", err)
 	}
 
-	metadataJSON, err := json.Marshal(config.Metadata)
-	if err != nil {
-		return fmt.Errorf("failed to marshal metadata: %w", err)
-	}
-
 	configJSON, err := json.Marshal(config.Config)
 	if err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
@@ -202,8 +181,8 @@ func (r *PostgresCodebaseConfigRepository) UpdateCodebaseConfig(ctx context.Cont
 
 	query := fmt.Sprintf(`
 		UPDATE %s SET 
-			name = $2, description = $3, provider = $4, url = $5, default_branch = $6,
-			status = $7, updated_at = $8, tags = $9, metadata = $10, config = $11
+			name = $2, description = $3, provider = $4, url = $5,
+			updated_at = $6, tags = $7, config = $8
 		WHERE config_id = $1
 	`, r.tableName)
 
@@ -213,11 +192,8 @@ func (r *PostgresCodebaseConfigRepository) UpdateCodebaseConfig(ctx context.Cont
 		config.Description,
 		config.Provider,
 		config.URL,
-		config.DefaultBranch,
-		config.Status,
 		config.UpdatedAt,
 		tagsJSON,
-		metadataJSON,
 		configJSON,
 	)
 	if err != nil {
@@ -277,8 +253,8 @@ func (r *PostgresCodebaseConfigRepository) CodebaseConfigExists(ctx context.Cont
 func (r *PostgresCodebaseConfigRepository) ListCodebaseConfigs(ctx context.Context, opts ListCodebaseConfigsOptions) ([]*CodebaseConfigRecord, string, error) {
 	// Build the base query
 	query := fmt.Sprintf(`
-		SELECT config_id, name, description, provider, url, default_branch,
-			   status, created_at, updated_at, tags, metadata, config
+		SELECT config_id, name, description, provider, url,
+			   created_at, updated_at, tags, config
 		FROM %s
 	`, r.tableName)
 
@@ -340,7 +316,7 @@ func (r *PostgresCodebaseConfigRepository) ListCodebaseConfigs(ctx context.Conte
 	for rows.Next() {
 		var config CodebaseConfigRecord
 		var description sql.NullString
-		var tagsJSON, metadataJSON, configJSON []byte
+		var tagsJSON, configJSON []byte
 
 		err := rows.Scan(
 			&config.ConfigID,
@@ -348,12 +324,9 @@ func (r *PostgresCodebaseConfigRepository) ListCodebaseConfigs(ctx context.Conte
 			&description,
 			&config.Provider,
 			&config.URL,
-			&config.DefaultBranch,
-			&config.Status,
 			&config.CreatedAt,
 			&config.UpdatedAt,
 			&tagsJSON,
-			&metadataJSON,
 			&configJSON,
 		)
 		if err != nil {
@@ -369,11 +342,6 @@ func (r *PostgresCodebaseConfigRepository) ListCodebaseConfigs(ctx context.Conte
 		if len(tagsJSON) > 0 {
 			if err := json.Unmarshal(tagsJSON, &config.Tags); err != nil {
 				return nil, "", fmt.Errorf("failed to unmarshal tags: %w", err)
-			}
-		}
-		if len(metadataJSON) > 0 {
-			if err := json.Unmarshal(metadataJSON, &config.Metadata); err != nil {
-				return nil, "", fmt.Errorf("failed to unmarshal metadata: %w", err)
 			}
 		}
 		if len(configJSON) > 0 {
@@ -405,12 +373,9 @@ func (r *PostgresCodebaseConfigRepository) CreateTable(ctx context.Context) erro
 			description TEXT,
 			provider VARCHAR(50) NOT NULL,
 			url VARCHAR(2048) NOT NULL,
-			default_branch VARCHAR(255) NOT NULL,
-			status VARCHAR(50) NOT NULL DEFAULT 'active',
 			created_at TIMESTAMP WITH TIME ZONE NOT NULL,
 			updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
 			tags JSONB DEFAULT '{}',
-			metadata JSONB DEFAULT '{}',
 			config JSONB NOT NULL
 		)
 	`, r.tableName)
@@ -424,7 +389,6 @@ func (r *PostgresCodebaseConfigRepository) CreateTable(ctx context.Context) erro
 	indexes := []string{
 		fmt.Sprintf("CREATE INDEX IF NOT EXISTS idx_%s_name ON %s (name)", r.tableName, r.tableName),
 		fmt.Sprintf("CREATE INDEX IF NOT EXISTS idx_%s_provider ON %s (provider)", r.tableName, r.tableName),
-		fmt.Sprintf("CREATE INDEX IF NOT EXISTS idx_%s_status ON %s (status)", r.tableName, r.tableName),
 		fmt.Sprintf("CREATE INDEX IF NOT EXISTS idx_%s_created_at ON %s (created_at)", r.tableName, r.tableName),
 		fmt.Sprintf("CREATE INDEX IF NOT EXISTS idx_%s_tags ON %s USING GIN (tags)", r.tableName, r.tableName),
 		fmt.Sprintf("CREATE INDEX IF NOT EXISTS idx_%s_url ON %s (url)", r.tableName, r.tableName),

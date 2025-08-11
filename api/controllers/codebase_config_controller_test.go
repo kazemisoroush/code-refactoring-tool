@@ -25,11 +25,18 @@ func TestCodebaseConfigController_CreateCodebaseConfig_Success(t *testing.T) {
 	controller := controllers.NewCodebaseConfigController(mockService)
 
 	request := models.CreateCodebaseConfigRequest{
-		Name:          "My Config",
-		Provider:      "github",
-		URL:           "https://github.com/test/repo.git",
-		DefaultBranch: "main",
-		Config:        models.GitProviderConfig{},
+		Name:     "My Config",
+		Provider: "github",
+		URL:      "https://github.com/test/repo.git",
+		Config: models.GitProviderConfig{
+			AuthType: "token",
+			GitHub: &models.GitHubConfig{
+				Token:         "test-token",
+				Owner:         "test-owner",
+				Repository:    "test-repo",
+				DefaultBranch: "main",
+			},
+		},
 	}
 
 	expectedResponse := &models.CreateCodebaseConfigResponse{
@@ -74,14 +81,12 @@ func TestCodebaseConfigController_GetCodebaseConfig_Success(t *testing.T) {
 	request := models.GetCodebaseConfigRequest{ConfigID: configID}
 
 	expectedResponse := &models.GetCodebaseConfigResponse{
-		ConfigID:      configID,
-		Name:          "Test Config",
-		Provider:      "github",
-		URL:           "https://github.com/test/repo.git",
-		DefaultBranch: "main",
-		Status:        "active",
-		CreatedAt:     "2025-08-10T10:00:00Z",
-		UpdatedAt:     "2025-08-10T10:00:00Z",
+		ConfigID:  configID,
+		Name:      "Test Config",
+		Provider:  "github",
+		URL:       "https://github.com/test/repo.git",
+		CreatedAt: "2025-08-10T10:00:00Z",
+		UpdatedAt: "2025-08-10T10:00:00Z",
 	}
 
 	mockService.EXPECT().GetCodebaseConfig(gomock.Any(), configID).Return(expectedResponse, nil).Times(1)
@@ -116,13 +121,11 @@ func TestCodebaseConfigController_UpdateCodebaseConfig_Success(t *testing.T) {
 	configID := "config-123"
 	name := "Updated Config"
 	url := "https://github.com/test/updated-repo.git"
-	branch := "develop"
 	request := models.UpdateCodebaseConfigRequest{
-		ConfigID:      configID,
-		Name:          &name,
-		URL:           &url,
-		DefaultBranch: &branch,
-		Config:        &models.GitProviderConfig{},
+		ConfigID: configID,
+		Name:     &name,
+		URL:      &url,
+		Config:   &models.GitProviderConfig{},
 	}
 
 	expectedResponse := &models.UpdateCodebaseConfigResponse{
@@ -209,14 +212,14 @@ func TestCodebaseConfigController_ListCodebaseConfigs_Success(t *testing.T) {
 				ConfigID:  "config-123",
 				Name:      "Test Config 1",
 				Provider:  "github",
-				Status:    "active",
+				URL:       "https://github.com/test/repo1.git",
 				CreatedAt: "2025-08-10T10:00:00Z",
 			},
 			{
 				ConfigID:  "config-456",
 				Name:      "Test Config 2",
 				Provider:  "gitlab",
-				Status:    "active",
+				URL:       "https://gitlab.com/test/repo2.git",
 				CreatedAt: "2025-08-10T11:00:00Z",
 			},
 		},

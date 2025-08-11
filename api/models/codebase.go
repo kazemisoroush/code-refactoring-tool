@@ -33,15 +33,14 @@ func (p Provider) String() string {
 
 // Codebase represents a Git-based repository attached to a Project
 type Codebase struct {
-	CodebaseID    string   `json:"codebase_id" db:"codebase_id"`
-	ProjectID     string   `json:"project_id" db:"project_id"`
-	Name          string   `json:"name" db:"name"`
-	Provider      Provider `json:"provider" db:"provider"`
-	URL           string   `json:"url" db:"url"`
-	DefaultBranch string   `json:"default_branch" db:"default_branch"`
+	CodebaseID string   `json:"codebase_id" db:"codebase_id"`
+	ProjectID  string   `json:"project_id" db:"project_id"`
+	Name       string   `json:"name" db:"name"`
+	Provider   Provider `json:"provider" db:"provider"`
+	URL        string   `json:"url" db:"url"`
 
-	// Git provider configuration
-	Config GitProviderConfig `json:"config" db:"config"`
+	// Reference to codebase configuration
+	ConfigID string `json:"config_id" db:"config_id"`
 
 	// Status and metadata
 	Status     CodebaseStatus    `json:"status" db:"status"`
@@ -66,83 +65,14 @@ const (
 	CodebaseStatusInactive CodebaseStatus = "inactive"
 )
 
-// GitProviderConfig represents provider-specific configuration
-type GitProviderConfig struct {
-	// Authentication method
-	AuthType GitAuthType `json:"auth_type" db:"auth_type"`
-
-	// For GitHub
-	GitHub *GitHubConfig `json:"github,omitempty" db:"github"`
-
-	// For GitLab
-	GitLab *GitLabConfig `json:"gitlab,omitempty" db:"gitlab"`
-
-	// For Bitbucket
-	Bitbucket *BitbucketConfig `json:"bitbucket,omitempty" db:"bitbucket"`
-
-	// For custom Git providers
-	Custom *CustomGitConfig `json:"custom,omitempty" db:"custom"`
-}
-
-// GitAuthType represents the type of authentication for Git providers
-type GitAuthType string
-
-const (
-	// GitAuthTypeToken represents a personal access token
-	GitAuthTypeToken GitAuthType = "token"
-
-	// GitAuthTypeOAuth represents an OAuth app
-	GitAuthTypeOAuth GitAuthType = "oauth"
-
-	// GitAuthTypeSSH SSH key
-	GitAuthTypeSSH GitAuthType = "ssh"
-
-	// GitAuthTypeBasic Username/password
-	GitAuthTypeBasic GitAuthType = "basic"
-)
-
-// GitHubConfig represents GitHub-specific configuration
-type GitHubConfig struct {
-	Token        string `json:"token,omitempty" db:"token"`               // PAT or OAuth token
-	Organization string `json:"organization,omitempty" db:"organization"` // GitHub org (if applicable)
-	Repository   string `json:"repository" db:"repository"`               // Repository name
-	Owner        string `json:"owner" db:"owner"`                         // Repository owner
-}
-
-// GitLabConfig represents GitLab-specific configuration
-type GitLabConfig struct {
-	Token     string `json:"token,omitempty" db:"token"`       // PAT or OAuth token
-	BaseURL   string `json:"base_url,omitempty" db:"base_url"` // For self-hosted GitLab
-	ProjectID string `json:"project_id" db:"project_id"`       // GitLab project ID
-	Namespace string `json:"namespace" db:"namespace"`         // GitLab namespace
-}
-
-// BitbucketConfig represents Bitbucket-specific configuration
-type BitbucketConfig struct {
-	Username    string `json:"username,omitempty" db:"username"`         // Bitbucket username
-	AppPassword string `json:"app_password,omitempty" db:"app_password"` // App password
-	Workspace   string `json:"workspace" db:"workspace"`                 // Bitbucket workspace
-	Repository  string `json:"repository" db:"repository"`               // Repository name
-}
-
-// CustomGitConfig represents configuration for custom Git providers
-type CustomGitConfig struct {
-	BaseURL  string            `json:"base_url" db:"base_url"`           // Git provider base URL
-	Token    string            `json:"token,omitempty" db:"token"`       // Authentication token
-	Username string            `json:"username,omitempty" db:"username"` // Username for basic auth
-	Password string            `json:"password,omitempty" db:"password"` // Password for basic auth
-	SSHKey   string            `json:"ssh_key,omitempty" db:"ssh_key"`   // SSH private key
-	Headers  map[string]string `json:"headers,omitempty" db:"headers"`   // Custom headers
-}
-
 // CreateCodebaseRequest represents the request to create a new codebase
 type CreateCodebaseRequest struct {
-	ProjectID     string            `json:"projectId" validate:"required,project_id" uri:"project_id"`
-	Name          string            `json:"name" validate:"required,min=1,max=255"`
-	Provider      Provider          `json:"provider" validate:"required,provider"`
-	URL           string            `json:"url" validate:"required,url,max=2048"`
-	DefaultBranch string            `json:"defaultBranch" validate:"required,min=1,max=255"`
-	Tags          map[string]string `json:"tags,omitempty" validate:"omitempty,dive,keys,min=1,max=64,endkeys,min=1,max=255"`
+	ProjectID string            `json:"projectId" validate:"required,project_id" uri:"project_id"`
+	Name      string            `json:"name" validate:"required,min=1,max=255"`
+	Provider  Provider          `json:"provider" validate:"required,provider"`
+	URL       string            `json:"url" validate:"required,url,max=2048"`
+	ConfigID  string            `json:"config_id" validate:"required,config_id"`
+	Tags      map[string]string `json:"tags,omitempty" validate:"omitempty,dive,keys,min=1,max=64,endkeys,min=1,max=255"`
 }
 
 // CreateCodebaseResponse represents the response after creating a codebase
@@ -158,25 +88,25 @@ type GetCodebaseRequest struct {
 
 // GetCodebaseResponse represents the response when retrieving a codebase
 type GetCodebaseResponse struct {
-	CodebaseID    string            `json:"codebaseId"`
-	ProjectID     string            `json:"projectId"`
-	Name          string            `json:"name"`
-	Provider      Provider          `json:"provider"`
-	URL           string            `json:"url"`
-	DefaultBranch string            `json:"defaultBranch"`
-	CreatedAt     string            `json:"createdAt"`
-	UpdatedAt     string            `json:"updatedAt"`
-	Metadata      map[string]string `json:"metadata,omitempty"`
-	Tags          map[string]string `json:"tags,omitempty"`
+	CodebaseID string            `json:"codebaseId"`
+	ProjectID  string            `json:"projectId"`
+	Name       string            `json:"name"`
+	Provider   Provider          `json:"provider"`
+	URL        string            `json:"url"`
+	ConfigID   string            `json:"config_id"`
+	CreatedAt  string            `json:"createdAt"`
+	UpdatedAt  string            `json:"updatedAt"`
+	Metadata   map[string]string `json:"metadata,omitempty"`
+	Tags       map[string]string `json:"tags,omitempty"`
 }
 
 // UpdateCodebaseRequest represents the request to update a codebase
 type UpdateCodebaseRequest struct {
-	CodebaseID    string            `json:"codebaseId" validate:"required,uuid" uri:"id"`
-	Name          *string           `json:"name,omitempty" validate:"omitempty,min=1,max=255"`
-	DefaultBranch *string           `json:"defaultBranch,omitempty" validate:"omitempty,min=1,max=255"`
-	Tags          map[string]string `json:"tags,omitempty" validate:"omitempty,dive,keys,min=1,max=64,endkeys,min=1,max=255"`
-	Metadata      map[string]string `json:"metadata,omitempty" validate:"omitempty,dive,keys,min=1,max=64,endkeys,min=1,max=255"`
+	CodebaseID string            `json:"codebaseId" validate:"required,uuid" uri:"id"`
+	Name       *string           `json:"name,omitempty" validate:"omitempty,min=1,max=255"`
+	ConfigID   *string           `json:"config_id,omitempty" validate:"omitempty,config_id"`
+	Tags       map[string]string `json:"tags,omitempty" validate:"omitempty,dive,keys,min=1,max=64,endkeys,min=1,max=255"`
+	Metadata   map[string]string `json:"metadata,omitempty" validate:"omitempty,dive,keys,min=1,max=64,endkeys,min=1,max=255"`
 }
 
 // UpdateCodebaseResponse represents the response after updating a codebase
@@ -205,14 +135,14 @@ type ListCodebasesRequest struct {
 
 // CodebaseSummary represents a summary of a codebase for listing purposes
 type CodebaseSummary struct {
-	CodebaseID    string            `json:"codebaseId"`
-	ProjectID     string            `json:"projectId"`
-	Name          string            `json:"name"`
-	Provider      Provider          `json:"provider"`
-	URL           string            `json:"url"`
-	DefaultBranch string            `json:"defaultBranch"`
-	CreatedAt     string            `json:"createdAt"`
-	Tags          map[string]string `json:"tags,omitempty"`
+	CodebaseID string            `json:"codebaseId"`
+	ProjectID  string            `json:"projectId"`
+	Name       string            `json:"name"`
+	Provider   Provider          `json:"provider"`
+	URL        string            `json:"url"`
+	ConfigID   string            `json:"config_id"`
+	CreatedAt  string            `json:"createdAt"`
+	Tags       map[string]string `json:"tags,omitempty"`
 }
 
 // ListCodebasesResponse represents the response when listing codebases

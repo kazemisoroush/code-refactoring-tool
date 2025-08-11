@@ -62,18 +62,15 @@ func (s *DefaultCodebaseConfigService) CreateCodebaseConfig(ctx context.Context,
 
 	now := time.Now().UTC()
 	record := &repository.CodebaseConfigRecord{
-		ConfigID:      configID,
-		Name:          request.Name,
-		Description:   request.Description,
-		Provider:      string(request.Provider),
-		URL:           request.URL,
-		DefaultBranch: request.DefaultBranch,
-		Status:        string(models.CodebaseConfigStatusActive),
-		CreatedAt:     now,
-		UpdatedAt:     now,
-		Tags:          request.Tags,
-		Metadata:      request.Metadata,
-		Config:        request.Config,
+		ConfigID:    configID,
+		Name:        request.Name,
+		Description: request.Description,
+		Provider:    string(request.Provider),
+		URL:         request.URL,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		Tags:        request.Tags,
+		Config:      request.Config,
 	}
 
 	// Create the configuration in the repository
@@ -117,9 +114,6 @@ func (s *DefaultCodebaseConfigService) UpdateCodebaseConfig(ctx context.Context,
 	if request.URL != nil {
 		existing.URL = *request.URL
 	}
-	if request.DefaultBranch != nil {
-		existing.DefaultBranch = *request.DefaultBranch
-	}
 	if request.Config != nil {
 		// Validate provider-specific configuration
 		provider := models.Provider(existing.Provider)
@@ -130,9 +124,6 @@ func (s *DefaultCodebaseConfigService) UpdateCodebaseConfig(ctx context.Context,
 	}
 	if request.Tags != nil {
 		existing.Tags = request.Tags
-	}
-	if request.Metadata != nil {
-		existing.Metadata = request.Metadata
 	}
 
 	existing.UpdatedAt = now
@@ -269,7 +260,7 @@ func (s *DefaultCodebaseConfigService) validateBitbucketConfig(config models.Git
 	return nil
 }
 
-// validateCustomConfig validates custom provider configuration
+// validateCustomConfig validates Custom provider configuration
 func (s *DefaultCodebaseConfigService) validateCustomConfig(config models.GitProviderConfig) error {
 	if config.Custom == nil {
 		return fmt.Errorf("custom configuration is required for custom provider")
@@ -280,7 +271,7 @@ func (s *DefaultCodebaseConfigService) validateCustomConfig(config models.GitPro
 	return nil
 }
 
-// validateAuthConfig validates authentication configuration
+// validateAuthConfig validates authentication configuration based on auth type
 func (s *DefaultCodebaseConfigService) validateAuthConfig(provider models.Provider, config models.GitProviderConfig) error {
 	switch config.AuthType {
 	case models.GitAuthTypeToken:

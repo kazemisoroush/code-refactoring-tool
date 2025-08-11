@@ -31,15 +31,16 @@ func (s *DefaultCodebaseService) CreateCodebase(ctx context.Context, request mod
 	// Create the codebase entity
 	now := time.Now().UTC()
 	codebase := &models.Codebase{
-		CodebaseID:    codebaseID,
-		ProjectID:     request.ProjectID,
-		Name:          request.Name,
-		Provider:      request.Provider,
-		URL:           request.URL,
-		DefaultBranch: request.DefaultBranch,
-		CreatedAt:     now,
-		UpdatedAt:     now,
-		Tags:          request.Tags,
+		CodebaseID: codebaseID,
+		ProjectID:  request.ProjectID,
+		Name:       request.Name,
+		Provider:   request.Provider,
+		URL:        request.URL,
+		ConfigID:   request.ConfigID,
+		Status:     models.CodebaseStatusActive,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+		Tags:       request.Tags,
 	}
 
 	// Initialize empty metadata if nil
@@ -69,16 +70,16 @@ func (s *DefaultCodebaseService) GetCodebase(ctx context.Context, codebaseID str
 	}
 
 	return &models.GetCodebaseResponse{
-		CodebaseID:    codebase.CodebaseID,
-		ProjectID:     codebase.ProjectID,
-		Name:          codebase.Name,
-		Provider:      codebase.Provider,
-		URL:           codebase.URL,
-		DefaultBranch: codebase.DefaultBranch,
-		CreatedAt:     codebase.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:     codebase.UpdatedAt.Format(time.RFC3339),
-		Metadata:      codebase.Metadata,
-		Tags:          codebase.Tags,
+		CodebaseID: codebase.CodebaseID,
+		ProjectID:  codebase.ProjectID,
+		Name:       codebase.Name,
+		Provider:   codebase.Provider,
+		URL:        codebase.URL,
+		ConfigID:   codebase.ConfigID,
+		CreatedAt:  codebase.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:  codebase.UpdatedAt.Format(time.RFC3339),
+		Metadata:   codebase.Metadata,
+		Tags:       codebase.Tags,
 	}, nil
 }
 
@@ -94,8 +95,8 @@ func (s *DefaultCodebaseService) UpdateCodebase(ctx context.Context, request mod
 	if request.Name != nil {
 		codebase.Name = *request.Name
 	}
-	if request.DefaultBranch != nil {
-		codebase.DefaultBranch = *request.DefaultBranch
+	if request.ConfigID != nil {
+		codebase.ConfigID = *request.ConfigID
 	}
 	if request.Tags != nil {
 		codebase.Tags = request.Tags
@@ -149,14 +150,14 @@ func (s *DefaultCodebaseService) ListCodebases(ctx context.Context, request mode
 	summaries := make([]models.CodebaseSummary, 0, len(codebases))
 	for _, codebase := range codebases {
 		summary := models.CodebaseSummary{
-			CodebaseID:    codebase.CodebaseID,
-			ProjectID:     codebase.ProjectID,
-			Name:          codebase.Name,
-			Provider:      codebase.Provider,
-			URL:           codebase.URL,
-			DefaultBranch: codebase.DefaultBranch,
-			CreatedAt:     codebase.CreatedAt.Format(time.RFC3339),
-			Tags:          codebase.Tags,
+			CodebaseID: codebase.CodebaseID,
+			ProjectID:  codebase.ProjectID,
+			Name:       codebase.Name,
+			Provider:   codebase.Provider,
+			URL:        codebase.URL,
+			ConfigID:   codebase.ConfigID,
+			CreatedAt:  codebase.CreatedAt.Format(time.RFC3339),
+			Tags:       codebase.Tags,
 		}
 		summaries = append(summaries, summary)
 	}

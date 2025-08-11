@@ -1928,15 +1928,6 @@ const docTemplate = `{
                     ],
                     "example": "github"
                 },
-                "status": {
-                    "description": "Configuration status",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.CodebaseConfigStatus"
-                        }
-                    ],
-                    "example": "active"
-                },
                 "tags": {
                     "description": "Optional user-defined key-value tags",
                     "type": "object",
@@ -2033,42 +2024,24 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "config",
-                "default_branch",
                 "name",
                 "provider",
                 "url"
             ],
             "properties": {
                 "config": {
-                    "description": "Provider-specific configuration",
+                    "description": "Provider-specific configuration (includes default branch)",
                     "allOf": [
                         {
                             "$ref": "#/definitions/models.GitProviderConfig"
                         }
                     ]
                 },
-                "default_branch": {
-                    "description": "Default branch to use",
-                    "type": "string",
-                    "maxLength": 255,
-                    "minLength": 1,
-                    "example": "main"
-                },
                 "description": {
                     "description": "Optional configuration description",
                     "type": "string",
                     "maxLength": 500,
                     "example": "GitHub configuration for production repositories"
-                },
-                "metadata": {
-                    "description": "Optional metadata",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    },
-                    "example": {
-                        "owner": "team-lead"
-                    }
                 },
                 "name": {
                     "description": "Human-readable configuration name",
@@ -2376,25 +2349,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2024-01-15T10:30:00Z"
                 },
-                "default_branch": {
-                    "description": "Default branch to use",
-                    "type": "string",
-                    "example": "main"
-                },
                 "description": {
                     "description": "Optional configuration description",
                     "type": "string",
                     "example": "GitHub configuration for production repositories"
-                },
-                "metadata": {
-                    "description": "Optional metadata",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    },
-                    "example": {
-                        "owner": "team-lead"
-                    }
                 },
                 "name": {
                     "description": "Human-readable configuration name",
@@ -2409,15 +2367,6 @@ const docTemplate = `{
                         }
                     ],
                     "example": "github"
-                },
-                "status": {
-                    "description": "Configuration status",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.CodebaseConfigStatus"
-                        }
-                    ],
-                    "example": "active"
                 },
                 "tags": {
                     "description": "Optional user-defined key-value tags",
@@ -2826,7 +2775,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "config": {
-                    "description": "Optional provider-specific configuration",
+                    "description": "Optional provider-specific configuration (includes default branch)",
                     "allOf": [
                         {
                             "$ref": "#/definitions/models.GitProviderConfig"
@@ -2838,28 +2787,11 @@ const docTemplate = `{
                     "type": "string",
                     "example": "config-12345-abcde"
                 },
-                "default_branch": {
-                    "description": "Optional default branch to use",
-                    "type": "string",
-                    "maxLength": 255,
-                    "minLength": 1,
-                    "example": "develop"
-                },
                 "description": {
                     "description": "Optional configuration description",
                     "type": "string",
                     "maxLength": 500,
                     "example": "Updated GitHub configuration"
-                },
-                "metadata": {
-                    "description": "Optional metadata",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    },
-                    "example": {
-                        "owner": "new-team-lead"
-                    }
                 },
                 "name": {
                     "description": "Optional human-readable configuration name",
@@ -3247,6 +3179,10 @@ const docTemplate = `{
                     "description": "App password",
                     "type": "string"
                 },
+                "default_branch": {
+                    "description": "Default branch to use",
+                    "type": "string"
+                },
                 "repository": {
                     "description": "Repository name",
                     "type": "string"
@@ -3264,6 +3200,9 @@ const docTemplate = `{
         "models.BitbucketConfigRedacted": {
             "type": "object",
             "properties": {
+                "default_branch": {
+                    "type": "string"
+                },
                 "has_app_password": {
                     "description": "AppPassword is redacted for security",
                     "type": "boolean"
@@ -3285,18 +3224,11 @@ const docTemplate = `{
                 "codebase_id": {
                     "type": "string"
                 },
-                "config": {
-                    "description": "Git provider configuration",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.GitProviderConfig"
-                        }
-                    ]
-                },
-                "created_at": {
+                "config_id": {
+                    "description": "Reference to codebase configuration",
                     "type": "string"
                 },
-                "default_branch": {
+                "created_at": {
                     "type": "string"
                 },
                 "last_sync_at": {
@@ -3339,19 +3271,6 @@ const docTemplate = `{
                 }
             }
         },
-        "models.CodebaseConfigStatus": {
-            "type": "string",
-            "enum": [
-                "active",
-                "inactive",
-                "deleted"
-            ],
-            "x-enum-varnames": [
-                "CodebaseConfigStatusActive",
-                "CodebaseConfigStatusInactive",
-                "CodebaseConfigStatusDeleted"
-            ]
-        },
         "models.CodebaseStatus": {
             "type": "string",
             "enum": [
@@ -3373,10 +3292,10 @@ const docTemplate = `{
                 "codebaseId": {
                     "type": "string"
                 },
-                "createdAt": {
+                "config_id": {
                     "type": "string"
                 },
-                "defaultBranch": {
+                "createdAt": {
                     "type": "string"
                 },
                 "name": {
@@ -3402,17 +3321,15 @@ const docTemplate = `{
         "models.CreateCodebaseRequest": {
             "type": "object",
             "required": [
-                "defaultBranch",
+                "config_id",
                 "name",
                 "projectId",
                 "provider",
                 "url"
             ],
             "properties": {
-                "defaultBranch": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "minLength": 1
+                "config_id": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string",
@@ -3501,6 +3418,10 @@ const docTemplate = `{
                     "description": "Git provider base URL",
                     "type": "string"
                 },
+                "default_branch": {
+                    "description": "Default branch to use",
+                    "type": "string"
+                },
                 "headers": {
                     "description": "Custom headers",
                     "type": "object",
@@ -3530,6 +3451,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "base_url": {
+                    "type": "string"
+                },
+                "default_branch": {
                     "type": "string"
                 },
                 "has_password": {
@@ -3567,10 +3491,10 @@ const docTemplate = `{
                 "codebaseId": {
                     "type": "string"
                 },
-                "createdAt": {
+                "config_id": {
                     "type": "string"
                 },
-                "defaultBranch": {
+                "createdAt": {
                     "type": "string"
                 },
                 "metadata": {
@@ -3628,6 +3552,10 @@ const docTemplate = `{
         "models.GitHubConfig": {
             "type": "object",
             "properties": {
+                "default_branch": {
+                    "description": "Default branch to use",
+                    "type": "string"
+                },
                 "organization": {
                     "description": "GitHub org (if applicable)",
                     "type": "string"
@@ -3649,6 +3577,9 @@ const docTemplate = `{
         "models.GitHubConfigRedacted": {
             "type": "object",
             "properties": {
+                "default_branch": {
+                    "type": "string"
+                },
                 "has_token": {
                     "description": "Token is redacted for security",
                     "type": "boolean"
@@ -3671,6 +3602,10 @@ const docTemplate = `{
                     "description": "For self-hosted GitLab",
                     "type": "string"
                 },
+                "default_branch": {
+                    "description": "Default branch to use",
+                    "type": "string"
+                },
                 "namespace": {
                     "description": "GitLab namespace",
                     "type": "string"
@@ -3689,6 +3624,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "base_url": {
+                    "type": "string"
+                },
+                "default_branch": {
                     "type": "string"
                 },
                 "has_token": {
@@ -4200,10 +4138,8 @@ const docTemplate = `{
                 "codebaseId": {
                     "type": "string"
                 },
-                "defaultBranch": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "minLength": 1
+                "config_id": {
+                    "type": "string"
                 },
                 "metadata": {
                     "type": "object",

@@ -64,19 +64,19 @@ func (r *PostgresCodebaseRepository) createTableIfNotExists() error {
 			name VARCHAR(255) NOT NULL,
 			provider VARCHAR(50) NOT NULL,
 			url TEXT NOT NULL,
-			default_branch VARCHAR(255) NOT NULL,
+			config_id VARCHAR(255) NOT NULL,
+			status VARCHAR(50) NOT NULL DEFAULT 'active',
+			last_sync_at TIMESTAMP WITH TIME ZONE,
 			created_at TIMESTAMP WITH TIME ZONE NOT NULL,
 			updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
 			metadata JSONB,
 			tags JSONB,
 			CONSTRAINT fk_project FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 		);
-
-		CREATE INDEX IF NOT EXISTS idx_%s_project_id ON %s(project_id);
-		CREATE INDEX IF NOT EXISTS idx_%s_provider ON %s(provider);
-		CREATE INDEX IF NOT EXISTS idx_%s_created_at ON %s(created_at);
-		CREATE INDEX IF NOT EXISTS idx_%s_tags ON %s USING GIN(tags);
-	`, r.tableName, r.tableName, r.tableName, r.tableName, r.tableName, r.tableName, r.tableName, r.tableName, r.tableName)
+		CREATE INDEX IF NOT EXISTS idx_codebases_project_id ON %s (project_id);
+		CREATE INDEX IF NOT EXISTS idx_codebases_provider ON %s (provider);
+		CREATE INDEX IF NOT EXISTS idx_codebases_created_at ON %s (created_at);
+	`, r.tableName, r.tableName, r.tableName, r.tableName)
 
 	_, err := r.db.Exec(query)
 	return err
@@ -85,8 +85,8 @@ func (r *PostgresCodebaseRepository) createTableIfNotExists() error {
 // CreateCodebase creates a new codebase record
 func (r *PostgresCodebaseRepository) CreateCodebase(ctx context.Context, codebase *models.Codebase) error {
 	query := fmt.Sprintf(`
-		INSERT INTO %s (codebase_id, project_id, name, provider, url, default_branch, created_at, updated_at, metadata, tags)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		INSERT INTO %s (codebase_id, project_id, name, provider, url, config_id, status, last_sync_at, created_at, updated_at, metadata, tags)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 	`, r.tableName)
 
 	metadataJSON, err := json.Marshal(codebase.Metadata)
@@ -105,7 +105,9 @@ func (r *PostgresCodebaseRepository) CreateCodebase(ctx context.Context, codebas
 		codebase.Name,
 		codebase.Provider,
 		codebase.URL,
-		codebase.DefaultBranch,
+		codebase.ConfigID,
+		codebase.Status,
+		codebase.LastSyncAt,
 		codebase.CreatedAt,
 		codebase.UpdatedAt,
 		metadataJSON,
@@ -130,7 +132,7 @@ func (r *PostgresCodebaseRepository) CreateCodebase(ctx context.Context, codebas
 // GetCodebase retrieves a codebase by ID
 func (r *PostgresCodebaseRepository) GetCodebase(ctx context.Context, codebaseID string) (*models.Codebase, error) {
 	query := fmt.Sprintf(`
-		SELECT codebase_id, project_id, name, provider, url, default_branch, created_at, updated_at, metadata, tags
+		SELECT codebase_id, project_id, name, provider, url, config_id, status, last_sync_at, created_at, updated_at, metadata, tags
 		FROM %s
 		WHERE codebase_id = $1
 	`, r.tableName)
@@ -144,7 +146,9 @@ func (r *PostgresCodebaseRepository) GetCodebase(ctx context.Context, codebaseID
 		&codebase.Name,
 		&codebase.Provider,
 		&codebase.URL,
-		&codebase.DefaultBranch,
+		&codebase.ConfigID,
+		&codebase.Status,
+		&codebase.LastSyncAt,
 		&codebase.CreatedAt,
 		&codebase.UpdatedAt,
 		&metadataJSON,
@@ -177,7 +181,7 @@ func (r *PostgresCodebaseRepository) GetCodebase(ctx context.Context, codebaseID
 func (r *PostgresCodebaseRepository) UpdateCodebase(ctx context.Context, codebase *models.Codebase) error {
 	query := fmt.Sprintf(`
 		UPDATE %s
-		SET name = $2, default_branch = $3, updated_at = $4, metadata = $5, tags = $6
+		SET name = $2, config_id = $3, status = $4, last_sync_at = $5, updated_at = $6, metadata = $7, tags = $8
 		WHERE codebase_id = $1
 	`, r.tableName)
 
@@ -194,7 +198,9 @@ func (r *PostgresCodebaseRepository) UpdateCodebase(ctx context.Context, codebas
 	result, err := r.db.ExecContext(ctx, query,
 		codebase.CodebaseID,
 		codebase.Name,
-		codebase.DefaultBranch,
+		codebase.ConfigID,
+		codebase.Status,
+		codebase.LastSyncAt,
 		codebase.UpdatedAt,
 		metadataJSON,
 		tagsJSON,
@@ -245,7 +251,7 @@ func (r *PostgresCodebaseRepository) ListCodebases(ctx context.Context, filter C
 	argIndex := 1
 
 	baseQuery := fmt.Sprintf(`
-		SELECT codebase_id, project_id, name, provider, url, default_branch, created_at, updated_at, metadata, tags
+		SELECT codebase_id, project_id, name, provider, url, config_id, status, last_sync_at, created_at, updated_at, metadata, tags
 		FROM %s
 	`, r.tableName)
 
@@ -312,9 +318,11 @@ func (r *PostgresCodebaseRepository) ListCodebases(ctx context.Context, filter C
 			&codebase.Name,
 			&codebase.Provider,
 			&codebase.URL,
-			&codebase.DefaultBranch,
+			&codebase.ConfigID,
+			&codebase.Status,
 			&codebase.CreatedAt,
 			&codebase.UpdatedAt,
+			&codebase.LastSyncAt,
 			&metadataJSON,
 			&tagsJSON,
 		)
@@ -378,7 +386,7 @@ func (r *PostgresCodebaseRepository) CodebaseExists(ctx context.Context, codebas
 // GetCodebasesByProject gets all codebases for a specific project
 func (r *PostgresCodebaseRepository) GetCodebasesByProject(ctx context.Context, projectID string) ([]*models.Codebase, error) {
 	query := fmt.Sprintf(`
-		SELECT codebase_id, project_id, name, provider, url, default_branch, created_at, updated_at, metadata, tags
+		SELECT codebase_id, project_id, name, provider, url, config_id, status, created_at, updated_at, last_sync_at, metadata, tags
 		FROM %s
 		WHERE project_id = $1
 		ORDER BY created_at DESC
@@ -404,9 +412,11 @@ func (r *PostgresCodebaseRepository) GetCodebasesByProject(ctx context.Context, 
 			&codebase.Name,
 			&codebase.Provider,
 			&codebase.URL,
-			&codebase.DefaultBranch,
+			&codebase.ConfigID,
+			&codebase.Status,
 			&codebase.CreatedAt,
 			&codebase.UpdatedAt,
+			&codebase.LastSyncAt,
 			&metadataJSON,
 			&tagsJSON,
 		)

@@ -21,11 +21,11 @@ func TestCodebaseValidation(t *testing.T) {
 	t.Run("CreateCodebaseRequest_ValidRequest", func(t *testing.T) {
 		// Valid request should pass validation
 		request := models.CreateCodebaseRequest{
-			ProjectID:     "proj-12345",
-			Name:          "My Codebase",
-			Provider:      models.ProviderGitHub,
-			URL:           "https://github.com/user/repo.git",
-			DefaultBranch: "main",
+			ProjectID: "proj-12345",
+			Name:      "My Codebase",
+			Provider:  models.ProviderGitHub,
+			URL:       "https://github.com/user/repo.git",
+			ConfigID:  "config-12345",
 			Tags: map[string]string{
 				"env":  "production",
 				"team": "backend",
@@ -91,11 +91,11 @@ func TestCodebaseValidation(t *testing.T) {
 	t.Run("CreateCodebaseRequest_InvalidURL", func(t *testing.T) {
 		// Invalid URL should fail validation
 		request := models.CreateCodebaseRequest{
-			ProjectID:     "proj-12345",
-			Name:          "My Codebase",
-			Provider:      models.ProviderGitHub,
-			URL:           "not-a-valid-url",
-			DefaultBranch: "main",
+			ProjectID: "proj-12345",
+			Name:      "My Codebase",
+			Provider:  models.ProviderGitHub,
+			URL:       "not-a-valid-url",
+			ConfigID:  "config-12345",
 		}
 
 		router := gin.New()
