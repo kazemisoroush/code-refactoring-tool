@@ -2163,7 +2163,71 @@ const docTemplate = `{
             }
         },
         "CreateTaskRequest": {
-            "type": "object"
+            "type": "object",
+            "required": [
+                "agent_id",
+                "description",
+                "project_id",
+                "title",
+                "type"
+            ],
+            "properties": {
+                "agent_id": {
+                    "type": "string",
+                    "example": "agent-12345"
+                },
+                "codebase_id": {
+                    "type": "string",
+                    "example": "codebase-12345"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 1,
+                    "example": "Please refactor the user authentication module to use JWT tokens instead of sessions"
+                },
+                "input": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "project_id": {
+                    "type": "string",
+                    "example": "proj-12345-abcde"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1,
+                    "example": "Refactor authentication module"
+                },
+                "type": {
+                    "enum": [
+                        "code_analysis",
+                        "refactoring",
+                        "code_review",
+                        "documentation",
+                        "custom"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.TaskType"
+                        }
+                    ],
+                    "example": "refactoring"
+                }
+            }
         },
         "CreateTaskResponse": {
             "type": "object",
@@ -2242,7 +2306,64 @@ const docTemplate = `{
             }
         },
         "ExecuteTaskRequest": {
-            "type": "object"
+            "type": "object",
+            "required": [
+                "agent_id",
+                "description",
+                "project_id",
+                "title",
+                "type"
+            ],
+            "properties": {
+                "agent_id": {
+                    "type": "string",
+                    "example": "agent-12345"
+                },
+                "async": {
+                    "description": "If true, returns task ID; if false, waits for completion",
+                    "type": "boolean",
+                    "example": false
+                },
+                "codebase_id": {
+                    "type": "string",
+                    "example": "codebase-12345"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 1,
+                    "example": "Analyze this function for potential improvements"
+                },
+                "input": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "project_id": {
+                    "type": "string",
+                    "example": "proj-12345-abcde"
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1,
+                    "example": "Quick code analysis"
+                },
+                "type": {
+                    "enum": [
+                        "code_analysis",
+                        "refactoring",
+                        "code_review",
+                        "documentation",
+                        "custom"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.TaskType"
+                        }
+                    ],
+                    "example": "refactoring"
+                }
+            }
         },
         "ExecuteTaskResponse": {
             "type": "object",

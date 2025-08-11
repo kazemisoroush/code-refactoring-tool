@@ -218,6 +218,54 @@ definitions:
         type: string
     type: object
   CreateTaskRequest:
+    properties:
+      agent_id:
+        example: agent-12345
+        type: string
+      codebase_id:
+        example: codebase-12345
+        type: string
+      description:
+        example: Please refactor the user authentication module to use JWT tokens
+          instead of sessions
+        maxLength: 2000
+        minLength: 1
+        type: string
+      input:
+        additionalProperties: {}
+        type: object
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      project_id:
+        example: proj-12345-abcde
+        type: string
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      title:
+        example: Refactor authentication module
+        maxLength: 200
+        minLength: 1
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/models.TaskType'
+        enum:
+        - code_analysis
+        - refactoring
+        - code_review
+        - documentation
+        - custom
+        example: refactoring
+    required:
+    - agent_id
+    - description
+    - project_id
+    - title
+    - type
     type: object
   CreateTaskResponse:
     properties:
@@ -273,6 +321,49 @@ definitions:
         type: string
     type: object
   ExecuteTaskRequest:
+    properties:
+      agent_id:
+        example: agent-12345
+        type: string
+      async:
+        description: If true, returns task ID; if false, waits for completion
+        example: false
+        type: boolean
+      codebase_id:
+        example: codebase-12345
+        type: string
+      description:
+        example: Analyze this function for potential improvements
+        maxLength: 2000
+        minLength: 1
+        type: string
+      input:
+        additionalProperties: {}
+        type: object
+      project_id:
+        example: proj-12345-abcde
+        type: string
+      title:
+        example: Quick code analysis
+        maxLength: 200
+        minLength: 1
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/models.TaskType'
+        enum:
+        - code_analysis
+        - refactoring
+        - code_review
+        - documentation
+        - custom
+        example: refactoring
+    required:
+    - agent_id
+    - description
+    - project_id
+    - title
+    - type
     type: object
   ExecuteTaskResponse:
     properties:

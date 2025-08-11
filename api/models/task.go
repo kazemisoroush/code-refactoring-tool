@@ -92,7 +92,7 @@ type CreateTaskRequest struct {
 	Type        TaskType          `json:"type" validate:"required,oneof=code_analysis refactoring code_review documentation custom" example:"refactoring"`
 	Title       string            `json:"title" validate:"required,min=1,max=200" example:"Refactor authentication module"`
 	Description string            `json:"description" validate:"required,min=1,max=2000" example:"Please refactor the user authentication module to use JWT tokens instead of sessions"`
-	Input       map[string]any    `json:"input,omitempty" example:"file_path:/src/auth/auth.go"`
+	Input       map[string]any    `json:"input,omitempty"`
 	Metadata    map[string]string `json:"metadata,omitempty" validate:"omitempty,max=10,dive,keys,min=1,max=50,endkeys,min=1,max=100"`
 	Tags        map[string]string `json:"tags,omitempty" validate:"omitempty,max=10,dive,keys,min=1,max=50,endkeys,min=1,max=100"`
 } //@name CreateTaskRequest
@@ -154,7 +154,7 @@ type ExecuteTaskRequest struct {
 	Type        TaskType       `json:"type" validate:"required,oneof=code_analysis refactoring code_review documentation custom" example:"refactoring"`
 	Title       string         `json:"title" validate:"required,min=1,max=200" example:"Quick code analysis"`
 	Description string         `json:"description" validate:"required,min=1,max=2000" example:"Analyze this function for potential improvements"`
-	Input       map[string]any `json:"input,omitempty" example:"code_snippet:func main() { fmt.Println(\"Hello\") }"`
+	Input       map[string]any `json:"input,omitempty"`
 	Async       bool           `json:"async" example:"false"` // If true, returns task ID; if false, waits for completion
 } //@name ExecuteTaskRequest
 
