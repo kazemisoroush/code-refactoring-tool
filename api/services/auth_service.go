@@ -23,6 +23,11 @@ type AuthService interface {
 	// Token Operations
 	ValidateToken(ctx context.Context, token string) (*models.UserContext, error)
 
+	// Password Reset & Email Verification
+	ConfirmEmail(ctx context.Context, req *models.ConfirmEmailRequest) error
+	ForgotPassword(ctx context.Context, req *models.ForgotPasswordRequest) error
+	ResetPassword(ctx context.Context, req *models.ResetPasswordRequest) error
+
 	// User Management (Admin operations)
 	CreateUser(ctx context.Context, req *models.CreateUserRequest) (*models.CreateUserResponse, error)
 	GetUser(ctx context.Context, userID string) (*models.GetUserResponse, error)
@@ -371,4 +376,34 @@ func (s *AuthServiceImpl) getUserPermissions(role models.UserRole) []models.Perm
 	default:
 		return []models.Permission{}
 	}
+}
+
+// ConfirmEmail confirms user email with verification code
+func (s *AuthServiceImpl) ConfirmEmail(ctx context.Context, req *models.ConfirmEmailRequest) error {
+	// For email confirmation, we need to find the user by email to get their username/ID
+	user, err := s.userRepo.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		return fmt.Errorf("user not found: %w", err)
+	}
+
+	// Use the auth provider's ConfirmSignUp method with the user's auth ID
+	return s.authProvider.ConfirmSignUp(ctx, user.AuthID, req.Code)
+}
+
+// ForgotPassword initiates password reset flow
+func (s *AuthServiceImpl) ForgotPassword(ctx context.Context, req *models.ForgotPasswordRequest) error {
+	// Use the auth provider to initiate password reset with email directly
+	return s.authProvider.ResetPassword(ctx, req.Email)
+}
+
+// ResetPassword completes password reset with verification code
+func (s *AuthServiceImpl) ResetPassword(ctx context.Context, req *models.ResetPasswordRequest) error {
+	// Use the auth provider to confirm password reset
+	resetReq := &auth.PasswordResetRequest{
+		Email:            req.Email,
+		ConfirmationCode: req.Code,
+		NewPassword:      req.NewPassword,
+	}
+
+	return s.authProvider.ConfirmPasswordReset(ctx, resetReq)
 }

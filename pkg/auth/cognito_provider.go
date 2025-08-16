@@ -257,6 +257,22 @@ func (c *CognitoProvider) SignUp(ctx context.Context, req *SignUpRequest) (*Auth
 	}, nil
 }
 
+// ConfirmSignUp confirms a user's signup with the provided confirmation code
+func (c *CognitoProvider) ConfirmSignUp(ctx context.Context, username, confirmationCode string) error {
+	input := &cognitoidentityprovider.ConfirmSignUpInput{
+		ClientId:         aws.String(c.config.ClientID),
+		Username:         aws.String(username),
+		ConfirmationCode: aws.String(confirmationCode),
+	}
+
+	_, err := c.client.ConfirmSignUp(ctx, input)
+	if err != nil {
+		return c.mapCognitoError(err)
+	}
+
+	return nil
+}
+
 // SignIn authenticates a user with Cognito
 func (c *CognitoProvider) SignIn(ctx context.Context, req *SignInRequest) (*AuthResult, error) {
 	input := &cognitoidentityprovider.InitiateAuthInput{

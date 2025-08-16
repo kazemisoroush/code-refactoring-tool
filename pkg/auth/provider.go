@@ -25,6 +25,9 @@ type AuthProvider interface {
 	RefreshToken(ctx context.Context, refreshToken string) (*AuthResult, error)
 	SignOut(ctx context.Context, accessToken string) error
 
+	// Email Confirmation
+	ConfirmSignUp(ctx context.Context, username, confirmationCode string) error
+
 	// Token Validation
 	ValidateToken(ctx context.Context, token string) (*TokenClaims, error)
 

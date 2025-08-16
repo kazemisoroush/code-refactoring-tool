@@ -49,6 +49,20 @@ func (mr *MockAuthProviderMockRecorder) ConfirmPasswordReset(ctx, req interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfirmPasswordReset", reflect.TypeOf((*MockAuthProvider)(nil).ConfirmPasswordReset), ctx, req)
 }
 
+// ConfirmSignUp mocks base method.
+func (m *MockAuthProvider) ConfirmSignUp(ctx context.Context, username, confirmationCode string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConfirmSignUp", ctx, username, confirmationCode)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ConfirmSignUp indicates an expected call of ConfirmSignUp.
+func (mr *MockAuthProviderMockRecorder) ConfirmSignUp(ctx, username, confirmationCode interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfirmSignUp", reflect.TypeOf((*MockAuthProvider)(nil).ConfirmSignUp), ctx, username, confirmationCode)
+}
+
 // CreateUser mocks base method.
 func (m *MockAuthProvider) CreateUser(ctx context.Context, req *auth.CreateUserRequest) (*auth.User, error) {
 	m.ctrl.T.Helper()

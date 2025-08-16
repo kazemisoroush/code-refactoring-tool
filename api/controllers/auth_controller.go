@@ -405,3 +405,247 @@ func (c *AuthController) ListUsers(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, response)
 }
+
+// ConfirmEmail handles email confirmation after signup
+// @Summary Confirm user email
+// @Description Verify user account after signup with email verification code
+// @Tags authentication
+// @Accept json
+// @Produce json
+// @Param request body models.ConfirmEmailRequest true "Confirm email request"
+// @Success 200 {object} models.SuccessResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /auth/confirm [post]
+func (c *AuthController) ConfirmEmail(ctx *gin.Context) {
+	// Get validated request from context (set by validation middleware)
+	validatedRequest, exists := ctx.Get("validatedRequest")
+	if !exists {
+		// Fallback to direct binding if validation middleware is not used
+		var req models.ConfirmEmailRequest
+		if err := ctx.ShouldBindJSON(&req); err != nil {
+			ctx.JSON(http.StatusBadRequest, models.ErrorResponse{
+				Code:    http.StatusBadRequest,
+				Message: "Invalid request body",
+				Details: err.Error(),
+			})
+			return
+		}
+		validatedRequest = req
+	}
+
+	req, ok := validatedRequest.(models.ConfirmEmailRequest)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+			Details: "Invalid request type",
+		})
+		return
+	}
+
+	err := c.authService.ConfirmEmail(ctx.Request.Context(), &req)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "does not exist") {
+			ctx.JSON(http.StatusNotFound, models.ErrorResponse{
+				Code:    http.StatusNotFound,
+				Message: "User not found",
+				Details: err.Error(),
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to confirm email",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.SuccessResponse{
+		Message: "Account verified successfully",
+	})
+}
+
+// ForgotPassword handles password reset initiation
+// @Summary Initiate password reset
+// @Description Send password reset code to user's email
+// @Tags authentication
+// @Accept json
+// @Produce json
+// @Param request body models.ForgotPasswordRequest true "Forgot password request"
+// @Success 200 {object} models.SuccessResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /auth/forgot-password [post]
+func (c *AuthController) ForgotPassword(ctx *gin.Context) {
+	// Get validated request from context (set by validation middleware)
+	validatedRequest, exists := ctx.Get("validatedRequest")
+	if !exists {
+		// Fallback to direct binding if validation middleware is not used
+		var req models.ForgotPasswordRequest
+		if err := ctx.ShouldBindJSON(&req); err != nil {
+			ctx.JSON(http.StatusBadRequest, models.ErrorResponse{
+				Code:    http.StatusBadRequest,
+				Message: "Invalid request body",
+				Details: err.Error(),
+			})
+			return
+		}
+		validatedRequest = req
+	}
+
+	req, ok := validatedRequest.(models.ForgotPasswordRequest)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+			Details: "Invalid request type",
+		})
+		return
+	}
+
+	err := c.authService.ForgotPassword(ctx.Request.Context(), &req)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "does not exist") {
+			ctx.JSON(http.StatusNotFound, models.ErrorResponse{
+				Code:    http.StatusNotFound,
+				Message: "User not found",
+				Details: err.Error(),
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to initiate password reset",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.SuccessResponse{
+		Message: "Password reset code sent to your email",
+	})
+}
+
+// ResetPassword handles password reset completion
+// @Summary Reset password
+// @Description Reset user password with confirmation code
+// @Tags authentication
+// @Accept json
+// @Produce json
+// @Param request body models.ResetPasswordRequest true "Reset password request"
+// @Success 200 {object} models.SuccessResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /auth/reset-password [post]
+func (c *AuthController) ResetPassword(ctx *gin.Context) {
+	// Get validated request from context (set by validation middleware)
+	validatedRequest, exists := ctx.Get("validatedRequest")
+	if !exists {
+		// Fallback to direct binding if validation middleware is not used
+		var req models.ResetPasswordRequest
+		if err := ctx.ShouldBindJSON(&req); err != nil {
+			ctx.JSON(http.StatusBadRequest, models.ErrorResponse{
+				Code:    http.StatusBadRequest,
+				Message: "Invalid request body",
+				Details: err.Error(),
+			})
+			return
+		}
+		validatedRequest = req
+	}
+
+	req, ok := validatedRequest.(models.ResetPasswordRequest)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+			Details: "Invalid request type",
+		})
+		return
+	}
+
+	err := c.authService.ResetPassword(ctx.Request.Context(), &req)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "does not exist") {
+			ctx.JSON(http.StatusNotFound, models.ErrorResponse{
+				Code:    http.StatusNotFound,
+				Message: "User not found",
+				Details: err.Error(),
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to reset password",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.SuccessResponse{
+		Message: "Password reset successfully",
+	})
+}
+
+// GetMe handles getting current user information
+// @Summary Get current user
+// @Description Get the current authenticated user's information
+// @Tags authentication
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {object} models.APIUser
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /auth/me [get]
+func (c *AuthController) GetMe(ctx *gin.Context) {
+	// Get user ID from context (set by auth middleware)
+	userID, exists := ctx.Get("userID")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Code:    http.StatusUnauthorized,
+			Message: "User not authenticated",
+			Details: "User ID not found in context",
+		})
+		return
+	}
+
+	// Ensure userID is a string
+	userIDStr, ok := userID.(string)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+			Details: "Invalid user ID type",
+		})
+		return
+	}
+
+	user, err := c.authService.GetUser(ctx.Request.Context(), userIDStr)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			ctx.JSON(http.StatusNotFound, models.ErrorResponse{
+				Code:    http.StatusNotFound,
+				Message: "User not found",
+				Details: err.Error(),
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get user information",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, user)
+}
