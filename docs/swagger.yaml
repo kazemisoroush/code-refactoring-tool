@@ -1126,6 +1126,16 @@ definitions:
       url:
         type: string
     type: object
+  models.ConfirmEmailRequest:
+    properties:
+      code:
+        type: string
+      email:
+        type: string
+    required:
+    - code
+    - email
+    type: object
   models.CreateCodebaseRequest:
     properties:
       config_id:
@@ -1240,6 +1250,13 @@ definitions:
     properties:
       success:
         type: boolean
+    type: object
+  models.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
     type: object
   models.GetCodebaseResponse:
     properties:
@@ -1505,6 +1522,20 @@ definitions:
         type: string
       token_type:
         type: string
+    type: object
+  models.ResetPasswordRequest:
+    properties:
+      code:
+        type: string
+      email:
+        type: string
+      new_password:
+        minLength: 8
+        type: string
+    required:
+    - code
+    - email
+    - new_password
     type: object
   models.SignInRequest:
     properties:
@@ -2180,6 +2211,97 @@ paths:
       summary: Update a task
       tags:
       - tasks
+  /auth/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Verify user account after signup with email verification code
+      parameters:
+      - description: Confirm email request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ConfirmEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Confirm user email
+      tags:
+      - authentication
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Send password reset code to user's email
+      parameters:
+      - description: Forgot password request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Initiate password reset
+      tags:
+      - authentication
+  /auth/me:
+    get:
+      description: Get the current authenticated user's information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.APIUser'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get current user
+      tags:
+      - authentication
   /auth/refresh:
     post:
       consumes:
@@ -2212,6 +2334,40 @@ paths:
           schema:
             $ref: '#/definitions/ErrorResponse'
       summary: Refresh access token
+      tags:
+      - authentication
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Reset user password with confirmation code
+      parameters:
+      - description: Reset password request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Reset password
       tags:
       - authentication
   /auth/signin:

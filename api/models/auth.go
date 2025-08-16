@@ -141,3 +141,21 @@ type DBUser struct {
 	CreatedAt time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
 }
+
+// ConfirmEmailRequest represents a request to confirm user email
+type ConfirmEmailRequest struct {
+	Email string `json:"email" validate:"required,email"`
+	Code  string `json:"code" validate:"required"`
+}
+
+// ForgotPasswordRequest represents a request to initiate password reset
+type ForgotPasswordRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+// ResetPasswordRequest represents a request to reset password with confirmation code
+type ResetPasswordRequest struct {
+	Email       string `json:"email" validate:"required,email"`
+	Code        string `json:"code" validate:"required"`
+	NewPassword string `json:"new_password" validate:"required,min=8"`
+}

@@ -35,6 +35,20 @@ func (m *MockAuthService) EXPECT() *MockAuthServiceMockRecorder {
 	return m.recorder
 }
 
+// ConfirmEmail mocks base method.
+func (m *MockAuthService) ConfirmEmail(ctx context.Context, req *models.ConfirmEmailRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConfirmEmail", ctx, req)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ConfirmEmail indicates an expected call of ConfirmEmail.
+func (mr *MockAuthServiceMockRecorder) ConfirmEmail(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfirmEmail", reflect.TypeOf((*MockAuthService)(nil).ConfirmEmail), ctx, req)
+}
+
 // CreateUser mocks base method.
 func (m *MockAuthService) CreateUser(ctx context.Context, req *models.CreateUserRequest) (*models.CreateUserResponse, error) {
 	m.ctrl.T.Helper()
@@ -62,6 +76,20 @@ func (m *MockAuthService) DeleteUser(ctx context.Context, userID string) error {
 func (mr *MockAuthServiceMockRecorder) DeleteUser(ctx, userID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*MockAuthService)(nil).DeleteUser), ctx, userID)
+}
+
+// ForgotPassword mocks base method.
+func (m *MockAuthService) ForgotPassword(ctx context.Context, req *models.ForgotPasswordRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ForgotPassword", ctx, req)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ForgotPassword indicates an expected call of ForgotPassword.
+func (mr *MockAuthServiceMockRecorder) ForgotPassword(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForgotPassword", reflect.TypeOf((*MockAuthService)(nil).ForgotPassword), ctx, req)
 }
 
 // GetUser mocks base method.
@@ -107,6 +135,20 @@ func (m *MockAuthService) RefreshToken(ctx context.Context, req *models.RefreshT
 func (mr *MockAuthServiceMockRecorder) RefreshToken(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefreshToken", reflect.TypeOf((*MockAuthService)(nil).RefreshToken), ctx, req)
+}
+
+// ResetPassword mocks base method.
+func (m *MockAuthService) ResetPassword(ctx context.Context, req *models.ResetPasswordRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResetPassword", ctx, req)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResetPassword indicates an expected call of ResetPassword.
+func (mr *MockAuthServiceMockRecorder) ResetPassword(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*MockAuthService)(nil).ResetPassword), ctx, req)
 }
 
 // SignIn mocks base method.
